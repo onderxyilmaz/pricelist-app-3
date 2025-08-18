@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, Typography, Space, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { authApi } from '../utils/api';
@@ -8,6 +8,13 @@ const { Title, Link } = Typography;
 
 const Register = ({ onRegister, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Price List App v3 - Register';
+    return () => {
+      document.title = 'Price List App v3';
+    };
+  }, []);
 
   const onFinish = async (values) => {
     setLoading(true);

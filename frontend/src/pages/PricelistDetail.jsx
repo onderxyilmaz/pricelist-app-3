@@ -49,8 +49,15 @@ const PricelistDetail = () => {
   const [form] = Form.useForm();
 
   useEffect(() => {
+    document.title = 'Price List App v3 - Pricelist Detail';
     fetchPricelistDetail();
   }, [id]);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
+  }, []);
 
   const fetchPricelistDetail = async () => {
     setLoading(true);

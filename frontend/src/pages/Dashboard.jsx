@@ -21,7 +21,14 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = 'Price List App v3 - Dashboard';
     fetchDashboardStats();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   const fetchDashboardStats = async () => {

@@ -36,11 +36,18 @@ const UserManagement = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    document.title = 'Price List App v3 - User Management';
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
     }
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   const fetchUsers = async () => {

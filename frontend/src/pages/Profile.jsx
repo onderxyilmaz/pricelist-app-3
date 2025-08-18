@@ -31,6 +31,7 @@ const Profile = ({ user, onUserUpdate }) => {
   };
 
   useEffect(() => {
+    document.title = 'Price List App v3 - Profile';
     console.log('User data in Profile:', user);
     setProfileData({
       firstName: user?.first_name || '',

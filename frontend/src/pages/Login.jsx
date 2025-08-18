@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, Typography, Space } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { authApi } from '../utils/api';
@@ -8,6 +8,13 @@ const { Title, Link } = Typography;
 
 const Login = ({ onLogin, onSwitchToRegister }) => {
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Price List App v3 - Login';
+    return () => {
+      document.title = 'Price List App v3';
+    };
+  }, []);
 
   const onFinish = async (values) => {
     setLoading(true);

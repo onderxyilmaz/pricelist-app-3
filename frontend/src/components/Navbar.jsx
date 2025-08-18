@@ -61,7 +61,7 @@ const Navbar = ({ user, onLogout }) => {
         onClick={() => navigate('/')}
       >
         <UnorderedListOutlined style={{ fontSize: '24px' }} />
-        Fiyat List App
+        Price List App v3
       </div>
       
       <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">

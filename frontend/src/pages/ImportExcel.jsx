@@ -49,7 +49,14 @@ const ImportExcel = () => {
   const [importProgress, setImportProgress] = useState(0);
 
   useEffect(() => {
+    document.title = 'Price List App v3 - Import Excel';
     fetchPricelists();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   const fetchPricelists = async () => {

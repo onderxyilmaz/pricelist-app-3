@@ -46,7 +46,14 @@ const PricelistList = () => {
   };
 
   useEffect(() => {
+    document.title = 'Price List App v3 - Price Lists';
     fetchPricelists();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   const fetchPricelists = async () => {

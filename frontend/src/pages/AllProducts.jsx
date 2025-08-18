@@ -48,8 +48,15 @@ const AllProducts = () => {
   const [editForm] = Form.useForm();
 
   useEffect(() => {
+    document.title = 'Price List App v3 - All Products';
     fetchAllProducts();
     fetchPricelists();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   const fetchAllProducts = async () => {
