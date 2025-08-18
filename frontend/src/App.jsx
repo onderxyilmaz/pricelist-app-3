@@ -35,8 +35,14 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
     }
   }, [user, navigate, hasNavigatedOnLogin]);
 
+  const handleLogout = () => {
+    onLogout();
+    // URL'yi temizlemek için sayfayı yenile
+    window.location.href = '/';
+  };
+
   return (
-    <LogoutHandler onLogout={onLogout}>
+    <LogoutHandler onLogout={handleLogout}>
       {({ onLogout }) => (
         <Layout className="app-layout">
           <Navbar user={user} onLogout={onLogout} />
