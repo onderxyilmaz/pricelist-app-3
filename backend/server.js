@@ -51,9 +51,27 @@ fastify.get('/api/test-db', async (request, reply) => {
   }
 });
 
+// Ensure required directories exist
+const ensureDirectories = async () => {
+  const uploadsDir = path.join(__dirname, 'uploads');
+  const avatarsDir = path.join(__dirname, 'uploads', 'avatars');
+  
+  try {
+    await fs.ensureDir(uploadsDir);
+    await fs.ensureDir(avatarsDir);
+    fastify.log.info('Upload directories created/verified');
+  } catch (err) {
+    fastify.log.error('Failed to create upload directories:', err);
+    throw err;
+  }
+};
+
 // Start server
 const start = async () => {
   try {
+    // Ensure upload directories exist before starting server
+    await ensureDirectories();
+    
     const port = process.env.PORT || 3001;
     await fastify.listen({ port, host: '0.0.0.0' });
     fastify.log.info(`Server listening on port ${port}`);
