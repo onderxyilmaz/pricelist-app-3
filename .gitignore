@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+.DS_Store
+backend/uploads/avatars/*.png
+!backend/uploads/avatars/.gitkeep
+.vscode/
+dist/
+build/
+.idea/

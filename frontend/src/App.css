@@ -1,0 +1,68 @@
+/* Layout styling */
+.app-layout {
+  height: 100vh;
+}
+
+.main-content {
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+}
+
+/* Auth styling */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-radius: 8px;
+}
+
+.auth-title {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #1890ff;
+}
+
+.auth-link {
+  text-align: center;
+  margin-top: 16px;
+}
+
+/* Notification styles */
+.ant-notification {
+  z-index: 9999 !important;
+}
+
+.ant-notification-notice {
+  max-width: 384px !important;
+  margin-bottom: 16px !important;
+  padding: 16px 24px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.ant-notification-notice-message {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  line-height: 1.5 !important;
+}
+
+.ant-notification-notice-description {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+
+.ant-notification-notice-icon {
+  font-size: 24px !important;
+  margin-top: 0 !important;
+}

@@ -1,0 +1,27 @@
+/* Alt menülerde sadece yazı bold olsun, arkaplan rengi olmasın */
+.ant-menu-dark .ant-menu-submenu .ant-menu-item-selected {
+  background-color: transparent !important;
+  font-weight: bold;
+}
+
+/* Alt menülerde hover durumunda da arkaplan rengi olmasın */
+.ant-menu-dark .ant-menu-submenu .ant-menu-item-selected:hover {
+  background-color: transparent !important;
+}
+
+/* Alt menülerde active durumunda da arkaplan rengi olmasın */
+.ant-menu-dark .ant-menu-submenu .ant-menu-item-selected:active {
+  background-color: transparent !important;
+}
+
+/* Parent menülerde normal selected stil korunsun */
+.ant-menu-dark .ant-menu-item-selected {
+  background-color: #1890ff !important;
+}
+
+/* Divider'ı görünür yap */
+.ant-menu-dark .ant-menu-item-divider {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  height: 1px !important;
+  margin: 8px 0 !important;
+}
