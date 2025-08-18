@@ -32,8 +32,9 @@ git clone https://github.com/onderxyilmaz/pricelist-app-3.git
 cd pricelist-app-3
 
 # 2. Database kurulumu (TEK KOMUT!)
-createdb pricelist-app-3
-psql -d pricelist-app-3 -f setup_database.sql
+# PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın
+createdb -U postgres pricelist-app-3
+psql -U postgres -d pricelist-app-3 -f setup_database.sql
 
 # 3. Backend kurulumu ve çalıştırma
 cd backend
@@ -67,11 +68,10 @@ PORT=3001
 
 ### İlk Kullanıcı
 Uygulama ilk çalıştırıldığında:
-- Eğer veritabanında hiç kullanıcı yoksa → **Register sayfası** açılır
+- Veritabanı boş tablolarla kurulur (hiç kullanıcı olmaz)
+- Frontend açıldığında otomatik olarak **Register sayfası** gösterilir
 - İlk kaydolan kullanıcı otomatik olarak **Super Admin** rolü alır
-- Sonraki tüm kullanıcılar için **Login sayfası** gösterilir
-
-**Not:** `setup_database.sql` dosyasındaki sample user'ı istemiyorsanız dosyadan silebilirsiniz.
+- Sonraki açılışlarda **Login sayfası** gösterilir
 
 ## Özellikler
 
