@@ -7,7 +7,8 @@ import {
   SettingOutlined,
   ImportOutlined,
   ProfileOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
@@ -36,6 +37,12 @@ const Sidebar = ({ user }) => {
       icon: <AppstoreOutlined />,
       label: 'Tüm Ürünler',
       onClick: () => navigate('/all-products')
+    },
+    {
+      key: '/offers',
+      icon: <FileTextOutlined />,
+      label: 'Teklifler',
+      onClick: () => navigate('/offers')
     },
     {
       key: '/import-excel',

@@ -31,6 +31,7 @@ fastify.register(require('@fastify/static'), {
 fastify.register(require('./src/routes/authRoutes'), { prefix: '/api/auth' });
 fastify.register(require('./src/routes/pricelistRoutes'), { prefix: '/api' });
 fastify.register(require('./src/routes/adminRoutes'), { prefix: '/api/admin' });
+fastify.register(require('./src/routes/offerRoutes'), { prefix: '/api' });
 
 // Health check
 fastify.get('/health', async (request, reply) => {

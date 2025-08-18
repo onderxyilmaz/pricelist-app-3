@@ -17,6 +17,7 @@ import CreatePricelist from './pages/CreatePricelist.jsx';
 import ImportExcel from './pages/ImportExcel.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import AllProducts from './pages/AllProducts.jsx';
+import Offers from './pages/Offers.jsx';
 import './App.css';
 
 const { Content } = Layout;
@@ -56,6 +57,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
                 <Route path="/pricelists/create" element={<CreatePricelist />} />
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
                 <Route path="/all-products" element={<AllProducts />} />
+                <Route path="/offers" element={<Offers />} />
                 <Route path="/import-excel" element={<ImportExcel />} />
                 <Route path="/admin/users" element={<UserManagement />} />
               </Routes>
