@@ -31,10 +31,17 @@ Modern bir fiyat listesi yönetim uygulaması. Dashboard, Excel import, kullanı
 git clone https://github.com/onderxyilmaz/pricelist-app-3.git
 cd pricelist-app-3
 
-# 2. Database kurulumu (TEK KOMUT!)
+# 2. Database kurulumu
 # PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın
 createdb -U postgres pricelist-app-3
-psql -U postgres -d pricelist-app-3 -f setup_database.sql
+psql -U postgres -d pricelist-app-3 -f database_schema.sql
+psql -U postgres -d pricelist-app-3 -f add_product_columns.sql
+psql -U postgres -d pricelist-app-3 -f add_color_column_fix.sql
+psql -U postgres -d pricelist-app-3 -f add_avatar_column.sql
+psql -U postgres -d pricelist-app-3 -f add_offers_table.sql
+psql -U postgres -d pricelist-app-3 -f add_companies_table.sql
+psql -U postgres -d pricelist-app-3 -f add_offer_items_table.sql
+psql -U postgres -d pricelist-app-3 -f fix_company_nullable.sql
 
 # 3. Backend kurulumu ve çalıştırma
 cd backend
@@ -108,11 +115,28 @@ Uygulama ilk çalıştırıldığında:
 - ✅ Profil yönetimi ve avatar upload
 - ✅ Güvenli authentication
 
+### 📋 Teklif Yönetimi
+- ✅ Akıllı teklif numaralandırma (YYYY-NNNN formatı)
+- ✅ Yıllık sıfırlama ve boş numara tekrar kullanımı
+- ✅ Çok adımlı teklif oluşturma wizard'ı
+- ✅ Firma otomatik tamamlama ve yönetimi
+- ✅ Ürün seçimi ile stok kontrolü
+- ✅ Fiyat listelerine göre gruplu teklif önizleme
+- ✅ Para birimi simgeleri ile modern görünüm
+
+### 🏢 Firma Yönetimi
+- ✅ Firma ekleme, düzenleme, silme
+- ✅ Tekliflerde otomatik firma senkronizasyonu
+- ✅ Firma kullanım sayısı takibi
+- ✅ Güvenli silme (tekliflerdeki referansları temizleme)
+
 ### 🎨 Arayüz
 - ✅ Modern Ant Design komponentleri
 - ✅ Responsive tasarım
 - ✅ Türkçe arayüz
 - ✅ Dark theme header
+- ✅ Multi-step wizard'lar
+- ✅ Gelişmiş form validasyonları
 
 ## API Endpoints
 
@@ -126,6 +150,49 @@ Uygulama ilk çalıştırıldığında:
 - `POST /api/pricelists/:id/items` - Ürün ekle
 - `PUT /api/items/:id` - Ürün güncelle
 - `DELETE /api/items/:id` - Ürün sil
+- `GET /api/pricelists-with-items` - Tüm fiyat listeleri ve ürünleri getir
+
+### Teklifler
+- `GET /api/offers` - Tüm teklifleri getir
+- `POST /api/offers` - Yeni teklif oluştur
+- `PUT /api/offers/:id` - Teklif güncelle
+- `DELETE /api/offers/:id` - Teklif sil
+- `GET /api/offers/next-number` - Sonraki teklif numarasını getir
+- `GET /api/offers/available-numbers` - Boş teklif numaralarını getir
+- `POST /api/offers/:id/items` - Teklif ürünlerini kaydet
+- `GET /api/offers/:id/items` - Teklif ürünlerini getir
+
+### Firmalar
+- `GET /api/companies` - Tüm firmaları getir (teklif sayısı ile)
+- `POST /api/companies` - Yeni firma oluştur
+- `PUT /api/companies/:id` - Firma güncelle
+- `DELETE /api/companies/:id` - Firma sil
+- `GET /api/companies/search` - Firma arama (autocomplete)
+
+## Yeni Özellikler (v3.0)
+
+### 🎉 Teklif Sistemi
+**Akıllı Numaralandırma:**
+- Otomatik YYYY-NNNN formatında teklif numarası (örn: 2025-0001)
+- Yıl değiştiğinde otomatik sıfırlanma
+- Silinen tekliflerin numaralarını tekrar kullanabilme
+
+**Çok Adımlı Teklif Oluşturma:**
+1. **Adım 1:** Teklif No ve Firma bilgileri
+2. **Adım 2:** Fiyat listelerinden ürün seçimi (stok kontrolü ile)
+3. **Adım 3:** Detaylı teklif önizleme ve onaylama
+
+**Gelişmiş Özellikler:**
+- Firma otomatik tamamlama (typeahead)
+- Stok miktarını aşan girişlerde uyarı
+- Para birimi simgeleri (€, $, £, ₺)
+- Fiyat listelerine göre gruplu gösterim
+
+### 🏢 Firma Yönetimi
+- Firma CRUD işlemleri
+- Tekliflerde kullanım sayısı gösterimi
+- Firma güncellemelerinin tekliflere otomatik yansıması
+- Güvenli silme (tekliflerdeki referansları temizleme)
 
 ## Geliştirme
 
@@ -150,16 +217,25 @@ npm run preview # Preview production build
 
 ### Veritabanı Yönetimi
 ```bash
-# Database'i sıfırla
-dropdb pricelist-app-3
-createdb pricelist-app-3
-psql -d pricelist-app-3 -f setup_database.sql
+# Database'i sıfırla (PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın)
+dropdb -U postgres pricelist-app-3
+createdb -U postgres pricelist-app-3
+
+# Tüm SQL dosyalarını sırayla çalıştır
+psql -U postgres -d pricelist-app-3 -f database_schema.sql
+psql -U postgres -d pricelist-app-3 -f add_product_columns.sql
+psql -U postgres -d pricelist-app-3 -f add_color_column_fix.sql
+psql -U postgres -d pricelist-app-3 -f add_avatar_column.sql
+psql -U postgres -d pricelist-app-3 -f add_offers_table.sql
+psql -U postgres -d pricelist-app-3 -f add_companies_table.sql
+psql -U postgres -d pricelist-app-3 -f add_offer_items_table.sql
+psql -U postgres -d pricelist-app-3 -f fix_company_nullable.sql
 
 # Backup al
-pg_dump pricelist-app-3 > backup.sql
+pg_dump -U postgres pricelist-app-3 > backup.sql
 
 # Backup'tan geri yükle
-psql -d pricelist-app-3 -f backup.sql
+psql -U postgres -d pricelist-app-3 -f backup.sql
 ```
 
 ## Katkıda Bulunma

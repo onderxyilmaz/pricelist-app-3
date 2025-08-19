@@ -215,6 +215,43 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Dashboard statistics
+  // Teklif için fiyat listeleri ve ürünleri getir (stok bilgisi ile)
+  fastify.get('/pricelists-with-items', async (request, reply) => {
+    try {
+      const client = await fastify.pg.connect();
+      
+      // Önce fiyat listelerini getir
+      const pricelistsResult = await client.query(`
+        SELECT id, name, currency
+        FROM pricelists 
+        ORDER BY name ASC
+      `);
+      
+      const pricelists = [];
+      
+      // Her fiyat listesi için ürünlerini getir
+      for (const pricelist of pricelistsResult.rows) {
+        const itemsResult = await client.query(`
+          SELECT 
+            id, product_id, name, description, price, unit, stock, created_at
+          FROM pricelist_items 
+          WHERE pricelist_id = $1 
+          ORDER BY name ASC
+        `, [pricelist.id]);
+        
+        pricelists.push({
+          ...pricelist,
+          items: itemsResult.rows
+        });
+      }
+      
+      client.release();
+      return { success: true, pricelists };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
   fastify.get('/dashboard/stats', async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
