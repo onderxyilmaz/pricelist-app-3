@@ -99,10 +99,12 @@ const PricelistList = () => {
   const handleSubmit = async (values) => {
     console.log('Form values:', values); // Debug log
     
-    // ColorPicker object değerini hex string'e çevir
+    // ColorPicker object değerini hex string'e çevir (alpha kanalı olmadan)
     const submissionData = {
       ...values,
-      color: typeof values.color === 'object' ? values.color.toHexString() : values.color
+      color: typeof values.color === 'object' 
+        ? values.color.toHex() // Alpha olmadan sadece HEX (#RRGGBB)
+        : values.color
     };
     
     console.log('Submission data:', submissionData); // Debug log
@@ -385,7 +387,7 @@ const PricelistList = () => {
             label="Renk"
             rules={[{ required: true, message: 'Renk seçimi gereklidir!' }]}
           >
-            <ColorPicker showText format="hex" />
+            <ColorPicker showText format="hex" disabledAlpha />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>

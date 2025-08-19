@@ -91,102 +91,58 @@ code {
   border-radius: 0 !important;
 }
 
-/* Notification styling - Modern Design */
+/* Notification animations */
 .ant-notification {
   z-index: 10000 !important;
-  top: 20px !important;
-  right: 20px !important;
-  position: fixed !important;
 }
 
-.ant-notification-notice {
-  background: #ffffff !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-  margin-bottom: 16px !important;
-  padding: 20px 24px !important;
-  border: none !important;
-  min-width: 380px !important;
-  max-width: 420px !important;
-  backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-/* Success notification */
-.ant-notification-notice-success {
-  background: linear-gradient(135deg, #f6ffed 0%, #ffffff 100%) !important;
-  border-left: 4px solid #52c41a !important;
-}
-
-/* Error notification */
-.ant-notification-notice-error {
-  background: linear-gradient(135deg, #fff2f0 0%, #ffffff 100%) !important;
-  border-left: 4px solid #ff4d4f !important;
-}
-
-/* Info notification */
-.ant-notification-notice-info {
-  background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%) !important;
-  border-left: 4px solid #1890ff !important;
-}
-
-/* Warning notification */
-.ant-notification-notice-warning {
-  background: linear-gradient(135deg, #fffbe6 0%, #ffffff 100%) !important;
-  border-left: 4px solid #faad14 !important;
-}
-
-.ant-notification-notice-message {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: #262626 !important;
-  margin-bottom: 8px !important;
-  line-height: 1.4 !important;
-}
-
-.ant-notification-notice-description {
-  font-size: 14px !important;
-  color: #595959 !important;
-  line-height: 1.6 !important;
-  margin: 0 !important;
-}
-
-.ant-notification-notice-icon {
-  font-size: 20px !important;
-  margin-right: 12px !important;
-  margin-top: 1px !important;
-  flex-shrink: 0 !important;
-}
-
-.ant-notification-notice-close {
-  color: #8c8c8c !important;
-  font-size: 16px !important;
-  cursor: pointer !important;
-  transition: all 0.3s ease !important;
-  padding: 4px !important;
-  border-radius: 4px !important;
-  top: 16px !important;
-  right: 16px !important;
-}
-
-.ant-notification-notice-close:hover {
-  color: #262626 !important;
-  background-color: rgba(0, 0, 0, 0.04) !important;
-}
-
-/* Animation improvements */
+/* Giriş animasyonu */
 .ant-notification-notice {
   animation: slideInRight 0.3s ease-out !important;
+}
+
+/* Çıkış animasyonları - tüm durumları kapsar */
+.ant-notification-notice.ant-notification-notice-close,
+.ant-notification-notice[style*="opacity: 0"],
+.ant-notification-fade-leave,
+.ant-notification-fade-leave-active,
+.ant-notification-slide-up-leave,
+.ant-notification-slide-up-leave-active {
+  animation: slideOutRight 0.25s ease-in forwards !important;
+}
+
+/* Double notification fix */
+.ant-notification-notice:not(:first-child) {
+  animation-delay: 0ms !important;
 }
 
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
     opacity: 0;
+    pointer-events: none;
   }
   to {
     transform: translateX(0);
     opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+    max-height: 200px;
+    margin-bottom: 16px;
+    pointer-events: auto;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    pointer-events: none;
   }
 }
 

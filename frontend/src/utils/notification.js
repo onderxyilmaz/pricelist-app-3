@@ -1,5 +1,3 @@
-import { notification } from 'antd';
-
 // Global notification instance
 let notificationApi = null;
 
@@ -14,15 +12,11 @@ const NotificationService = {
       notificationApi.success({
         message,
         description,
-        placement: 'topRight',
-        duration: 4,
-      });
-    } else {
-      notification.success({
-        message,
-        description,
-        placement: 'topRight',
-        duration: 4,
+        duration: 3,
+        closable: true,
+        onClose: () => {
+          // Kapanırken ek işlem yok, sadece animasyon
+        },
       });
     }
   },
@@ -32,15 +26,11 @@ const NotificationService = {
       notificationApi.error({
         message,
         description,
-        placement: 'topRight',
-        duration: 4,
-      });
-    } else {
-      notification.error({
-        message,
-        description,
-        placement: 'topRight',
-        duration: 4,
+        duration: 3,
+        closable: true,
+        onClose: () => {
+          // Kapanırken ek işlem yok, sadece animasyon
+        },
       });
     }
   },
@@ -50,15 +40,11 @@ const NotificationService = {
       notificationApi.warning({
         message,
         description,
-        placement: 'topRight',
-        duration: 4,
-      });
-    } else {
-      notification.warning({
-        message,
-        description,
-        placement: 'topRight',
-        duration: 4,
+        duration: 3,
+        closable: true,
+        onClose: () => {
+          // Kapanırken ek işlem yok, sadece animasyon
+        },
       });
     }
   },
@@ -68,15 +54,11 @@ const NotificationService = {
       notificationApi.info({
         message,
         description,
-        placement: 'topRight',
-        duration: 4,
-      });
-    } else {
-      notification.info({
-        message,
-        description,
-        placement: 'topRight',
-        duration: 4,
+        duration: 3,
+        closable: true,
+        onClose: () => {
+          // Kapanırken ek işlem yok, sadece animasyon
+        },
       });
     }
   },

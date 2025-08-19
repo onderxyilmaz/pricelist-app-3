@@ -166,7 +166,11 @@ const Companies = () => {
           />
           <Popconfirm
             title="Firmayı silmek istediğinizden emin misiniz?"
-            description={`Bu firma ${record.offer_count || 0} teklifte kullanılıyor. Silinirse tüm tekliflerden kaldırılacak.`}
+            description={
+              (record.offer_count || 0) > 0 
+                ? `Bu firma ${record.offer_count} teklifte kullanılıyor. Silinirse tüm tekliflerden kaldırılacak.`
+                : undefined
+            }
             onConfirm={() => handleDelete(record.id)}
             okText="Evet"
             cancelText="Hayır"

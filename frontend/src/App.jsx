@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { ConfigProvider, Layout, Spin, App as AntApp, Typography, notification } from 'antd';
+import { ConfigProvider, Layout, Spin, App as AntApp, Typography } from 'antd';
 import trTR from 'antd/locale/tr_TR';
 import { authApi } from './utils/api';
 import NotificationService, { setNotificationApi } from './utils/notification';
@@ -28,6 +28,12 @@ const { Title } = Typography;
 const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
   const [hasNavigatedOnLogin, setHasNavigatedOnLogin] = useState(false);
+  const { notification } = AntApp.useApp();
+  
+  useEffect(() => {
+    // Set the notification API for the service
+    setNotificationApi(notification);
+  }, [notification]);
   
   useEffect(() => {
     // Sadece ilk login'de dashboard'a yönlendir
@@ -76,13 +82,10 @@ function App() {
   const [hasUsers, setHasUsers] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
-  const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
     initializeApp();
-    // Set the notification API for the service
-    setNotificationApi(api);
-  }, [api]);
+  }, []);
 
   const initializeApp = async () => {
     setLoading(true);
@@ -155,7 +158,6 @@ function App() {
   return (
     <ConfigProvider locale={trTR}>
       <AntApp>
-        {contextHolder}
         {user ? (
           <Router>
             <RouterApp user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />

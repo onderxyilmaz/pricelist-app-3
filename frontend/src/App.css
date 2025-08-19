@@ -36,20 +36,7 @@
   margin-top: 16px;
 }
 
-/* Notification styles */
-.ant-notification {
-  z-index: 9999 !important;
-}
-
-.ant-notification-notice {
-  max-width: 384px !important;
-  margin-bottom: 16px !important;
-  padding: 16px 24px !important;
-  border-radius: 6px !important;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
-}
-
-.ant-notification-notice-message {
+.auth-card .ant-card-body {
   font-size: 16px !important;
   font-weight: 600 !important;
   margin-bottom: 8px !important;
