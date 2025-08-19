@@ -31,17 +31,10 @@ Modern bir fiyat listesi yönetim uygulaması. Dashboard, Excel import, kullanı
 git clone https://github.com/onderxyilmaz/pricelist-app-3.git
 cd pricelist-app-3
 
-# 2. Database kurulumu
+# 2. Database kurulumu (TEK KOMUT!)
 # PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın
 createdb -U postgres pricelist-app-3
-psql -U postgres -d pricelist-app-3 -f database_schema.sql
-psql -U postgres -d pricelist-app-3 -f add_product_columns.sql
-psql -U postgres -d pricelist-app-3 -f add_color_column_fix.sql
-psql -U postgres -d pricelist-app-3 -f add_avatar_column.sql
-psql -U postgres -d pricelist-app-3 -f add_offers_table.sql
-psql -U postgres -d pricelist-app-3 -f add_companies_table.sql
-psql -U postgres -d pricelist-app-3 -f add_offer_items_table.sql
-psql -U postgres -d pricelist-app-3 -f fix_company_nullable.sql
+psql -U postgres -d pricelist-app-3 -f setup_database.sql
 
 # 3. Backend kurulumu ve çalıştırma
 cd backend
@@ -220,16 +213,7 @@ npm run preview # Preview production build
 # Database'i sıfırla (PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın)
 dropdb -U postgres pricelist-app-3
 createdb -U postgres pricelist-app-3
-
-# Tüm SQL dosyalarını sırayla çalıştır
-psql -U postgres -d pricelist-app-3 -f database_schema.sql
-psql -U postgres -d pricelist-app-3 -f add_product_columns.sql
-psql -U postgres -d pricelist-app-3 -f add_color_column_fix.sql
-psql -U postgres -d pricelist-app-3 -f add_avatar_column.sql
-psql -U postgres -d pricelist-app-3 -f add_offers_table.sql
-psql -U postgres -d pricelist-app-3 -f add_companies_table.sql
-psql -U postgres -d pricelist-app-3 -f add_offer_items_table.sql
-psql -U postgres -d pricelist-app-3 -f fix_company_nullable.sql
+psql -U postgres -d pricelist-app-3 -f setup_database.sql
 
 # Backup al
 pg_dump -U postgres pricelist-app-3 > backup.sql
