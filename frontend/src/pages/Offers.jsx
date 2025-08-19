@@ -73,6 +73,41 @@ const Offers = () => {
   const [pricelists, setPricelists] = useState([]);
   const [productFilter, setProductFilter] = useState(''); // Ürün filtreleme
 
+  // Step 1'de Firma alanına autofocus
+  useEffect(() => {
+    if (modalVisible && !editingOffer && currentStep === 0) {
+      // Birden fazla deneme yapalım çünkü DOM render gecikmesi olabilir
+      const tryFocus = (attempt = 0) => {
+        // AutoComplete için birden fazla selector deneyelim
+        const selectors = [
+          'input[placeholder="Firma adını girin veya seçin"]',
+          '.ant-select-selector input',
+          '.ant-input',
+          '[data-testid="company-input"]'
+        ];
+        
+        let companyInput = null;
+        for (const selector of selectors) {
+          companyInput = document.querySelector(selector);
+          if (companyInput && companyInput.offsetParent !== null) {
+            // Element görünür durumda mı kontrol et
+            break;
+          }
+          companyInput = null;
+        }
+        
+        if (companyInput) {
+          companyInput.focus();
+        } else if (attempt < 5) {
+          // 5 defa dene, her seferinde 100ms bekle
+          setTimeout(() => tryFocus(attempt + 1), 100);
+        }
+      };
+      
+      setTimeout(() => tryFocus(), 50);
+    }
+  }, [modalVisible, editingOffer, currentStep]);
+
   useEffect(() => {
     document.title = 'Price List App v3 - Teklifler';
     const savedUser = localStorage.getItem('user');
@@ -278,8 +313,8 @@ const Offers = () => {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('tr-TR', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      month: '2-digit',
+      day: '2-digit'
     });
   };
 
@@ -520,6 +555,7 @@ const Offers = () => {
         width={editingOffer ? 600 : 900}
         afterOpenChange={(open) => {
           if (open && editingOffer) {
+            // Sadece düzenleme modunda Teklif No alanına focus
             setTimeout(() => {
               const firstInput = document.querySelector('input[placeholder="Teklif numarasını girin"]');
               if (firstInput) {
@@ -553,8 +589,8 @@ const Offers = () => {
 
             <Form.Item
               name="revision_no"
-              label="Revizyon No"
-              rules={[{ required: true, message: 'Revizyon No gereklidir!' }]}
+              label="Rev. No"
+              rules={[{ required: true, message: 'Rev. No gereklidir!' }]}
             >
               <InputNumber 
                 placeholder="Revizyon numarasını girin" 
@@ -650,6 +686,7 @@ const Offers = () => {
                     allowClear
                     filterOption={false}
                     autoComplete="off"
+                    autoFocus={true}
                   />
                 </Form.Item>
 
@@ -806,15 +843,15 @@ const Offers = () => {
                 }}>
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                      Proje No: {offerData.offer_no}
+                      Teklif No: {offerData.offer_no}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                      Revizyon No: 0
+                      Rev. No: 0
                     </div>
                     <div style={{ fontSize: '14px', color: '#666', marginTop: 4 }}>
-                      Teklif Tarihi: {formatDate(new Date())}
+                      Tarih: {formatDate(new Date())}
                     </div>
                   </div>
                 </div>
