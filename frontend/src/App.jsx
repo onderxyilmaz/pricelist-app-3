@@ -45,8 +45,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
 
   const handleLogout = () => {
     onLogout();
-    // URL'yi temizlemek için sayfayı yenile
-    window.location.href = '/';
+    // Router otomatik olarak user null olduğunda login sayfasına yönlendirir
   };
 
   return (
