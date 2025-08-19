@@ -883,33 +883,33 @@ const Offers = () => {
                       style={{ marginBottom: 16 }}
                       columns={[
                         {
-                          title: 'Product ID',
+                          title: 'Product Code',
                           dataIndex: 'product_id',
                           key: 'product_id',
                           width: 120,
                         },
                         {
-                          title: 'Product Name',
+                          title: 'Name',
                           dataIndex: 'name',
                           key: 'name',
                           ellipsis: true,
                         },
                         {
-                          title: 'Product Description',
+                          title: 'Description',
                           dataIndex: 'description',
                           key: 'description',
                           ellipsis: true,
                           render: (text) => text || '-'
                         },
                                                     {
-                              title: 'Pcs',
+                              title: 'Qty',
                               dataIndex: 'quantity',
                               key: 'quantity',
                               width: 100,
                               align: 'center',
                             },
                         {
-                          title: 'Product Price',
+                          title: 'Unit Price',
                           dataIndex: 'price',
                           key: 'price',
                           width: 120,
@@ -917,7 +917,7 @@ const Offers = () => {
                           render: (price) => formatCurrency(price, group.pricelist.currency)
                         },
                         {
-                          title: 'Product Total Price',
+                          title: 'Total Price',
                           dataIndex: 'total_price',
                           key: 'total_price',
                           width: 150,
@@ -963,7 +963,7 @@ const Offers = () => {
                     borderRadius: 6
                   }}>
                     <div style={{ marginBottom: 8, fontSize: '16px', color: '#666' }}>
-                      TEKLİF TOPLAMI
+                      TOTAL AMOUNT
                     </div>
                     {Object.entries(calculateTotalsByCurrency()).map(([currency, total]) => (
                       <div key={currency} style={{ 
