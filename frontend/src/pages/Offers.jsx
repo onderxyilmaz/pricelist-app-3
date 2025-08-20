@@ -61,49 +61,29 @@ const Offers = () => {
   const [editingOffer, setEditingOffer] = useState(null);
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState(null);
-  const [numberingMode, setNumberingMode] = useState('auto'); // 'auto', 'available', 'manual'
-  const [nextNumber, setNextNumber] = useState('');
-  const [availableNumbers, setAvailableNumbers] = useState([]);
+  // Teklif numarası artık manuel girilecek
   const [companyOptions, setCompanyOptions] = useState([]);
   
   // Wizard states
   const [currentStep, setCurrentStep] = useState(0);
   const [offerData, setOfferData] = useState({}); // Adım 1 verisi
   const [selectedItems, setSelectedItems] = useState([]); // Adım 2 verisi
+  const [itemNotes, setItemNotes] = useState({}); // {itemId: note}
   const [pricelists, setPricelists] = useState([]);
   const [productFilter, setProductFilter] = useState(''); // Ürün filtreleme
 
-  // Step 1'de Firma alanına autofocus
+  // Step 1'de Teklif No alanına autofocus
   useEffect(() => {
     if (modalVisible && !editingOffer && currentStep === 0) {
-      // Birden fazla deneme yapalım çünkü DOM render gecikmesi olabilir
       const tryFocus = (attempt = 0) => {
-        // AutoComplete için birden fazla selector deneyelim
-        const selectors = [
-          'input[placeholder="Firma adını girin veya seçin"]',
-          '.ant-select-selector input',
-          '.ant-input',
-          '[data-testid="company-input"]'
-        ];
-        
-        let companyInput = null;
-        for (const selector of selectors) {
-          companyInput = document.querySelector(selector);
-          if (companyInput && companyInput.offsetParent !== null) {
-            // Element görünür durumda mı kontrol et
-            break;
-          }
-          companyInput = null;
-        }
-        
-        if (companyInput) {
-          companyInput.focus();
+        const offerNoInput = document.querySelector('input[placeholder="Teklif numarasını girin"]');
+        if (offerNoInput && offerNoInput.offsetParent !== null) {
+          offerNoInput.focus();
+          offerNoInput.select();
         } else if (attempt < 5) {
-          // 5 defa dene, her seferinde 100ms bekle
           setTimeout(() => tryFocus(attempt + 1), 100);
         }
       };
-      
       setTimeout(() => tryFocus(), 50);
     }
   }, [modalVisible, editingOffer, currentStep]);
@@ -210,42 +190,19 @@ const Offers = () => {
   };
 
   const handleCreate = async () => {
-    setEditingOffer(null);
-    form.resetFields();
-    setNumberingMode('auto');
-    setCurrentStep(0);
-    setOfferData({});
-    setSelectedItems([]);
-    setProductFilter(''); // Filtreyi sıfırla
-    
-    // Otomatik numara ve boş numaraları yükle
-    const nextNum = await fetchNextNumber();
-    const availableNums = await fetchAvailableNumbers();
-    
-    // Firma seçeneklerini temizle - kullanıcı yazmaya başlayınca gelecek
-    setCompanyOptions([]);
-    
-    // Fiyat listelerini yükle
-    await fetchPricelistsWithItems();
-    
-    // Yeni teklif için varsayılan değerler
-    form.setFieldsValue({
-      offer_no: nextNum
-    });
-    
-    setModalVisible(true);
+  setEditingOffer(null);
+  form.resetFields();
+  setCurrentStep(0);
+  setOfferData({});
+  setSelectedItems([]);
+  setProductFilter('');
+  setCompanyOptions([]);
+  setItemNotes({});
+  await fetchPricelistsWithItems();
+  setModalVisible(true);
   };
 
-  const handleNumberingModeChange = (mode) => {
-    setNumberingMode(mode);
-    
-    if (mode === 'auto') {
-      form.setFieldsValue({ offer_no: nextNumber });
-    } else if (mode === 'available') {
-      // Boş numara seçimi için field'i temizle
-      form.setFieldsValue({ offer_no: undefined });
-    }
-  };
+  // Numara modu kaldırıldı
 
   // Adım 1: Teklif bilgileri
   const handleStep1Submit = (values) => {
@@ -261,32 +218,30 @@ const Offers = () => {
   // Ürün seçimi ve adet değişikliği
   const handleItemSelection = (item, checked) => {
     if (checked) {
-      setSelectedItems(prev => [...prev, { ...item, quantity: 1, total_price: item.price }]);
+      const initialQty = item.stock <= 0 ? 0 : 1;
+      setSelectedItems(prev => [...prev, { ...item, quantity: initialQty, total_price: (item.price * initialQty).toFixed(2) }]);
+      // Açıklama silinmesin, state korunacak
     } else {
       setSelectedItems(prev => prev.filter(selected => selected.id !== item.id));
+      // Açıklama silinmiyor
     }
   };
 
   const handleQuantityChange = (itemId, quantity) => {
-    if (quantity < 1) return;
-    
+    if (quantity < 0) return;
     setSelectedItems(prev => prev.map(item => {
       if (item.id === itemId) {
-        // Stok kontrolü - item'den değil pricelists'den güncel stok al
         const originalItem = pricelists
           .flatMap(p => p.items)
           .find(pi => pi.id === itemId);
-        
         if (!originalItem) return item;
-        
         if (quantity > originalItem.stock) {
           NotificationService.warning(
             'Stok Uyarısı', 
             `"${originalItem.name}" ürünü için maksimum ${originalItem.stock} ${originalItem.unit} seçebilirsiniz. Mevcut stok: ${originalItem.stock}`
           );
-          return item; // Değişiklik yapma
+          return item;
         }
-        
         return {
           ...item,
           quantity,
@@ -550,6 +505,7 @@ const Offers = () => {
           setOfferData({});
           setSelectedItems([]);
           setProductFilter('');
+          setItemNotes({});
         }}
         footer={null}
         width={editingOffer ? 600 : 900}
@@ -637,42 +593,16 @@ const Offers = () => {
                 onFinish={handleStep1Submit}
                 autoComplete="off"
               >
-                <Form.Item label="Teklif Numarası Seçimi">
-                  <Radio.Group 
-                    value={numberingMode} 
-                    onChange={(e) => handleNumberingModeChange(e.target.value)}
-                    style={{ width: '100%' }}
-                  >
-                    <Radio value="auto">Otomatik ({nextNumber})</Radio>
-                    <Radio value="available" disabled={availableNumbers.length === 0}>
-                      Boş Numara ({availableNumbers.length} adet)
-                    </Radio>
-                  </Radio.Group>
-                </Form.Item>
-
                 <Form.Item
                   name="offer_no"
                   label="Teklif No"
                   rules={[{ required: true, message: 'Teklif No gereklidir!' }]}
                 >
-                  {numberingMode === 'available' ? (
-                    <Select 
-                      placeholder="Seçiniz..."
-                      allowClear
-                      showSearch={false}
-                      style={{ width: '100%' }}
-                    >
-                      {availableNumbers.map(num => (
-                        <Option key={num} value={num}>{num}</Option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input 
-                      placeholder={nextNumber} 
-                      autoComplete="off"
-                      disabled={numberingMode === 'auto'}
-                    />
-                  )}
+                  <Input 
+                    placeholder="Teklif numarasını girin" 
+                    autoComplete="off"
+                    autoFocus
+                  />
                 </Form.Item>
 
                 <Form.Item
@@ -735,12 +665,9 @@ const Offers = () => {
                 <Collapse>
                   {pricelists.map(pricelist => {
                     const filteredItems = filterItems(pricelist.items);
-                    
-                    // Eğer filtreleme sonucu hiç ürün yoksa bu fiyat listesini gösterme
                     if (filteredItems.length === 0 && productFilter.trim()) {
                       return null;
                     }
-                    
                     return (
                       <Panel 
                         header={`${pricelist.name} (${pricelist.currency}) - ${filteredItems.length}/${pricelist.items.length} ürün${productFilter.trim() ? ' (filtrelenmiş)' : ''}`} 
@@ -749,19 +676,15 @@ const Offers = () => {
                         {filteredItems.map(item => {
                         const selectedItem = selectedItems.find(selected => selected.id === item.id);
                         const isSelected = !!selectedItem;
-                        
                         return (
                           <div key={item.id} style={{ 
                             display: 'flex', 
                             alignItems: 'center', 
                             padding: '8px 0',
-                            borderBottom: '1px solid #f0f0f0',
-                            opacity: item.stock <= 0 ? 0.5 : 1,
-                            backgroundColor: item.stock <= 0 ? '#f5f5f5' : 'transparent'
+                            borderBottom: '1px solid #f0f0f0'
                           }}>
                             <Checkbox
                               checked={isSelected}
-                              disabled={item.stock <= 0}
                               onChange={(e) => handleItemSelection({...item, pricelist_id: pricelist.id, currency: pricelist.currency}, e.target.checked)}
                             />
                             <div style={{ flex: 1, marginLeft: 12 }}>
@@ -783,15 +706,23 @@ const Offers = () => {
                               <div style={{ marginLeft: 12, display: 'flex', alignItems: 'center' }}>
                                 <span style={{ marginRight: 8 }}>Adet:</span>
                                 <AntInputNumber
-                                  min={1}
-                                  max={item.stock}
+                                  min={0}
+                                  max={item.stock <= 0 ? 0 : item.stock}
                                   value={selectedItem.quantity}
                                   onChange={(value) => handleQuantityChange(item.id, value)}
+                                  disabled={item.stock <= 0}
                                   style={{ width: 80 }}
                                 />
                                 <span style={{ marginLeft: 8, fontWeight: 'bold' }}>
                                   {selectedItem.total_price} {pricelist.currency}
                                 </span>
+                                {/* Açıklama alanı */}
+                                <Input
+                                  placeholder="Açıklama (opsiyonel)"
+                                  value={itemNotes[item.id] || ''}
+                                  onChange={e => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
+                                  style={{ width: 180, marginLeft: 8 }}
+                                />
                               </div>
                             )}
                           </div>
@@ -864,70 +795,85 @@ const Offers = () => {
                 )}
 
                 {/* Fiyat Listelerine Göre Gruplu Ürünler */}
-                {groupItemsByPricelist().map((group, index) => (
-                  <div key={group.pricelist.id} style={{ marginBottom: 32 }}>
-                    <h3 style={{ 
-                      fontSize: '16px', 
-                      fontWeight: 'bold', 
-                      marginBottom: 16,
-                      color: '#1890ff'
-                    }}>
-                      {group.pricelist.name} ({group.pricelist.currency})
-                    </h3>
-                    
-                    <Table 
-                      dataSource={group.items}
-                      pagination={false}
-                      rowKey="id"
-                      size="small"
-                      style={{ marginBottom: 16 }}
-                      columns={[
-                        {
-                          title: 'Product Code',
-                          dataIndex: 'product_id',
-                          key: 'product_id',
-                          width: 120,
-                        },
-                        {
-                          title: 'Name',
-                          dataIndex: 'name',
-                          key: 'name',
-                          ellipsis: true,
-                        },
-                        {
-                          title: 'Description',
-                          dataIndex: 'description',
-                          key: 'description',
-                          ellipsis: true,
-                          render: (text) => text || '-'
-                        },
-                                                    {
-                              title: 'Qty',
-                              dataIndex: 'quantity',
-                              key: 'quantity',
-                              width: 100,
-                              align: 'center',
-                            },
-                        {
-                          title: 'Unit Price',
-                          dataIndex: 'price',
-                          key: 'price',
-                          width: 120,
-                          align: 'right',
-                          render: (price) => formatCurrency(price, group.pricelist.currency)
-                        },
-                        {
-                          title: 'Total Price',
-                          dataIndex: 'total_price',
-                          key: 'total_price',
-                          width: 150,
-                          align: 'right',
-                          render: (total) => formatCurrency(total, group.pricelist.currency)
-                        }
-                      ]}
-                    />
-                  </div>
-                ))}
+                {groupItemsByPricelist().map((group, index) => {
+                  // Filtre: adet > 0 veya açıklama dolu ise göster
+                  const filteredItems = group.items.filter(item => {
+                    const note = itemNotes[item.id];
+                    return item.quantity > 0 || (note && note.trim() !== '');
+                  });
+                  if (filteredItems.length === 0) return null;
+                  return (
+                    <div key={group.pricelist.id} style={{ marginBottom: 32 }}>
+                      <h3 style={{ 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        marginBottom: 16,
+                        color: '#1890ff'
+                      }}>
+                        {group.pricelist.name} ({group.pricelist.currency})
+                      </h3>
+                      <Table 
+                        dataSource={filteredItems.map(item => ({
+                          ...item,
+                          note: itemNotes[item.id] || ''
+                        }))}
+                        pagination={false}
+                        rowKey="id"
+                        size="small"
+                        style={{ marginBottom: 16 }}
+                        columns={[
+                          {
+                            title: 'Product Code',
+                            dataIndex: 'product_id',
+                            key: 'product_id',
+                            width: 120,
+                          },
+                          {
+                            title: 'Name',
+                            dataIndex: 'name',
+                            key: 'name',
+                            ellipsis: true,
+                          },
+                          {
+                            title: 'Description',
+                            dataIndex: 'description',
+                            key: 'description',
+                            ellipsis: true,
+                            render: (text) => text || '-'
+                          },
+                          {
+                            title: 'Qty',
+                            dataIndex: 'quantity',
+                            key: 'quantity',
+                            width: 100,
+                            align: 'center',
+                          },
+                          {
+                            title: 'Unit Price',
+                            dataIndex: 'price',
+                            key: 'price',
+                            width: 120,
+                            align: 'right',
+                            render: (price) => formatCurrency(price, group.pricelist.currency)
+                          },
+                          {
+                            title: 'Total Price',
+                            dataIndex: 'total_price',
+                            key: 'total_price',
+                            width: 150,
+                            align: 'right',
+                            render: (total, record) => {
+                              const note = record.note;
+                              return note && note.trim() !== ''
+                                ? <span style={{ color: '#faad14' }}>{note}</span>
+                                : formatCurrency(total, group.pricelist.currency);
+                            }
+                          }
+                        ]}
+                      />
+                    </div>
+                  );
+                })}
 
                 {/* Toplam Fiyat */}
                 <div style={{ 

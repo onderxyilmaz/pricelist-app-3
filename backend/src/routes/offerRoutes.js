@@ -1,35 +1,7 @@
 const fastify = require('fastify');
 
 async function offerRoutes(fastify, options) {
-  // Sonraki otomatik teklif numarasını getir
-  fastify.get('/offers/next-number', async (request, reply) => {
-    try {
-      const client = await fastify.pg.connect();
-      const currentYear = new Date().getFullYear();
-      
-      // Bu yıl için en yüksek teklif numarasını bul
-      const result = await client.query(`
-        SELECT offer_no FROM offers 
-        WHERE offer_no LIKE $1 
-        ORDER BY offer_no DESC 
-        LIMIT 1
-      `, [`${currentYear}-%`]);
-      
-      let nextNumber = 1;
-      if (result.rows.length > 0) {
-        const lastOfferNo = result.rows[0].offer_no;
-        const lastNumber = parseInt(lastOfferNo.split('-')[1]);
-        nextNumber = lastNumber + 1;
-      }
-      
-      const suggestedNumber = `${currentYear}-${String(nextNumber).padStart(4, '0')}`;
-      
-      client.release();
-      return { success: true, nextNumber: suggestedNumber };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
+  // Otomatik teklif numarası endpointi kaldırıldı
 
   // Firma arama (autocomplete için)
   fastify.get('/companies/search', async (request, reply) => {
