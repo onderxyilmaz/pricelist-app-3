@@ -69,8 +69,11 @@ const Offers = () => {
   const [offerData, setOfferData] = useState({}); // Adım 1 verisi
   const [selectedItems, setSelectedItems] = useState([]); // Adım 2 verisi
   const [itemNotes, setItemNotes] = useState({}); // {itemId: note}
+  const [discountData, setDiscountData] = useState({}); // Adım 3 indirim verisi: {pricelistId: [{rate: number, description: string}]}
+  const [profitData, setProfitData] = useState({}); // Adım 4 kar verisi: {pricelistId: [{rate: number, description: string}]}
   const [pricelists, setPricelists] = useState([]);
   const [productFilter, setProductFilter] = useState(''); // Ürün filtreleme
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
 
   // Step 1'de Teklif No alanına autofocus
   useEffect(() => {
@@ -198,6 +201,8 @@ const Offers = () => {
   setProductFilter('');
   setCompanyOptions([]);
   setItemNotes({});
+  setDiscountData({});
+  setProfitData({});
   await fetchPricelistsWithItems();
   setModalVisible(true);
   };
@@ -273,6 +278,175 @@ const Offers = () => {
     });
   };
 
+  // Ürün bazında net fiyat hesapla (o fiyat listesinin indirimlerini uygula) - Toplam fiyat
+  const calculateItemNetPrice = (item, pricelistId) => {
+    let netPrice = parseFloat(item.price);
+    
+    // O fiyat listesinin indirimlerini uygula
+    const discounts = discountData[pricelistId] || [];
+    discounts.forEach(discount => {
+      if (discount.rate > 0) {
+        netPrice = netPrice * (1 - discount.rate / 100);
+      }
+    });
+    
+    // Adet ile çarp
+    return netPrice * item.quantity;
+  };
+
+  // Ürün bazında satış fiyatı hesapla (indirimler + kar oranları) - Toplam fiyat
+  const calculateItemSalesPrice = (item, pricelistId) => {
+    let salesPrice = parseFloat(item.price);
+    
+    // Önce indirimleri uygula
+    const discounts = discountData[pricelistId] || [];
+    discounts.forEach(discount => {
+      if (discount.rate > 0) {
+        salesPrice = salesPrice * (1 - discount.rate / 100);
+      }
+    });
+
+    // Sonra kar oranlarını uygula
+    const profits = profitData[pricelistId] || [];
+    profits.forEach(profit => {
+      if (profit.rate > 0) {
+        salesPrice = salesPrice * (1 + profit.rate / 100);
+      }
+    });
+    
+    // Adet ile çarp
+    return salesPrice * item.quantity;
+  };
+
+  // Sadece indirimli tutarı hesapla (kar oranları olmadan)
+  const calculateDiscountedTotal = (pricelistId) => {
+    const items = selectedItems.filter(item => item.pricelist_id === pricelistId);
+    let total = items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
+    
+    // Sadece indirimleri uygula
+    const discounts = discountData[pricelistId] || [];
+    discounts.forEach(discount => {
+      if (discount.rate > 0) {
+        total = total * (1 - discount.rate / 100);
+      }
+    });
+    
+    return total;
+  };
+
+  // Fiyat listesi toplamlarını hesapla (indirimler ve kar oranlarıyla birlikte)
+  const calculatePricelistTotal = (pricelistId) => {
+    const items = selectedItems.filter(item => item.pricelist_id === pricelistId);
+    let total = items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
+    
+    // İndirimleri uygula
+    const discounts = discountData[pricelistId] || [];
+    discounts.forEach(discount => {
+      if (discount.rate > 0) {
+        total = total * (1 - discount.rate / 100);
+      }
+    });
+
+    // Kar oranlarını uygula
+    const profits = profitData[pricelistId] || [];
+    profits.forEach(profit => {
+      if (profit.rate > 0) {
+        total = total * (1 + profit.rate / 100);
+      }
+    });
+    
+    return total;
+  };
+
+  // İndirim yönetimi fonksiyonları
+  const addDiscount = (pricelistId) => {
+    setDiscountData(prev => ({
+      ...prev,
+      [pricelistId]: [
+        ...(prev[pricelistId] || []),
+        { rate: 0, description: '' }
+      ]
+    }));
+  };
+
+  const updateDiscount = (pricelistId, index, field, value) => {
+    setDiscountData(prev => ({
+      ...prev,
+      [pricelistId]: prev[pricelistId].map((discount, i) => 
+        i === index ? { ...discount, [field]: value } : discount
+      )
+    }));
+  };
+
+  const removeDiscount = (pricelistId, index) => {
+    setDiscountData(prev => ({
+      ...prev,
+      [pricelistId]: prev[pricelistId].filter((_, i) => i !== index)
+    }));
+  };
+
+  // Kar oranı yönetimi fonksiyonları
+  const addProfit = (pricelistId) => {
+    setProfitData(prev => ({
+      ...prev,
+      [pricelistId]: [
+        ...(prev[pricelistId] || []),
+        { rate: 0, description: '' }
+      ]
+    }));
+  };
+
+  const updateProfit = (pricelistId, index, field, value) => {
+    setProfitData(prev => ({
+      ...prev,
+      [pricelistId]: prev[pricelistId].map((profit, i) => 
+        i === index ? { ...profit, [field]: value } : profit
+      )
+    }));
+  };
+
+  const removeProfit = (pricelistId, index) => {
+    setProfitData(prev => ({
+      ...prev,
+      [pricelistId]: prev[pricelistId].filter((_, i) => i !== index)
+    }));
+  };
+
+  // Modal kapatma fonksiyonu
+  const handleModalClose = () => {
+    // Eğer düzenleme modundaysa direkt kapat
+    if (editingOffer) {
+      setModalVisible(false);
+      return;
+    }
+
+    // Yeni teklif modunda veri girildiyse onay iste
+    const hasData = selectedItems.length > 0 || 
+                    Object.keys(discountData).length > 0 || 
+                    Object.keys(profitData).length > 0 ||
+                    offerData.offer_no || 
+                    offerData.company;
+
+    if (hasData) {
+      setCancelConfirmVisible(true);
+    } else {
+      setModalVisible(false);
+    }
+  };
+
+  // Onaylandığında modal'ı kapat ve verileri temizle
+  const handleConfirmCancel = () => {
+    setModalVisible(false);
+    setCancelConfirmVisible(false);
+    setCurrentStep(0);
+    setOfferData({});
+    setSelectedItems([]);
+    setProductFilter('');
+    setItemNotes({});
+    setDiscountData({});
+    setProfitData({});
+  };
+
   // Seçilen ürünleri fiyat listelerine göre grupla
   const groupItemsByPricelist = () => {
     const groups = {};
@@ -290,27 +464,44 @@ const Offers = () => {
     return Object.values(groups);
   };
 
-  // Toplam fiyatı hesapla
+  // Toplam fiyatı hesapla (indirimlerle birlikte)
   const calculateTotalPrice = () => {
-    return selectedItems.reduce((total, item) => {
-      return total + parseFloat(item.total_price || 0);
-    }, 0).toFixed(2);
+    const groups = groupItemsByPricelist();
+    let total = 0;
+    
+    groups.forEach(group => {
+      const pricelistTotal = calculatePricelistTotal(group.pricelist.id);
+      total += pricelistTotal;
+    });
+    
+    return total.toFixed(2);
   };
 
-  // Para birimlerine göre toplam hesapla
+  // Para birimlerine göre toplam hesapla (indirimlerle birlikte)
   const calculateTotalsByCurrency = () => {
     const totals = {};
-    selectedItems.forEach(item => {
-      const currency = item.currency;
+    const groups = groupItemsByPricelist();
+    
+    groups.forEach(group => {
+      const currency = group.pricelist.currency;
+      const pricelistTotal = calculatePricelistTotal(group.pricelist.id);
+      
       if (!totals[currency]) {
-        totals[currency] = 0;
+        totals[currency] = {
+          total: 0,
+          pricelists: []
+        };
       }
-      totals[currency] += parseFloat(item.total_price || 0);
+      totals[currency].total += pricelistTotal;
+      totals[currency].pricelists.push({
+        name: group.pricelist.name,
+        amount: pricelistTotal
+      });
     });
     
     // Her para birimini 2 decimal ile formatla
     Object.keys(totals).forEach(currency => {
-      totals[currency] = totals[currency].toFixed(2);
+      totals[currency].total = totals[currency].total.toFixed(2);
     });
     
     return totals;
@@ -499,16 +690,9 @@ const Offers = () => {
       <Modal
         title={editingOffer ? 'Teklif Düzenle' : 'Yeni Teklif'}
         open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          setCurrentStep(0);
-          setOfferData({});
-          setSelectedItems([]);
-          setProductFilter('');
-          setItemNotes({});
-        }}
+        onCancel={handleModalClose}
         footer={null}
-        width={editingOffer ? 600 : 900}
+        width={editingOffer ? 600 : 1200}
         afterOpenChange={(open) => {
           if (open && editingOffer) {
             // Sadece düzenleme modunda Teklif No alanına focus
@@ -583,6 +767,8 @@ const Offers = () => {
             <Steps current={currentStep} style={{ marginBottom: 24 }}>
               <Step title="Teklif Bilgileri" description="Teklif No ve Firma" />
               <Step title="Ürün Seçimi" description="Fiyat listesi ve ürünler" />
+              <Step title="İndirim Oranı" description="Liste bazında indirimler" />
+              <Step title="Kar Oranı" description="Liste bazında kar marjları" />
               <Step title="Ön İzleme" description="Teklif özeti ve kontrol" />
             </Steps>
 
@@ -749,7 +935,7 @@ const Offers = () => {
                 <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
                   <Space>
                     <Button onClick={handlePrevStep}>Önceki Adım</Button>
-                    <Button onClick={() => setModalVisible(false)}>İptal</Button>
+                    <Button onClick={handleModalClose}>İptal</Button>
                     <Button 
                       type="primary" 
                       disabled={selectedItems.length === 0}
@@ -763,6 +949,208 @@ const Offers = () => {
             )}
 
             {currentStep === 2 && (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <Title level={4}>İndirim Oranları</Title>
+                  <p>Her fiyat listesi için indirim oranları ekleyebilirsiniz. İndirimler sırasıyla uygulanır.</p>
+                </div>
+
+                {groupItemsByPricelist().map((group) => {
+                  const pricelistId = group.pricelist.id;
+                  const originalTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
+                  const discounts = discountData[pricelistId] || [];
+
+                  return (
+                    <Card key={pricelistId} style={{ marginBottom: 16 }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <strong>{group.pricelist.name}</strong> ({group.pricelist.currency})
+                        <div style={{ fontSize: '14px', color: '#666' }}>
+                          Ürün sayısı: {group.items.length} | 
+                          Orijinal tutar: {formatCurrency(originalTotal, group.pricelist.currency)}
+                        </div>
+                      </div>
+
+                      {discounts.map((discount, index) => (
+                        <div key={index} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          marginBottom: 8,
+                          padding: '8px 12px',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: 4
+                        }}>
+                          <span style={{ minWidth: '80px' }}>İndirim {index + 1}:</span>
+                          <InputNumber
+                            placeholder="Oran"
+                            min={0}
+                            max={100}
+                            value={discount.rate}
+                            onChange={(value) => updateDiscount(pricelistId, index, 'rate', value || 0)}
+                            style={{ width: 100, marginRight: 8 }}
+                            addonAfter="%"
+                          />
+                          <Input
+                            placeholder="Açıklama (opsiyonel)"
+                            value={discount.description}
+                            onChange={(e) => updateDiscount(pricelistId, index, 'description', e.target.value)}
+                            style={{ flex: 1, marginRight: 8 }}
+                          />
+                          <Button
+                            type="text"
+                            danger
+                            onClick={() => removeDiscount(pricelistId, index)}
+                            icon={<DeleteOutlined />}
+                          />
+                        </div>
+                      ))}
+
+                      <div style={{ marginTop: 12 }}>
+                        <Button
+                          type="dashed"
+                          onClick={() => addDiscount(pricelistId)}
+                          icon={<PlusOutlined />}
+                          style={{ marginRight: 16 }}
+                        >
+                          İndirim Ekle
+                        </Button>
+                        
+                        {discounts.length > 0 && (
+                          <span style={{ 
+                            fontWeight: 'bold',
+                            color: '#1890ff' 
+                          }}>
+                            İndirimli tutar: {formatCurrency(calculateDiscountedTotal(pricelistId), group.pricelist.currency)}
+                          </span>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
+                  <Space>
+                    <Button onClick={handlePrevStep}>Önceki Adım</Button>
+                    <Button onClick={handleModalClose}>İptal</Button>
+                    <Button 
+                      type="primary"
+                      onClick={() => setCurrentStep(3)}
+                    >
+                      Sonraki Adım
+                    </Button>
+                  </Space>
+                </Form.Item>
+              </div>
+            )}
+
+            {currentStep === 3 && (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <Title level={4}>Kar Oranları</Title>
+                  <p>Her fiyat listesi için kar oranları ekleyebilirsiniz. Kar oranları indirimli fiyat üzerinden sırasıyla uygulanır.</p>
+                </div>
+
+                {groupItemsByPricelist().map((group) => {
+                  const pricelistId = group.pricelist.id;
+                  const originalTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
+                  
+                  // İndirimli tutar hesapla
+                  const discounts = discountData[pricelistId] || [];
+                  const discountedTotal = calculateDiscountedTotal(pricelistId);
+                  
+                  const profits = profitData[pricelistId] || [];
+
+                  return (
+                    <Card key={pricelistId} style={{ marginBottom: 16 }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <strong>{group.pricelist.name}</strong> ({group.pricelist.currency})
+                        <div style={{ fontSize: '14px', color: '#666' }}>
+                          Ürün sayısı: {group.items.length} | 
+                          İndirimli tutar: {formatCurrency(discountedTotal, group.pricelist.currency)}
+                        </div>
+                      </div>
+
+                      {profits.map((profit, index) => (
+                        <div key={index} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          marginBottom: 8,
+                          padding: '8px 12px',
+                          backgroundColor: '#f6ffed',
+                          borderRadius: 4,
+                          border: '1px solid #b7eb8f'
+                        }}>
+                          <span style={{ minWidth: '80px' }}>Kar {index + 1}:</span>
+                          <InputNumber
+                            placeholder="Oran"
+                            min={0}
+                            max={1000}
+                            value={profit.rate}
+                            onChange={(value) => updateProfit(pricelistId, index, 'rate', value || 0)}
+                            style={{ width: 100, marginRight: 8 }}
+                            addonAfter="%"
+                          />
+                          <Input
+                            placeholder="Açıklama (opsiyonel)"
+                            value={profit.description}
+                            onChange={(e) => updateProfit(pricelistId, index, 'description', e.target.value)}
+                            style={{ flex: 1, marginRight: 8 }}
+                          />
+                          <Button
+                            type="text"
+                            danger
+                            onClick={() => removeProfit(pricelistId, index)}
+                            icon={<DeleteOutlined />}
+                          />
+                        </div>
+                      ))}
+
+                      <div style={{ marginTop: 12 }}>
+                        <Button
+                          type="dashed"
+                          onClick={() => addProfit(pricelistId)}
+                          icon={<PlusOutlined />}
+                          style={{ marginRight: 16 }}
+                        >
+                          Kar Oranı Ekle
+                        </Button>
+                        
+                        {profits.length > 0 && (
+                          <span style={{ 
+                            fontWeight: 'bold',
+                            color: '#52c41a' 
+                          }}>
+                            Final tutar: {formatCurrency(calculatePricelistTotal(pricelistId), group.pricelist.currency)}
+                          </span>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
+                  <Space>
+                    <Button onClick={handlePrevStep}>Önceki Adım</Button>
+                    <Button onClick={handleModalClose}>İptal</Button>
+                    <Button 
+                      type="primary"
+                      onClick={() => setCurrentStep(4)}
+                    >
+                      Sonraki Adım
+                    </Button>
+                  </Space>
+                </Form.Item>
+              </div>
+            )}
+
+            {currentStep === 4 && (
               <div>
                 {/* Başlık Bölümü */}
                 <div style={{ 
@@ -857,7 +1245,31 @@ const Offers = () => {
                             render: (price) => formatCurrency(price, group.pricelist.currency)
                           },
                           {
-                            title: 'List Price',
+                            title: 'Sales Price',
+                            key: 'sales_price',
+                            width: 120,
+                            align: 'right',
+                            render: (_, record) => {
+                              const salesPrice = calculateItemSalesPrice(record, group.pricelist.id);
+                              return <span style={{ color: '#52c41a', fontWeight: 'bold' }}>
+                                {formatCurrency(salesPrice, group.pricelist.currency)}
+                              </span>;
+                            }
+                          },
+                          {
+                            title: <span style={{ color: '#bfbfbf' }}>Net Price</span>,
+                            key: 'net_price',
+                            width: 120,
+                            align: 'right',
+                            render: (_, record) => {
+                              const netPrice = calculateItemNetPrice(record, group.pricelist.id);
+                              return <span style={{ color: '#bfbfbf' }}>
+                                {formatCurrency(netPrice, group.pricelist.currency)}
+                              </span>;
+                            }
+                          },
+                          {
+                            title: <span style={{ color: '#bfbfbf' }}>List Price</span>,
                             dataIndex: 'total_price',
                             key: 'total_price',
                             width: 150,
@@ -866,7 +1278,9 @@ const Offers = () => {
                               const note = record.note;
                               return note && note.trim() !== ''
                                 ? <span style={{ color: '#faad14' }}>{note}</span>
-                                : formatCurrency(total, group.pricelist.currency);
+                                : <span style={{ color: '#bfbfbf' }}>
+                                    {formatCurrency(total, group.pricelist.currency)}
+                                  </span>;
                             }
                           }
                         ]}
@@ -888,10 +1302,67 @@ const Offers = () => {
                     marginBottom: 16 
                   }}>
                     {groupItemsByPricelist().map((group, index) => {
-                      const groupTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
+                      const pricelistId = group.pricelist.id;
+                      const originalTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
+                      
+                      // İndirimli tutar hesapla
+                      const discounts = discountData[pricelistId] || [];
+                      const discountedTotal = calculateDiscountedTotal(pricelistId);
+
+                      // Final tutar hesapla (kar oranlarıyla)
+                      const finalTotal = calculatePricelistTotal(pricelistId);
+                      const profits = profitData[pricelistId] || [];
+                      
                       return (
-                        <div key={group.pricelist.id} style={{ marginBottom: 8 }}>
-                          {group.pricelist.name} Toplamı: <strong>{formatCurrency(groupTotal, group.pricelist.currency)}</strong>
+                        <div key={group.pricelist.id} style={{ marginBottom: 16 }}>
+                          <div style={{ marginBottom: 4 }}>
+                            <strong>{group.pricelist.name} Orijinal Toplamı:</strong> {formatCurrency(originalTotal, group.pricelist.currency)}
+                          </div>
+                          
+                          {/* İndirimleri göster */}
+                          {discounts.map((discount, discountIndex) => (
+                            <div key={discountIndex} style={{ 
+                              fontSize: '14px', 
+                              color: '#ff4d4f',
+                              marginLeft: 16,
+                              marginBottom: 2
+                            }}>
+                              - {discount.description || `İndirim ${discountIndex + 1}`}: %{discount.rate}
+                            </div>
+                          ))}
+                          
+                          {discounts.length > 0 && (
+                            <div style={{ 
+                              marginLeft: 16,
+                              fontSize: '14px',
+                              color: '#1890ff',
+                              marginBottom: 4
+                            }}>
+                              İndirimli Tutar: {formatCurrency(discountedTotal, group.pricelist.currency)}
+                            </div>
+                          )}
+
+                          {/* Kar oranlarını göster */}
+                          {profits.map((profit, profitIndex) => (
+                            <div key={profitIndex} style={{ 
+                              fontSize: '14px', 
+                              color: '#52c41a',
+                              marginLeft: 16,
+                              marginBottom: 2
+                            }}>
+                              + {profit.description || `Kar ${profitIndex + 1}`}: %{profit.rate}
+                            </div>
+                          ))}
+                          
+                          <div style={{ 
+                            marginLeft: 16,
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: profits.length > 0 ? '#52c41a' : (discounts.length > 0 ? '#52c41a' : '#000'),
+                            marginBottom: 4
+                          }}>
+                            <strong>{group.pricelist.name} Final Toplamı:</strong> {formatCurrency(finalTotal, group.pricelist.currency)}
+                          </div>
                         </div>
                       );
                     })}
@@ -911,12 +1382,20 @@ const Offers = () => {
                     <div style={{ marginBottom: 8, fontSize: '16px', color: '#666' }}>
                       TOTAL AMOUNT
                     </div>
-                    {Object.entries(calculateTotalsByCurrency()).map(([currency, total]) => (
+                    {Object.entries(calculateTotalsByCurrency()).map(([currency, data]) => (
                       <div key={currency} style={{ 
-                        marginBottom: 4,
-                        color: '#1890ff'
+                        marginBottom: 8,
+                        color: '#1890ff',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}>
-                        {formatCurrency(total, currency)}
+                        <div style={{ fontSize: '16px', color: '#666' }}>
+                          {data.pricelists.map(p => p.name).join(' + ')}:
+                        </div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                          {formatCurrency(data.total, currency)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -925,7 +1404,7 @@ const Offers = () => {
                 <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
                   <Space>
                     <Button onClick={handlePrevStep}>Önceki Adım</Button>
-                    <Button onClick={() => setModalVisible(false)}>İptal</Button>
+                    <Button onClick={handleModalClose}>İptal</Button>
                     <Button 
                       type="primary"
                       onClick={() => {
@@ -942,6 +1421,20 @@ const Offers = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* İptal Onay Dialog'u */}
+      <Modal
+        title="Teklif İptal Edilecek!"
+        open={cancelConfirmVisible}
+        onOk={handleConfirmCancel}
+        onCancel={() => setCancelConfirmVisible(false)}
+        okText="Evet, İptal Et"
+        cancelText="Hayır, Devam Et"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Bu teklif iptal edilecek ve girdiğiniz tüm veriler kaybolacak!</p>
+        <p>Onaylıyor musunuz?</p>
       </Modal>
     </div>
   );
