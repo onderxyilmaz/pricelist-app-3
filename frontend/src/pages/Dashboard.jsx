@@ -110,7 +110,7 @@ const Dashboard = () => {
               title="Toplam Stok Değeri"
               value={stats?.totalValue || 0}
               precision={2}
-              prefix={<DollarOutlined />}
+              prefix="€"
               suffix="EUR"
               loading={loading}
             />
