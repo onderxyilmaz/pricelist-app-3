@@ -857,7 +857,7 @@ const Offers = () => {
                             render: (price) => formatCurrency(price, group.pricelist.currency)
                           },
                           {
-                            title: 'Total Price',
+                            title: 'List Price',
                             dataIndex: 'total_price',
                             key: 'total_price',
                             width: 150,
