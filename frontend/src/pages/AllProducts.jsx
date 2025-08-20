@@ -272,12 +272,28 @@ const AllProducts = () => {
       render: (text) => text || '-'
     },
     {
+      title: 'Para Birimi',
+      dataIndex: 'currency',
+      key: 'currency',
+  width: 110,
+      align: 'center',
+      render: (currency) => getCurrencySymbol(currency),
+      sorter: (a, b) => {
+        const symbolA = getCurrencySymbol(a.currency);
+        const symbolB = getCurrencySymbol(b.currency);
+        return symbolA.localeCompare(symbolB);
+      }
+    },
+    {
       title: 'Fiyat',
       dataIndex: 'price',
       key: 'price',
       width: 120,
       sorter: (a, b) => parseFloat(a.price) - parseFloat(b.price),
-      render: (price, record) => formatPrice(price, record.currency)
+      render: (price) => parseFloat(price).toLocaleString('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
     },
     {
       title: 'Stok',
