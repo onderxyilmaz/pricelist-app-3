@@ -549,16 +549,13 @@ const Offers = () => {
 
   // Modal kapatma fonksiyonu
   const handleModalClose = () => {
-    // Eğer düzenleme modundaysa direkt kapat
-    if (editingOffer) {
-      setModalVisible(false);
-      return;
-    }
-
-    // Yeni teklif modunda veri girildiyse onay iste
+    // Hem yeni teklif hem düzenleme modunda veri girildiyse onay iste
     const hasData = selectedItems.length > 0 || 
                     Object.keys(discountData).length > 0 || 
                     Object.keys(profitData).length > 0 ||
+                    Object.keys(itemNotes).length > 0 ||
+                    Object.keys(itemDiscounts).length > 0 ||
+                    Object.keys(manualPrices).length > 0 ||
                     offerData.offer_no || 
                     offerData.company;
 
@@ -674,25 +671,38 @@ const Offers = () => {
         // Önce fiyat listelerini yükle
         await fetchPricelistsWithItems();
         
-        // Seçili ürünleri doldur
-        const mappedItems = offerData.items.map(item => ({
-          id: item.pricelist_item_id,
-          product_id: item.product_id,
-          name: item.product_name,
-          description: item.description,
-          price: parseFloat(item.price),
-          unit: item.unit,
-          currency: item.currency,
-          pricelist_id: item.pricelist_id,
-          quantity: item.quantity,
-          total_price: item.total_price
-        }));
+        // Seçili ürünleri doldur - orijinal ürün açıklamasını al
+        const mappedItems = offerData.items.map(item => {
+          // Orijinal ürün bilgilerini fiyat listelerinden bul
+          const originalItem = pricelists
+            .flatMap(p => p.items)
+            .find(pi => pi.id === item.pricelist_item_id);
+          
+          return {
+            id: item.pricelist_item_id,
+            product_id: item.product_id,
+            name: item.product_name,
+            description: originalItem ? originalItem.description : '', // Orijinal ürün açıklaması
+            price: parseFloat(item.price),
+            unit: item.unit,
+            currency: item.currency,
+            pricelist_id: item.pricelist_id,
+            quantity: item.quantity,
+            total_price: item.total_price
+          };
+        });
         setSelectedItems(mappedItems);
 
-        // Ürün notlarını doldur
+        // Ürün notlarını doldur - sadece kullanıcının girdiği özel açıklamaları
         const notes = {};
         offerData.items.forEach(item => {
-          if (item.description) {
+          // Orijinal ürün açıklamasını al
+          const originalItem = pricelists
+            .flatMap(p => p.items)
+            .find(pi => pi.id === item.pricelist_item_id);
+          
+          // Eğer teklif kalemindeki açıklama orijinal açıklamadan farklıysa, kullanıcının özel açıklaması
+          if (item.description && originalItem && item.description !== originalItem.description) {
             notes[item.pricelist_item_id] = item.description;
           }
         });
@@ -743,23 +753,38 @@ const Offers = () => {
       if (sourceOffer.items && sourceOffer.items.length > 0) {
         await fetchPricelistsWithItems();
         
-        const mappedItems = sourceOffer.items.map(item => ({
-          id: item.pricelist_item_id,
-          product_id: item.product_id,
-          name: item.product_name,
-          description: item.description,
-          price: parseFloat(item.price),
-          unit: item.unit,
-          currency: item.currency,
-          pricelist_id: item.pricelist_id,
-          quantity: item.quantity,
-          total_price: item.total_price
-        }));
+        // Seçili ürünleri doldur - orijinal ürün açıklamasını al
+        const mappedItems = sourceOffer.items.map(item => {
+          // Orijinal ürün bilgilerini fiyat listelerinden bul
+          const originalItem = pricelists
+            .flatMap(p => p.items)
+            .find(pi => pi.id === item.pricelist_item_id);
+          
+          return {
+            id: item.pricelist_item_id,
+            product_id: item.product_id,
+            name: item.product_name,
+            description: originalItem ? originalItem.description : '', // Orijinal ürün açıklaması
+            price: parseFloat(item.price),
+            unit: item.unit,
+            currency: item.currency,
+            pricelist_id: item.pricelist_id,
+            quantity: item.quantity,
+            total_price: item.total_price
+          };
+        });
         setSelectedItems(mappedItems);
 
+        // Ürün notlarını doldur - sadece kullanıcının girdiği özel açıklamaları
         const notes = {};
         sourceOffer.items.forEach(item => {
-          if (item.description) {
+          // Orijinal ürün açıklamasını al
+          const originalItem = pricelists
+            .flatMap(p => p.items)
+            .find(pi => pi.id === item.pricelist_item_id);
+          
+          // Eğer teklif kalemindeki açıklama orijinal açıklamadan farklıysa, kullanıcının özel açıklaması
+          if (item.description && originalItem && item.description !== originalItem.description) {
             notes[item.pricelist_item_id] = item.description;
           }
         });
