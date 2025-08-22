@@ -31,36 +31,59 @@ import {
 import axios from 'axios';
 import NotificationService from '../utils/notification';
 
+// CSS stilleri
+const styles = `
+  .sent-offer-row {
+    background-color: #f6ffed !important;
+    border-left: 4px solid #52c41a;
+  }
+  .sent-offer-row:hover {
+    background-color: #f6ffed !important;
+  }
+`;
+
+// Stilleri head'e ekle
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.type = "text/css";
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
+}
+
 const { Title } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 const { Step } = Steps;
 const { Panel } = Collapse;
 
-// Utility functions
-const formatCurrency = (amount, currency = 'TRY') => {
-  const currencySymbols = {
-    EUR: '€',
-    USD: '$',
-    GBP: '£',
-    TRY: '₺'
+// Para birimi simgesi helper
+const getCurrencySymbol = (currency) => {
+  const symbols = {
+    'EUR': '€',
+    'USD': '$',
+    'GBP': '£',
+    'TRY': '₺',
+    'TL': '₺'
   };
-  
-  const formatted = new Intl.NumberFormat('tr-TR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount || 0);
-  
-  return `${formatted} ${currencySymbols[currency] || currency}`;
+  return symbols[currency] || currency;
+};
+
+// Para birimi formatı helper
+const formatCurrency = (amount, currency) => {
+  const symbol = getCurrencySymbol(currency);
+  return `${symbol} ${parseFloat(amount).toFixed(2)}`;
 };
 
 const Offers = () => {
-  // Ana state'ler
   const [offers, setOffers] = useState([]);
   const [filteredOffers, setFilteredOffers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
+  const [form] = Form.useForm();
+  const [currentUser, setCurrentUser] = useState(null);
+  // Teklif numarası artık manuel girilecek
+  const [companyOptions, setCompanyOptions] = useState([]);
   
   // Wizard states
   const [currentStep, setCurrentStep] = useState(0);
@@ -71,13 +94,8 @@ const Offers = () => {
   const [discountData, setDiscountData] = useState({}); // Adım 3 indirim verisi: {pricelistId: [{rate: number, description: string}]}
   const [profitData, setProfitData] = useState({}); // Adım 4 kar verisi: {pricelistId: [{rate: number, description: string}]}
   const [manualPrices, setManualPrices] = useState({}); // Adım 5 manuel fiyat verisi: {itemId: {enabled: boolean, price: number}}
-
-  // Diğer state'ler
-  const [form] = Form.useForm();
-  const [currentUser, setCurrentUser] = useState(null);
-  const [companyOptions, setCompanyOptions] = useState([]);
   const [pricelists, setPricelists] = useState([]);
-  const [productFilter, setProductFilter] = useState('');
+  const [productFilter, setProductFilter] = useState(''); // Ürün filtreleme
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
 
   // Step 1'de Teklif No alanına autofocus

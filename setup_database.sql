@@ -96,7 +96,9 @@ CREATE TABLE IF NOT EXISTS offers (
     id SERIAL PRIMARY KEY,
     offer_no VARCHAR(20) UNIQUE NOT NULL,
     revision_no INTEGER DEFAULT 0,
+    parent_offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
     company VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent')),
     created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     revised_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -106,6 +108,8 @@ CREATE TABLE IF NOT EXISTS offers (
 CREATE INDEX IF NOT EXISTS idx_offers_offer_no ON offers(offer_no);
 CREATE INDEX IF NOT EXISTS idx_offers_company ON offers(company);
 CREATE INDEX IF NOT EXISTS idx_offers_created_by ON offers(created_by);
+CREATE INDEX IF NOT EXISTS idx_offers_parent_offer_id ON offers(parent_offer_id);
+CREATE INDEX IF NOT EXISTS idx_offers_status ON offers(status);
 
 -- Create trigger for revised_at
 CREATE OR REPLACE TRIGGER update_offers_revised_at 

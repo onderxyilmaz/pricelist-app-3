@@ -243,7 +243,7 @@ async function offerRoutes(fastify, options) {
       const result = await client.query(`
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
-          o.company, o.status,
+          o.company, o.status, o.parent_offer_id,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o
@@ -257,10 +257,62 @@ async function offerRoutes(fastify, options) {
     }
   });
 
+  // Tek teklifi detayları ile getir
+  fastify.get('/offers/:id', async (request, reply) => {
+    try {
+      const { id } = request.params;
+      
+      const client = await fastify.pg.connect();
+      
+      // Ana teklif bilgileri
+      const offerResult = await client.query(`
+        SELECT 
+          o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
+          o.company, o.status, o.parent_offer_id, o.created_by,
+          u.first_name, u.last_name,
+          CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+        FROM offers o
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE o.id = $1
+      `, [id]);
+
+      if (offerResult.rows.length === 0) {
+        client.release();
+        return { success: false, message: 'Teklif bulunamadı' };
+      }
+
+      const offer = offerResult.rows[0];
+
+      // Teklif kalemleri
+      const itemsResult = await client.query(`
+        SELECT 
+          oi.*,
+          p.name as pricelist_name,
+          p.currency as pricelist_currency
+        FROM offer_items oi
+        LEFT JOIN pricelists p ON oi.pricelist_id = p.id
+        WHERE oi.offer_id = $1
+        ORDER BY oi.created_at ASC
+      `, [id]);
+
+      client.release();
+      
+      return { 
+        success: true, 
+        offer: {
+          ...offer,
+          items: itemsResult.rows
+        }
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
   // Yeni teklif oluştur
   fastify.post('/offers', async (request, reply) => {
     try {
-      const { offer_no, company, created_by } = request.body;
+      const { offer_no, company, created_by, parent_offer_id, revision_no } = request.body;
       
       if (!offer_no || !created_by) {
         return { success: false, message: 'Teklif No ve Oluşturan gereklidir' };
@@ -290,8 +342,8 @@ async function offerRoutes(fastify, options) {
 
         // Teklif oluştur
         const result = await client.query(
-          'INSERT INTO offers (offer_no, company, created_by) VALUES ($1, $2, $3) RETURNING *',
-          [offer_no, company || null, created_by]
+          'INSERT INTO offers (offer_no, company, created_by, parent_offer_id, revision_no) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [offer_no, company || null, created_by, parent_offer_id || null, revision_no || 0]
         );
         
         await client.query('COMMIT');
@@ -311,7 +363,7 @@ async function offerRoutes(fastify, options) {
   fastify.put('/offers/:id', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { offer_no, company, revision_no } = request.body;
+      const { offer_no, company, revision_no, status, parent_offer_id } = request.body;
       
       if (!offer_no) {
         return { success: false, message: 'Teklif No gereklidir' };
@@ -352,8 +404,8 @@ async function offerRoutes(fastify, options) {
 
         const updateQuery = `
           UPDATE offers 
-          SET offer_no = $1, company = $2, revision_no = $3, revised_at = CURRENT_TIMESTAMP
-          WHERE id = $4 
+          SET offer_no = $1, company = $2, revision_no = $3, status = $4, parent_offer_id = $5, revised_at = CURRENT_TIMESTAMP
+          WHERE id = $6 
           RETURNING *
         `;
         
@@ -361,6 +413,8 @@ async function offerRoutes(fastify, options) {
           offer_no, 
           company || null, 
           revision_no || existingOffer.rows[0].revision_no,
+          status || existingOffer.rows[0].status || 'draft',
+          parent_offer_id || existingOffer.rows[0].parent_offer_id,
           id
         ]);
         
