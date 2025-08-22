@@ -1000,10 +1000,10 @@ const Offers = () => {
         open={modalVisible}
         onCancel={handleModalClose}
         footer={null}
-        width={editingOffer ? 600 : 1200}
+        width={1200}
         afterOpenChange={(open) => {
-          if (open && editingOffer) {
-            // Sadece düzenleme modunda Teklif No alanına focus
+          if (open && !editingOffer && currentStep === 0) {
+            // Sadece yeni teklif modunda Teklif No alanına focus
             setTimeout(() => {
               const firstInput = document.querySelector('input[placeholder="Teklif numarasını girin"]');
               if (firstInput) {
@@ -1014,65 +1014,9 @@ const Offers = () => {
           }
         }}
       >
-        {editingOffer ? (
-          // Düzenleme modu - eski form
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            autoComplete="off"
-          >
-            <Form.Item
-              name="offer_no"
-              label="Teklif No"
-              rules={[{ required: true, message: 'Teklif No gereklidir!' }]}
-            >
-              <Input 
-                placeholder="Teklif numarasını girin" 
-                autoComplete="off"
-                autoFocus
-                disabled
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="revision_no"
-              label="Rev. No"
-              rules={[{ required: true, message: 'Rev. No gereklidir!' }]}
-            >
-              <InputNumber 
-                placeholder="Revizyon numarasını girin" 
-                autoComplete="off"
-                style={{ width: '100%' }}
-                min={0}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="company"
-              label="Firma"
-            >
-              <AutoComplete
-                options={companyOptions}
-                onSearch={searchCompanies}
-                placeholder="Firma adını girin veya seçin"
-                allowClear
-                filterOption={false}
-                autoComplete="off"
-              />
-            </Form.Item>
-
-            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-              <Space>
-                <Button onClick={() => setModalVisible(false)}>İptal</Button>
-                <Button type="primary" htmlType="submit">Güncelle</Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        ) : (
-          // Yeni teklif modu - wizard
-          <div>
-            <Steps current={currentStep} style={{ marginBottom: 24 }}>
+        {/* Hem yeni teklif hem düzenleme modu - wizard */}
+        <div>
+          <Steps current={currentStep} style={{ marginBottom: 24 }}>
               <Step title="Teklif Bilgileri" description="Teklif No ve Firma" />
               <Step title="Ürün Seçimi" description="Fiyat listesi ve ürünler" />
               <Step title="İndirim Oranı" description="Liste bazında indirimler" />
@@ -1924,7 +1868,6 @@ const Offers = () => {
               </div>
             )}
           </div>
-        )}
       </Modal>
 
       {/* İptal Onay Dialog'u */}
