@@ -245,6 +245,8 @@ const Offers = () => {
           revision_no: offerData.revision_no || 0
         };
 
+        console.log('Offer payload:', offerPayload); // Debug için
+
         const offerResponse = await axios.post('http://localhost:3001/api/offers', offerPayload);
         
         if (!offerResponse.data.success) {
@@ -320,7 +322,11 @@ const Offers = () => {
       }
     }
     
-    setOfferData(values);
+    // Mevcut offerData'daki revizyon bilgilerini koru
+    setOfferData(prevData => ({
+      ...prevData,
+      ...values
+    }));
     setCurrentStep(1);
   };
 
@@ -730,25 +736,61 @@ const Offers = () => {
 
       const sourceOffer = response.data.offer;
       
-      // Yeni revizyon numarası hesapla
-      const newRevisionNo = (sourceOffer.revision_no || 0) + 1;
+      // Ana teklifi bul (parent_offer_id null olan)
+      const parentOfferId = sourceOffer.parent_offer_id || offer.id;
+      
+      // Ana teklifin tüm revizyonlarını getir ve en yüksek revizyon numarasını bul
+      const allOffersResponse = await axios.get('http://localhost:3001/api/offers');
+      if (!allOffersResponse.data.success) {
+        NotificationService.error('Hata', 'Teklifler yüklenemedi');
+        return;
+      }
+      
+      const allOffers = allOffersResponse.data.offers;
+      const relatedOffers = allOffers.filter(o => 
+        o.id === parentOfferId || o.parent_offer_id === parentOfferId
+      );
+      
+      const maxRevisionNo = Math.max(...relatedOffers.map(o => o.revision_no || 0));
+      const newRevisionNo = maxRevisionNo + 1;
+      
+      // Ana teklifin offer_no'sunu bul
+      const parentOffer = allOffers.find(o => o.id === parentOfferId);
+      const baseOfferNo = parentOffer ? parentOffer.offer_no : sourceOffer.offer_no.split('-R')[0];
       
       // Form verilerini doldur (yeni teklif no ile)
-      const newOfferNo = `${sourceOffer.offer_no}-R${newRevisionNo}`;
+      const newOfferNo = `${baseOfferNo}-R${newRevisionNo}`;
       
       form.setFieldsValue({
         offer_no: newOfferNo,
         company: sourceOffer.company || ''
       });
 
+      console.log('Revizyon bilgileri:', {
+        sourceOfferId: offer.id,
+        parentOfferId,
+        newRevisionNo,
+        newOfferNo,
+        offerData: {
+          offer_no: newOfferNo,
+          company: sourceOffer.company || '',
+          parent_offer_id: parentOfferId,
+          revision_no: newRevisionNo
+        }
+      }); // Debug için
+
       // Wizard state'lerini doldur
       setOfferData({
         offer_no: newOfferNo,
         company: sourceOffer.company || '',
-        parent_offer_id: offer.id,
+        parent_offer_id: parentOfferId,
         revision_no: newRevisionNo
       });
 
+      // Revizyon oluştururken 1. adımdan başla (Teklif Bilgileri)
+      setCurrentStep(0);
+      setEditingOffer(null);
+      
       // Ürün kalemleri varsa doldur
       if (sourceOffer.items && sourceOffer.items.length > 0) {
         await fetchPricelistsWithItems();
@@ -789,10 +831,10 @@ const Offers = () => {
           }
         });
         setItemNotes(notes);
+      } else {
+        await fetchPricelistsWithItems();
       }
 
-      setEditingOffer(null); // Revizyon modu için null
-      setCurrentStep(0);
       setModalVisible(true);
       
     } catch (error) {
@@ -874,19 +916,21 @@ const Offers = () => {
     }
   };
 
+  // Ana teklifleri filtrele (parent_offer_id null olanlar)
+  const parentOffers = filteredOffers.filter(offer => !offer.parent_offer_id);
+  
+  // Her ana teklifin revizyonlarını bul
+  const getRevisions = (parentOfferId) => {
+    return filteredOffers.filter(offer => offer.parent_offer_id === parentOfferId)
+      .sort((a, b) => a.revision_no - b.revision_no);
+  };
+
   const columns = [
     {
       title: 'Teklif No',
       dataIndex: 'offer_no',
       key: 'offer_no',
       sorter: (a, b) => a.offer_no.localeCompare(b.offer_no, 'tr'),
-    },
-    {
-      title: 'Rev. No',
-      dataIndex: 'revision_no',
-      key: 'revision_no',
-      width: 100,
-      sorter: (a, b) => a.revision_no - b.revision_no,
     },
     {
       title: 'Oluşturma',
@@ -898,16 +942,17 @@ const Offers = () => {
     },
     {
       title: 'Revize',
-      dataIndex: 'revised_at',
-      key: 'revised_at',
-      width: 140,
+      key: 'revision_count',
+      width: 100,
       sorter: (a, b) => {
-        if (!a.revised_at && !b.revised_at) return 0;
-        if (!a.revised_at) return -1;
-        if (!b.revised_at) return 1;
-        return new Date(a.revised_at) - new Date(b.revised_at);
+        const aCount = getRevisions(a.id).length;
+        const bCount = getRevisions(b.id).length;
+        return aCount - bCount;
       },
-      render: (date) => date ? new Date(date).toLocaleDateString('tr-TR') : '-',
+      render: (_, record) => {
+        const revisionCount = getRevisions(record.id).length;
+        return revisionCount > 0 ? revisionCount : '-';
+      },
     },
     {
       title: 'Hazırlayan',
@@ -974,7 +1019,33 @@ const Offers = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <>
+      <style>
+        {`
+          .sent-offer-row td {
+            background-color: #f6ffed !important;
+            border-color: #b7eb8f !important;
+          }
+          .sent-offer-row:hover td {
+            background-color: #d9f7be !important;
+          }
+          
+          /* Revizyon tablosu için özel stiller */
+          .ant-table-expanded-row > td {
+            padding: 0 !important;
+            background-color: #f8f9fa !important;
+          }
+          
+          .ant-table-expanded-row .ant-table-thead > tr > th {
+            background-color: #e9ecef !important;
+            font-weight: 600 !important;
+            color: #495057 !important;
+            font-size: 13px !important;
+          }
+        `}
+      </style>
+      
+      <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={2} style={{ margin: 0 }}>Teklifler</Title>
         <Button 
@@ -1000,7 +1071,7 @@ const Offers = () => {
 
         <Table
           columns={columns}
-          dataSource={filteredOffers}
+          dataSource={parentOffers}
           rowKey="id"
           loading={loading}
           rowClassName={(record) => record.status === 'sent' ? 'sent-offer-row' : ''}
@@ -1012,6 +1083,136 @@ const Offers = () => {
             pageSizeOptions: ['5', '10', '20', '50'],
           }}
           scroll={{ x: 800 }}
+          expandable={{
+            expandedRowRender: (record) => {
+              const revisions = getRevisions(record.id);
+              if (revisions.length === 0) {
+                return <div style={{ padding: '16px', color: '#999' }}>Bu teklif için revizyon bulunmuyor</div>;
+              }
+              
+              return (
+                <div style={{ 
+                  margin: '0 0 0 40px', 
+                  padding: '16px',
+                  backgroundColor: '#f8f9fa',
+                  borderLeft: '4px solid #1890ff',
+                  borderRadius: '6px'
+                }}>
+                  <div style={{ 
+                    fontWeight: 'bold', 
+                    marginBottom: '12px',
+                    color: '#1890ff',
+                    fontSize: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    📋 Revizyonlar ({revisions.length})
+                  </div>
+                  <Table
+                    columns={[
+                      {
+                        title: 'Revize No',
+                        dataIndex: 'revision_no',
+                        key: 'revision_no',
+                        width: 100,
+                        sorter: (a, b) => a.revision_no - b.revision_no,
+                        render: (rev_no) => `R${rev_no}`
+                      },
+                      {
+                        title: 'Teklif No',
+                        dataIndex: 'offer_no',
+                        key: 'offer_no',
+                      },
+                      {
+                        title: 'Oluşturma Tarihi',
+                        dataIndex: 'created_at',
+                        key: 'created_at',
+                        width: 140,
+                        sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+                        render: (date) => new Date(date).toLocaleDateString('tr-TR'),
+                      },
+                      {
+                        title: 'Hazırlayan',
+                        dataIndex: 'created_by_name',
+                        key: 'created_by_name',
+                        render: (name) => name || '-',
+                      },
+                      {
+                        title: 'Firma',
+                        dataIndex: 'company',
+                        key: 'company',
+                        render: (company) => company || '-',
+                      },
+                      {
+                        title: 'İşlemler',
+                        key: 'actions',
+                        width: 200,
+                        render: (_, revRecord) => (
+                          <Space>
+                            <Button
+                              type="primary"
+                              size="small"
+                              icon={<EditOutlined />}
+                              onClick={() => handleEdit(revRecord)}
+                              title="Düzenle"
+                            />
+                            <Button
+                              type="default"
+                              size="small"
+                              icon={<BranchesOutlined />}
+                              onClick={() => handleCreateRevision(revRecord)}
+                              title="Revizyon Oluştur"
+                            />
+                            <Button
+                              type="default"
+                              size="small"
+                              icon={<SendOutlined />}
+                              onClick={() => handleToggleStatus(revRecord)}
+                              title={revRecord.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
+                              style={{ 
+                                color: revRecord.status === 'sent' ? '#52c41a' : '#1890ff',
+                                borderColor: revRecord.status === 'sent' ? '#52c41a' : '#1890ff'
+                              }}
+                            />
+                            <Popconfirm
+                              title="Revizyonu silmek istediğinizden emin misiniz?"
+                              onConfirm={() => handleDelete(revRecord.id)}
+                              okText="Evet"
+                              cancelText="Hayır"
+                            >
+                              <Button
+                                type="primary"
+                                danger
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                title="Sil"
+                              />
+                            </Popconfirm>
+                          </Space>
+                        ),
+                      },
+                    ]}
+                    dataSource={revisions}
+                    rowKey="id"
+                    rowClassName={(record) => record.status === 'sent' ? 'sent-offer-row' : ''}
+                    pagination={false}
+                    size="small"
+                    style={{ 
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e8e8e8',
+                      borderRadius: '4px'
+                    }}
+                    bordered
+                  />
+                </div>
+              );
+            },
+            rowExpandable: (record) => {
+              const revisions = getRevisions(record.id);
+              return revisions.length > 0;
+            },
+            expandRowByClick: false,
+          }}
         />
       </Card>
 
@@ -1909,6 +2110,7 @@ const Offers = () => {
         <p>Onaylıyor musunuz?</p>
       </Modal>
     </div>
+    </>
   );
 };
 
