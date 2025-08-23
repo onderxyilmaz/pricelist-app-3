@@ -943,10 +943,10 @@ const Offers = () => {
       worksheet.addRow(['', '', '', '', '']);
       
       // A4-E7 bilgi satırları
-      worksheet.addRow(['Proje Adı:', offerData.offer_no || '', '', 'Rev No:', offerData.revision_no || 0]);
-      worksheet.addRow(['Firma Adı:', offerData.company || '', '', 'Proje No:', '']);
-      worksheet.addRow(['İlgili Kişi:', '', '', 'Tarih:', new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
-      worksheet.addRow(['Konu:', '', '', 'Hazırlayan:', offerData.created_by_name || '']);
+      worksheet.addRow(['Proje Adı:', offerData.offer_no || '', 'Rev No:', offerData.revision_no || 0, '']);
+      worksheet.addRow(['Firma Adı:', offerData.company || '', 'Proje No:', '', '']);
+      worksheet.addRow(['İlgili Kişi:', '', 'Tarih:', new Date(offerData.created_at).toLocaleDateString('tr-TR'), new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
+      worksheet.addRow(['Konu:', '', 'Hazırlayan:', offerData.created_by_name || '', '']);
       
       // Boş satır (8. satır)
       worksheet.addRow(['', '', '', '', '']);
@@ -957,7 +957,6 @@ const Offers = () => {
       // Ana tablo başlıkları (10. satır)
       const headerRow = worksheet.addRow([
         'Product Code /\nÜrün kodu', 
-        'Name', 
         'Description / Açıklama', 
         'Qty /\nMiktar', 
         'Unit Price /\nBirim Fiyat', 
@@ -965,6 +964,7 @@ const Offers = () => {
         'Net Price / Net\nFiyat', 
         'Net Total /\nNet Toplam', 
         'List Price / Liste\nFiyat', 
+        '', 
         '', 
         ''
       ]);
@@ -984,21 +984,29 @@ const Offers = () => {
         };
       });
       
-      // 10. satırın yüksekliğini ayarla (30px = 22.5 Excel point)
-      headerRow.height = 22.5;
+      // 10. satırın yüksekliğini ayarla (45px = 33.75 Excel point)
+      headerRow.height = 33.75;
       
       worksheet.addRow([]);
 
       // Grup başına verileri ekle
       Object.entries(groupedItems).forEach(([groupName, items]) => {
-        // Grup başlığı (mavi renk için)
-        worksheet.addRow([groupName, '', '', '', '', '', '', '', '', '', '']);
+        // Grup başlığı (B sütununa taşındı)
+        const groupRow = worksheet.addRow(['', groupName, '', '', '', '', '', '', '', '', '']);
+        
+        // Grup başlığının formatını ayarla (B sütunu)
+        const groupCell = groupRow.getCell(2); // B sütunu
+        groupCell.font = { 
+          bold: true, 
+          name: 'Tahoma', 
+          size: 12, 
+          color: { argb: 'FF0070C0' } 
+        };
         
         // Grup öğeleri
         items.forEach(item => {
-          worksheet.addRow([
+          const productRow = worksheet.addRow([
             item.product_code || '',
-            item.product_name || '',
             item.description || '',
             item.quantity || 1,
             parseFloat(item.unit_price || 0).toFixed(2),
@@ -1007,8 +1015,20 @@ const Offers = () => {
             parseFloat(item.net_total || item.total_price || 0).toFixed(2),
             parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
             0.00, // Placeholder for additional columns
-            parseFloat(item.list_price || item.unit_price || 0).toFixed(2)
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            ''
           ]);
+          
+          // Ürün satırlarına 9.5pt font boyutu uygula
+          productRow.eachCell((cell) => {
+            cell.font = { 
+              name: 'Tahoma', 
+              size: 9.5 
+            };
+            cell.alignment = { 
+              vertical: 'middle'
+            };
+          });
         });
         
         // Grup toplamı
@@ -1036,17 +1056,17 @@ const Offers = () => {
 
       // Sütun genişliklerini ayarla
       worksheet.columns = [
-        { width: 19.14 }, // A - Product Code (119px)
-        { width: 44.29 }, // B - Name (315px)
-        { width: 72.86 }, // C - Description (315px)
-        { width: 8.71 },  // D - Qty (66px)
-        { width: 16.00 }, // E - Unit Price (117px)
-        { width: 16.00 }, // F - Total Price (117px)
-        { width: 12 }, // G - Net Price
-        { width: 12 }, // H - Net Total
-        { width: 12 }, // I - List Price
-        { width: 8 },  // J - Extra column
-        { width: 12 }  // K - List Price 2
+        { width: 15.86 }, // A - Product Code (116px)
+        { width: 71.43 }, // B - Description (505px)
+        { width: 8.71 },  // C - Qty (66px)
+        { width: 14.29 }, // D - Unit Price (105px)
+        { width: 16.00 }, // E - Total Price (117px)
+        { width: 12 }, // F - Net Price
+        { width: 12 }, // G - Net Total
+        { width: 12 }, // H - List Price
+        { width: 8 },  // I - Extra column
+        { width: 12 }, // J - List Price 2
+        { width: 8 }   // K - Extra column
       ];
 
       // A4:K7 aralığını bold yapalım
@@ -1055,8 +1075,8 @@ const Offers = () => {
           const cell = worksheet.getCell(`${col}${row}`);
           cell.font = { bold: true, name: 'Tahoma', size: 10.5 };
           
-          // Belirli hücreleri sağa yasla (A4, A5, A6, A7, D4, D5, D6, D7)
-          if ((col === 'A' || col === 'D') && row >= 4 && row <= 7) {
+          // A sütununu sağa yasla
+          if (col === 'A' && row >= 4 && row <= 7) {
             cell.alignment = { 
               vertical: 'middle',
               horizontal: 'right'
@@ -1067,6 +1087,21 @@ const Offers = () => {
             };
           }
         }
+      }
+
+      // Hücreleri birleştir ve formatla
+      worksheet.mergeCells('C4:D4'); // Rev No
+      worksheet.mergeCells('C5:D5'); // Proje No
+      worksheet.mergeCells('C6:D6'); // Tarih
+      worksheet.mergeCells('C7:D7'); // Hazırlayan
+
+      // Birleştirilen hücreleri sağa yasla
+      for (let row = 4; row <= 7; row++) {
+        const mergedCell = worksheet.getCell(`C${row}`);
+        mergedCell.alignment = { 
+          vertical: 'middle',
+          horizontal: 'right'
+        };
       }
 
       // A1:K3 aralığının font boyutunu ayarla
