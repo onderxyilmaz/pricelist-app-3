@@ -26,9 +26,11 @@ import {
   DeleteOutlined, 
   SearchOutlined,
   BranchesOutlined,
-  SendOutlined
+  SendOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import NotificationService from '../utils/notification';
 
 const { Title } = Typography;
@@ -916,6 +918,125 @@ const Offers = () => {
     }
   };
 
+  const handleExportToExcel = async (offer) => {
+    try {
+      // Teklif detaylarını fetch et
+      const response = await axios.get(`http://localhost:3001/api/offers/${offer.id}/details`);
+      
+      console.log('Excel export response:', response.data); // Debug için
+      
+      if (!response.data.success) {
+        NotificationService.error('Hata', response.data.message || 'Teklif detayları alınamadı');
+        return;
+      }
+
+      const offerData = response.data.offer;
+      const groupedItems = offerData.items;
+
+      // Excel workbook oluştur
+      const wb = XLSX.utils.book_new();
+      
+      // Worksheet verilerini hazırla
+      const wsData = [];
+      
+      // Başlık bilgileri
+      wsData.push(['Yeni Teklif']);
+      wsData.push([]);
+      wsData.push(['Teklif Bilgileri', '', '', '', 'Ürün Seçimi', '', 'İndirim Oranı', '', 'Kar Oranı', '', 'Manuel Fiyat', '', 'Ön İşleme']);
+      wsData.push(['Teklif No ve Firma', '', '', '', 'Fiyat listesi ve ürünler', '', 'indirimler', '', 'marjları', '', 'Ürün bazında fiyat', '', 'düzenlemesi', '', 'Teklif özeti ve kontrol']);
+      wsData.push([]);
+      wsData.push([]);
+      wsData.push(['Teklif No: ' + (offerData.offer_no || 'w'), '', '', '', '', '', '', '', '', '', '', '', 'Rev. No: ' + (offerData.revision_no || 0)]);
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '', '', 'Tarih: ' + new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
+      wsData.push([]);
+      wsData.push(['Firma:', offerData.company || '']);
+      wsData.push([]);
+
+      // Ana tablo başlıkları
+      wsData.push(['Product Code /', 'Name', 'Description / Açıklama', 'Qty /', 'Unit Price /', 'Total Price /', 'Net Price / Net', 'Net Total /', 'List Price / Liste', '', '']);
+      wsData.push(['Ürün kodu', '', '', 'Miktar', 'Birim Fiyat', 'Toplam Fiyat', 'Fiyat', 'Net Toplam', 'Fiyat', '', '']);
+      wsData.push([]);
+
+      // Grup başına verileri ekle
+      Object.entries(groupedItems).forEach(([groupName, items]) => {
+        // Grup başlığı (mavi renk için)
+        wsData.push([groupName, '', '', '', '', '', '', '', '', '', '']);
+        
+        // Grup öğeleri
+        items.forEach(item => {
+          wsData.push([
+            item.product_code || '',
+            item.product_name || '',
+            item.description || '',
+            item.quantity || 1,
+            parseFloat(item.unit_price || 0).toFixed(2),
+            parseFloat(item.total_price || 0).toFixed(2),
+            parseFloat(item.net_price || 0).toFixed(2),
+            parseFloat(item.net_total || item.total_price || 0).toFixed(2),
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            0.00, // Placeholder for additional columns
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2)
+          ]);
+        });
+        
+        // Grup toplamı
+        const groupTotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+        const groupNetTotal = items.reduce((sum, item) => sum + parseFloat(item.net_total || item.total_price || 0), 0);
+        
+        wsData.push([
+          '', 
+          `${groupName} Orjinal Toplamı:`, 
+          groupTotal.toFixed(2) + ' €',
+          '', '', '', '', '', '', '', ''
+        ]);
+        wsData.push([
+          '', 
+          `${groupName} Final Toplamı:`, 
+          groupNetTotal.toFixed(2) + ' €',
+          '', '', '', '', '', '', '', ''
+        ]);
+        wsData.push([]);
+      });
+
+      // Genel toplam
+      const totalAmount = Object.values(groupedItems).flat().reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+      wsData.push(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
+
+      // Worksheet oluştur
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      
+      // Sütun genişliklerini ayarla
+      ws['!cols'] = [
+        { wch: 15 }, // Product Code
+        { wch: 30 }, // Name
+        { wch: 40 }, // Description
+        { wch: 8 },  // Qty
+        { wch: 12 }, // Unit Price
+        { wch: 12 }, // Total Price
+        { wch: 12 }, // Net Price
+        { wch: 12 }, // Net Total
+        { wch: 12 }, // List Price
+        { wch: 8 },  // Extra column
+        { wch: 12 }  // List Price 2
+      ];
+
+      // Worksheet'i workbook'a ekle
+      XLSX.utils.book_append_sheet(wb, ws, 'Teklif');
+
+      // Dosya adını oluştur
+      const fileName = `Teklif_${offerData.offer_no || 'w'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Excel dosyasını indir
+      XLSX.writeFile(wb, fileName);
+      
+      NotificationService.success('Başarılı', 'Excel dosyası indirildi');
+      
+    } catch (error) {
+      console.error('Excel export error:', error);
+      NotificationService.error('Hata', 'Excel dosyası oluşturulurken hata oluştu: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   // Ana teklifleri filtrele (parent_offer_id null olanlar)
   const parentOffers = filteredOffers.filter(offer => !offer.parent_offer_id);
   
@@ -971,7 +1092,7 @@ const Offers = () => {
     {
       title: 'İşlemler',
       key: 'actions',
-      width: 200,
+      width: 250,
       render: (_, record) => (
         <Space>
           <Button
@@ -997,6 +1118,17 @@ const Offers = () => {
             style={{ 
               color: record.status === 'sent' ? '#52c41a' : '#1890ff',
               borderColor: record.status === 'sent' ? '#52c41a' : '#1890ff'
+            }}
+          />
+          <Button
+            type="default"
+            size="small"
+            icon={<FileExcelOutlined />}
+            onClick={() => handleExportToExcel(record)}
+            title="Excel'e Aktar"
+            style={{ 
+              color: '#52c41a',
+              borderColor: '#52c41a'
             }}
           />
           <Popconfirm
@@ -1146,7 +1278,7 @@ const Offers = () => {
                       {
                         title: 'İşlemler',
                         key: 'actions',
-                        width: 200,
+                        width: 250,
                         render: (_, revRecord) => (
                           <Space>
                             <Button
@@ -1172,6 +1304,17 @@ const Offers = () => {
                               style={{ 
                                 color: revRecord.status === 'sent' ? '#52c41a' : '#1890ff',
                                 borderColor: revRecord.status === 'sent' ? '#52c41a' : '#1890ff'
+                              }}
+                            />
+                            <Button
+                              type="default"
+                              size="small"
+                              icon={<FileExcelOutlined />}
+                              onClick={() => handleExportToExcel(revRecord)}
+                              title="Excel'e Aktar"
+                              style={{ 
+                                color: '#52c41a',
+                                borderColor: '#52c41a'
                               }}
                             />
                             <Popconfirm

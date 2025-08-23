@@ -309,6 +309,75 @@ async function offerRoutes(fastify, options) {
     }
   });
 
+  // Excel export için teklif detaylarını gruplu olarak getir
+  fastify.get('/offers/:id/details', async (request, reply) => {
+    try {
+      const { id } = request.params;
+      
+      const client = await fastify.pg.connect();
+      
+      // Ana teklif bilgileri
+      const offerResult = await client.query(`
+        SELECT 
+          o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
+          o.company, o.status, o.parent_offer_id, o.created_by,
+          u.first_name, u.last_name,
+          CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+        FROM offers o
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE o.id = $1
+      `, [id]);
+
+      if (offerResult.rows.length === 0) {
+        client.release();
+        return { success: false, message: 'Teklif bulunamadı' };
+      }
+
+      const offer = offerResult.rows[0];
+
+      // Teklif kalemleri ile ürün bilgileri
+      const itemsResult = await client.query(`
+        SELECT 
+          oi.*,
+          p.name as pricelist_name,
+          p.currency as pricelist_currency,
+          oi.product_name,
+          oi.product_id as product_code,
+          oi.description,
+          oi.price as unit_price,
+          oi.price as net_price,
+          oi.price as list_price,
+          oi.total_price as net_total
+        FROM offer_items oi
+        LEFT JOIN pricelists p ON oi.pricelist_id = p.id
+        WHERE oi.offer_id = $1
+        ORDER BY p.name, oi.product_name
+      `, [id]);
+
+      // Verileri fiyat listesi ismine göre grupla
+      const groupedItems = {};
+      itemsResult.rows.forEach(item => {
+        const groupName = item.pricelist_name || 'Diğer';
+        if (!groupedItems[groupName]) {
+          groupedItems[groupName] = [];
+        }
+        groupedItems[groupName].push(item);
+      });
+
+      client.release();
+      
+      return { 
+        success: true, 
+        offer: {
+          ...offer,
+          items: groupedItems
+        }
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
   // Yeni teklif oluştur
   fastify.post('/offers', async (request, reply) => {
     try {
