@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import NotificationService from '../utils/notification';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const { Title } = Typography;
 const { Search } = Input;
