@@ -27,7 +27,7 @@ import {
   SelectOutlined,
   ClearOutlined
 } from '@ant-design/icons';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import axios from 'axios';
 import NotificationService from '../utils/notification';
 

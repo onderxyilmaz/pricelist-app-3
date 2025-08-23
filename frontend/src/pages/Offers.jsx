@@ -30,7 +30,7 @@ import {
   FileExcelOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import NotificationService from '../utils/notification';
 
 const { Title } = Typography;
@@ -934,37 +934,69 @@ const Offers = () => {
       const groupedItems = offerData.items;
 
       // Excel workbook oluştur
-      const wb = XLSX.utils.book_new();
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Teklif');
       
-      // Worksheet verilerini hazırla
-      const wsData = [];
+      // A1:E3 boş satırlar
+      worksheet.addRow(['', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '']);
       
-      // Başlık bilgileri
-      wsData.push(['Yeni Teklif']);
-      wsData.push([]);
-      wsData.push(['Teklif Bilgileri', '', '', '', 'Ürün Seçimi', '', 'İndirim Oranı', '', 'Kar Oranı', '', 'Manuel Fiyat', '', 'Ön İşleme']);
-      wsData.push(['Teklif No ve Firma', '', '', '', 'Fiyat listesi ve ürünler', '', 'indirimler', '', 'marjları', '', 'Ürün bazında fiyat', '', 'düzenlemesi', '', 'Teklif özeti ve kontrol']);
-      wsData.push([]);
-      wsData.push([]);
-      wsData.push(['Teklif No: ' + (offerData.offer_no || 'w'), '', '', '', '', '', '', '', '', '', '', '', 'Rev. No: ' + (offerData.revision_no || 0)]);
-      wsData.push(['', '', '', '', '', '', '', '', '', '', '', '', 'Tarih: ' + new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
-      wsData.push([]);
-      wsData.push(['Firma:', offerData.company || '']);
-      wsData.push([]);
+      // A4-E7 bilgi satırları
+      worksheet.addRow(['Proje Adı:', offerData.offer_no || '', '', 'Rev No:', offerData.revision_no || 0]);
+      worksheet.addRow(['Firma Adı:', offerData.company || '', '', 'Proje No:', '']);
+      worksheet.addRow(['İlgili Kişi:', '', '', 'Tarih:', new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
+      worksheet.addRow(['Konu:', '', '', 'Hazırlayan:', offerData.created_by_name || '']);
+      
+      // Boş satır (8. satır)
+      worksheet.addRow(['', '', '', '', '']);
+      
+      // Boş satır (9. satır)
+      worksheet.addRow(['', '', '', '', '']);
 
-      // Ana tablo başlıkları
-      wsData.push(['Product Code /', 'Name', 'Description / Açıklama', 'Qty /', 'Unit Price /', 'Total Price /', 'Net Price / Net', 'Net Total /', 'List Price / Liste', '', '']);
-      wsData.push(['Ürün kodu', '', '', 'Miktar', 'Birim Fiyat', 'Toplam Fiyat', 'Fiyat', 'Net Toplam', 'Fiyat', '', '']);
-      wsData.push([]);
+      // Ana tablo başlıkları (10. satır)
+      const headerRow = worksheet.addRow([
+        'Product Code /\nÜrün kodu', 
+        'Name', 
+        'Description / Açıklama', 
+        'Qty /\nMiktar', 
+        'Unit Price /\nBirim Fiyat', 
+        'Total Price /\nToplam Fiyat', 
+        'Net Price / Net\nFiyat', 
+        'Net Total /\nNet Toplam', 
+        'List Price / Liste\nFiyat', 
+        '', 
+        ''
+      ]);
+      
+      // 10. satır başlıklarını bold yap ve arkaplan rengini ayarla
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true, name: 'Tahoma', size: 9 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFD9D9D9' }
+        };
+        cell.alignment = { 
+          vertical: 'middle',
+          horizontal: 'center',
+          wrapText: true 
+        };
+      });
+      
+      // 10. satırın yüksekliğini ayarla (30px = 22.5 Excel point)
+      headerRow.height = 22.5;
+      
+      worksheet.addRow([]);
 
       // Grup başına verileri ekle
       Object.entries(groupedItems).forEach(([groupName, items]) => {
         // Grup başlığı (mavi renk için)
-        wsData.push([groupName, '', '', '', '', '', '', '', '', '', '']);
+        worksheet.addRow([groupName, '', '', '', '', '', '', '', '', '', '']);
         
         // Grup öğeleri
         items.forEach(item => {
-          wsData.push([
+          worksheet.addRow([
             item.product_code || '',
             item.product_name || '',
             item.description || '',
@@ -983,51 +1015,102 @@ const Offers = () => {
         const groupTotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
         const groupNetTotal = items.reduce((sum, item) => sum + parseFloat(item.net_total || item.total_price || 0), 0);
         
-        wsData.push([
+        worksheet.addRow([
           '', 
           `${groupName} Orjinal Toplamı:`, 
           groupTotal.toFixed(2) + ' €',
           '', '', '', '', '', '', '', ''
         ]);
-        wsData.push([
+        worksheet.addRow([
           '', 
           `${groupName} Final Toplamı:`, 
           groupNetTotal.toFixed(2) + ' €',
           '', '', '', '', '', '', '', ''
         ]);
-        wsData.push([]);
+        worksheet.addRow([]);
       });
 
       // Genel toplam
       const totalAmount = Object.values(groupedItems).flat().reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-      wsData.push(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
+      worksheet.addRow(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
 
-      // Worksheet oluştur
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      
       // Sütun genişliklerini ayarla
-      ws['!cols'] = [
-        { wch: 15 }, // Product Code
-        { wch: 30 }, // Name
-        { wch: 40 }, // Description
-        { wch: 8 },  // Qty
-        { wch: 12 }, // Unit Price
-        { wch: 12 }, // Total Price
-        { wch: 12 }, // Net Price
-        { wch: 12 }, // Net Total
-        { wch: 12 }, // List Price
-        { wch: 8 },  // Extra column
-        { wch: 12 }  // List Price 2
+      worksheet.columns = [
+        { width: 19.14 }, // A - Product Code (119px)
+        { width: 44.29 }, // B - Name (315px)
+        { width: 72.86 }, // C - Description (315px)
+        { width: 8.71 },  // D - Qty (66px)
+        { width: 16.00 }, // E - Unit Price (117px)
+        { width: 16.00 }, // F - Total Price (117px)
+        { width: 12 }, // G - Net Price
+        { width: 12 }, // H - Net Total
+        { width: 12 }, // I - List Price
+        { width: 8 },  // J - Extra column
+        { width: 12 }  // K - List Price 2
       ];
 
-      // Worksheet'i workbook'a ekle
-      XLSX.utils.book_append_sheet(wb, ws, 'Teklif');
+      // A4:K7 aralığını bold yapalım
+      for (let row = 4; row <= 7; row++) {
+        for (let col of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']) {
+          const cell = worksheet.getCell(`${col}${row}`);
+          cell.font = { bold: true, name: 'Tahoma', size: 10.5 };
+          
+          // Belirli hücreleri sağa yasla (A4, A5, A6, A7, D4, D5, D6, D7)
+          if ((col === 'A' || col === 'D') && row >= 4 && row <= 7) {
+            cell.alignment = { 
+              vertical: 'middle',
+              horizontal: 'right'
+            };
+          } else {
+            cell.alignment = { 
+              vertical: 'middle'
+            };
+          }
+        }
+      }
+
+      // A1:K3 aralığının font boyutunu ayarla
+      for (let row = 1; row <= 3; row++) {
+        for (let col of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']) {
+          const cell = worksheet.getCell(`${col}${row}`);
+          cell.font = { name: 'Tahoma', size: 9 };
+          cell.alignment = { 
+            vertical: 'middle'
+          };
+        }
+      }
+
+      // Tüm worksheet'e varsayılan font ayarla
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          if (!cell.font || !cell.font.name) {
+            cell.font = { 
+              ...cell.font, 
+              name: 'Tahoma', 
+              size: cell.font?.size || 11 
+            };
+          }
+          // Eğer hizalama ayarlanmamışsa dikey ortala
+          if (!cell.alignment) {
+            cell.alignment = { 
+              vertical: 'middle'
+            };
+          }
+        });
+      });
 
       // Dosya adını oluştur
       const fileName = `Teklif_${offerData.offer_no || 'w'}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
       // Excel dosyasını indir
-      XLSX.writeFile(wb, fileName);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
       
       NotificationService.success('Başarılı', 'Excel dosyası indirildi');
       
