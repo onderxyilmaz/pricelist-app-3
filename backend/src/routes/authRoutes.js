@@ -21,18 +21,19 @@ async function authRoutes(fastify, options) {
   fastify.post('/register', async (request, reply) => {
     try {
       const { firstName, lastName, email, password } = request.body;
-      
-      if (!firstName || !lastName || !email || !password) {
+      // username'i email'den türet (ör: email'in @ öncesi kısmı)
+      const username = email ? email.split('@')[0] : null;
+      if (!firstName || !lastName || !email || !password || !username) {
         return { success: false, message: 'Tüm alanlar gereklidir' };
       }
 
       const client = await fastify.pg.connect();
-      
-      // Check if email already exists
-      const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+
+      // Check if email or username already exists
+      const existingUser = await client.query('SELECT id FROM users WHERE email = $1 OR username = $2', [email, username]);
       if (existingUser.rows.length > 0) {
         client.release();
-        return { success: false, message: 'Bu e-mail adresi zaten kullanımda' };
+        return { success: false, message: 'Bu e-mail veya kullanıcı adı zaten kullanımda' };
       }
 
       // Check if this is the first user (will be super admin)
@@ -46,10 +47,10 @@ async function authRoutes(fastify, options) {
 
       // Insert new user
       const result = await client.query(
-        'INSERT INTO users (first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, first_name, last_name, email, avatar_filename, role',
-        [firstName, lastName, email, hashedPassword, role]
+        'INSERT INTO users (username, first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, first_name, last_name, email, avatar_filename, role',
+        [username, firstName, lastName, email, hashedPassword, role]
       );
-      
+
       client.release();
       return { success: true, user: result.rows[0] };
     } catch (err) {

@@ -100,11 +100,16 @@ const Pricelist = () => {
     console.log('Form values:', values); // Debug log
     
     // ColorPicker object değerini hex string'e çevir (alpha kanalı olmadan)
+    let colorValue = typeof values.color === 'object' 
+      ? values.color.toHex() // Alpha olmadan sadece HEX (#RRGGBB)
+      : values.color;
+    // Renk kodunun başında '#' yoksa ekle
+    if (typeof colorValue === 'string' && !colorValue.startsWith('#')) {
+      colorValue = `#${colorValue}`;
+    }
     const submissionData = {
       ...values,
-      color: typeof values.color === 'object' 
-        ? values.color.toHex() // Alpha olmadan sadece HEX (#RRGGBB)
-        : values.color
+      color: colorValue
     };
     
     console.log('Submission data:', submissionData); // Debug log
