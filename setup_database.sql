@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    avatar_filename VARCHAR(255),
     role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('super_admin', 'admin', 'user')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -23,6 +26,8 @@ CREATE TABLE IF NOT EXISTS pricelists (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     currency VARCHAR(10) DEFAULT 'EUR',
+    description TEXT,
+    color VARCHAR(20) DEFAULT '#1890ff',
     created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -192,32 +197,3 @@ ALTER TABLE offers ALTER COLUMN company DROP NOT NULL;
 -- ====================================
 
 -- Kurulum özeti
-\echo ''
-\echo '=================================='
-\echo 'DATABASE SETUP COMPLETED!'
-\echo '=================================='
-\echo ''
-\echo 'Created tables:'
-\echo '  ✓ users'
-\echo '  ✓ pricelists'
-\echo '  ✓ pricelist_items'
-\echo '  ✓ offers'
-\echo '  ✓ companies'
-\echo '  ✓ offer_items'
-\echo ''
-\echo 'Added columns:'
-\echo '  ✓ pricelist_items.stock'
-\echo '  ✓ pricelists.color'
-\echo '  ✓ users.avatar'
-\echo ''
-\echo 'Created indexes and triggers for:'
-\echo '  ✓ Performance optimization'
-\echo '  ✓ Auto-update timestamps'
-\echo ''
-\echo 'Next steps:'
-\echo '  1. Start backend: cd backend && npm run dev'
-\echo '  2. Start frontend: cd frontend && npm run dev'
-\echo '  3. Register first user (will be Super Admin)'
-\echo ''
-\echo 'Happy coding! 🚀'
-\echo ''
