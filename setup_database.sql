@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS offers (
     parent_offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
     company VARCHAR(255),
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent')),
+    customer_response VARCHAR(20) DEFAULT NULL CHECK (customer_response IN ('accepted', 'rejected', NULL)),
     created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     revised_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -191,6 +192,11 @@ CREATE INDEX IF NOT EXISTS idx_offer_items_pricelist_id ON offer_items(pricelist
 
 -- Make company column nullable in offers table
 ALTER TABLE offers ALTER COLUMN company DROP NOT NULL;
+
+-- Add customer_response column to offers table
+ALTER TABLE offers 
+ADD COLUMN IF NOT EXISTS customer_response VARCHAR(20) DEFAULT NULL 
+CHECK (customer_response IN ('accepted', 'rejected', NULL));
 
 -- ====================================
 -- KURULUM TAMAMLANDI!

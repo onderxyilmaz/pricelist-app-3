@@ -23,10 +23,35 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
+    // Başarılı response'larda da kontrol et
+    if (response.data && response.data.success === false && 
+        response.data.message === 'Kullanıcı bulunamadı') {
+      console.warn('User not found in database (success:false), clearing localStorage');
+      localStorage.removeItem('user');
+      
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
     return response;
   },
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    
+    // Eğer kullanıcı bulunamadı hatası gelirse localStorage'ı temizle
+    if (error.response?.status === 404 || 
+        error.response?.data?.message === 'Kullanıcı bulunamadı' ||
+        (error.response?.data?.success === false && error.response?.data?.message === 'Kullanıcı bulunamadı')) {
+      
+      console.warn('User not found in database (error), clearing localStorage');
+      localStorage.removeItem('user');
+      
+      // Eğer login sayfasında değilsek login sayfasına yönlendir
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

@@ -243,7 +243,7 @@ async function offerRoutes(fastify, options) {
       const result = await client.query(`
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
-          o.company, o.status, o.parent_offer_id,
+          o.company, o.status, o.customer_response, o.parent_offer_id,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o
@@ -268,7 +268,7 @@ async function offerRoutes(fastify, options) {
       const offerResult = await client.query(`
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
-          o.company, o.status, o.parent_offer_id, o.created_by,
+          o.company, o.status, o.customer_response, o.parent_offer_id, o.created_by,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o
@@ -432,7 +432,7 @@ async function offerRoutes(fastify, options) {
   fastify.put('/offers/:id', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { offer_no, company, revision_no, status, parent_offer_id } = request.body;
+      const { offer_no, company, revision_no, status, parent_offer_id, customer_response } = request.body;
       
       if (!offer_no) {
         return { success: false, message: 'Teklif No gereklidir' };
@@ -471,10 +471,16 @@ async function offerRoutes(fastify, options) {
           `, [company.trim()]);
         }
 
+        // Eğer status 'draft'a döndürülüyorsa customer_response'u sıfırla
+        let finalCustomerResponse = customer_response !== undefined ? customer_response : existingOffer.rows[0].customer_response;
+        if (status === 'draft' && existingOffer.rows[0].status === 'sent') {
+          finalCustomerResponse = null;
+        }
+
         const updateQuery = `
           UPDATE offers 
-          SET offer_no = $1, company = $2, revision_no = $3, status = $4, parent_offer_id = $5, revised_at = CURRENT_TIMESTAMP
-          WHERE id = $6 
+          SET offer_no = $1, company = $2, revision_no = $3, status = $4, parent_offer_id = $5, customer_response = $6, revised_at = CURRENT_TIMESTAMP
+          WHERE id = $7 
           RETURNING *
         `;
         
@@ -484,6 +490,7 @@ async function offerRoutes(fastify, options) {
           revision_no || existingOffer.rows[0].revision_no,
           status || existingOffer.rows[0].status || 'draft',
           parent_offer_id || existingOffer.rows[0].parent_offer_id,
+          finalCustomerResponse,
           id
         ]);
         

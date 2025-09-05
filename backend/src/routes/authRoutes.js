@@ -99,10 +99,11 @@ async function authRoutes(fastify, options) {
   fastify.get('/user/:id', async (request, reply) => {
     try {
       const { id } = request.params;
+      const userId = parseInt(id); // Convert to integer
       const client = await fastify.pg.connect();
       const result = await client.query(
         'SELECT id, first_name, last_name, email, avatar_filename, role FROM users WHERE id = $1',
-        [id]
+        [userId]
       );
       client.release();
       
@@ -122,7 +123,18 @@ async function authRoutes(fastify, options) {
       const { id } = request.params;
       const { firstName, lastName, avatarFilename, password } = request.body;
       
+      // Convert ID to integer
+      const userId = parseInt(id);
+      
       const client = await fastify.pg.connect();
+      
+      // Check if user exists first
+      const checkUser = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+      
+      if (checkUser.rows.length === 0) {
+        client.release();
+        return { success: false, message: 'Kullanıcı bulunamadı' };
+      }
       
       let query, params;
       if (password) {
@@ -130,11 +142,11 @@ async function authRoutes(fastify, options) {
         const saltRounds = 12;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         query = 'UPDATE users SET first_name = $1, last_name = $2, avatar_filename = $3, password = $4, updated_at = NOW() WHERE id = $5 RETURNING id, first_name, last_name, email, avatar_filename, role';
-        params = [firstName, lastName, avatarFilename, hashedPassword, id];
+        params = [firstName, lastName, avatarFilename, hashedPassword, userId];
       } else {
         // Şifre güncellemesi yoksa
         query = 'UPDATE users SET first_name = $1, last_name = $2, avatar_filename = $3, updated_at = NOW() WHERE id = $4 RETURNING id, first_name, last_name, email, avatar_filename, role';
-        params = [firstName, lastName, avatarFilename, id];
+        params = [firstName, lastName, avatarFilename, userId];
       }
       
       const result = await client.query(query, params);
@@ -146,6 +158,7 @@ async function authRoutes(fastify, options) {
 
       return { success: true, user: result.rows[0] };
     } catch (err) {
+      console.error('Update user error:', err);
       return { success: false, message: err.message };
     }
   });
@@ -154,6 +167,7 @@ async function authRoutes(fastify, options) {
   fastify.post('/upload-avatar/:id', async (request, reply) => {
     try {
       const { id } = request.params;
+      const userId = parseInt(id); // Convert to integer
       const data = await request.file();
       
       if (!data) {
@@ -167,14 +181,14 @@ async function authRoutes(fastify, options) {
 
       // Generate unique filename
       const fileExtension = path.extname(data.filename);
-      const uniqueFilename = `avatar_${id}_${crypto.randomUUID()}${fileExtension}`;
+      const uniqueFilename = `avatar_${userId}_${crypto.randomUUID()}${fileExtension}`;
       const uploadPath = path.join(__dirname, '../../uploads/avatars', uniqueFilename);
       
       // Get current user to check for existing avatar
       const client = await fastify.pg.connect();
       const userResult = await client.query(
         'SELECT avatar_filename FROM users WHERE id = $1',
-        [id]
+        [userId]
       );
       
       // Delete old avatar if exists
@@ -199,12 +213,13 @@ async function authRoutes(fastify, options) {
   fastify.delete('/avatar/:id', async (request, reply) => {
     try {
       const { id } = request.params;
+      const userId = parseInt(id); // Convert to integer
       const client = await fastify.pg.connect();
       
       // Get current avatar filename
       const userResult = await client.query(
         'SELECT avatar_filename FROM users WHERE id = $1',
-        [id]
+        [userId]
       );
       
       if (userResult.rows.length > 0 && userResult.rows[0].avatar_filename) {
