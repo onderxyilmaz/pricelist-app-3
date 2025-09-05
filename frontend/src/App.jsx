@@ -92,7 +92,26 @@ function App() {
       // Check if user is already logged in
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        const userData = JSON.parse(savedUser);
+        console.log('Found saved user:', userData);
+        
+        // Validate user exists in database
+        try {
+          const userResponse = await authApi.getUser(userData.id);
+          if (userResponse.data.success) {
+            console.log('User validated successfully');
+            setUser(userData);
+          } else {
+            console.warn('User validation failed:', userResponse.data.message);
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        } catch (error) {
+          console.warn('User validation error, clearing localStorage:', error);
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+        
         setLoading(false);
         return;
       }

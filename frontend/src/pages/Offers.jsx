@@ -18,7 +18,10 @@ import {
   Steps,
   Collapse,
   Checkbox,
-  InputNumber as AntInputNumber
+  InputNumber as AntInputNumber,
+  DatePicker,
+  Row,
+  Col
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -27,7 +30,13 @@ import {
   SearchOutlined,
   BranchesOutlined,
   SendOutlined,
-  FileExcelOutlined
+  FileExcelOutlined,
+  FilePdfOutlined,
+  FilterOutlined,
+  ClearOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  QuestionCircleOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import ExcelJS from 'exceljs';
@@ -38,6 +47,8 @@ const { Search } = Input;
 const { Option } = Select;
 const { Step } = Steps;
 const { Panel } = Collapse;
+const { RangePicker } = DatePicker;
+import dayjs from 'dayjs';
 
 // Utility functions
 const formatCurrency = (amount, currency = 'TRY') => {
@@ -63,6 +74,18 @@ const Offers = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
+  
+  // Filtreleme state'leri
+  const [filters, setFilters] = useState({
+    status: 'all', // all, draft, sent
+    company: 'all',
+    createdBy: 'all',
+    offerNo: '',
+    dateRange: null,
+    customerResponse: 'all' // all, accepted, rejected, pending
+  });
+  const [availableCompanies, setAvailableCompanies] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   
   // Wizard states
   const [currentStep, setCurrentStep] = useState(0);
@@ -119,13 +142,95 @@ const Offers = () => {
       const response = await axios.get('http://localhost:3001/api/offers');
       if (response.data.success) {
         setOffers(response.data.offers);
-        setFilteredOffers(response.data.offers);
+        
+        // Filtreleme seçenekleri için unique değerleri topla
+        const companies = [...new Set(response.data.offers.map(o => o.company).filter(Boolean))].sort();
+        const users = [...new Set(response.data.offers.map(o => o.created_by_name).filter(Boolean))].sort();
+        
+        setAvailableCompanies(companies);
+        setAvailableUsers(users);
+        
+        // Filtreleri uygula
+        applyFilters(response.data.offers);
       }
     } catch (error) {
       NotificationService.error('Hata', 'Teklifler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filtreleri uygula
+  const applyFilters = (offerList = offers) => {
+    let filtered = [...offerList];
+
+    // Durum filtresi
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(offer => (offer.status || 'draft') === filters.status);
+    }
+
+    // Firma filtresi
+    if (filters.company !== 'all') {
+      filtered = filtered.filter(offer => offer.company === filters.company);
+    }
+
+    // Hazırlayan filtresi
+    if (filters.createdBy !== 'all') {
+      filtered = filtered.filter(offer => offer.created_by_name === filters.createdBy);
+    }
+
+    // Teklif No filtresi
+    if (filters.offerNo.trim()) {
+      const searchTerm = filters.offerNo.toLowerCase();
+      filtered = filtered.filter(offer => 
+        offer.offer_no.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Tarih aralığı filtresi
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      const [startDate, endDate] = filters.dateRange;
+      filtered = filtered.filter(offer => {
+        const offerDate = dayjs(offer.created_at);
+        return offerDate.isAfter(startDate.startOf('day')) && offerDate.isBefore(endDate.endOf('day'));
+      });
+    }
+
+    // Müşteri yanıtı filtresi
+    if (filters.customerResponse !== 'all') {
+      if (filters.customerResponse === 'pending') {
+        filtered = filtered.filter(offer => !offer.customer_response);
+      } else {
+        filtered = filtered.filter(offer => offer.customer_response === filters.customerResponse);
+      }
+    }
+
+    setFilteredOffers(filtered);
+  };
+
+  // Filtre değiştiğinde
+  useEffect(() => {
+    applyFilters();
+  }, [filters]);
+
+  // Filtreleri temizle
+  const clearFilters = () => {
+    setFilters({
+      status: 'all',
+      company: 'all',
+      createdBy: 'all',
+      offerNo: '',
+      dateRange: null,
+      customerResponse: 'all'
+    });
+  };
+
+  // Filtre değiştirme fonksiyonu
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   const fetchNextNumber = async () => {
@@ -188,15 +293,6 @@ const Offers = () => {
       console.error('Pricelists fetch error:', error);
       NotificationService.error('Hata', 'Fiyat listeleri yüklenirken hata oluştu');
     }
-  };
-
-  const handleSearch = (value) => {
-    const filtered = offers.filter(offer => 
-      offer.offer_no.toLowerCase().includes(value.toLowerCase()) ||
-      (offer.company && offer.company.toLowerCase().includes(value.toLowerCase())) ||
-      (offer.created_by_name && offer.created_by_name.toLowerCase().includes(value.toLowerCase()))
-    );
-    setFilteredOffers(filtered);
   };
 
   const handleCreate = async () => {
@@ -870,6 +966,35 @@ const Offers = () => {
     }
   };
 
+  // Müşteri yanıtını güncelle
+  const handleCustomerResponse = async (offer, response) => {
+    try {
+      const updateResponse = await axios.put(`http://localhost:3001/api/offers/${offer.id}`, {
+        offer_no: offer.offer_no,
+        company: offer.company,
+        customer_response: response
+      });
+
+      if (updateResponse.data.success) {
+        const responseText = response === 'accepted' ? 'kabul edildi' : 
+                           response === 'rejected' ? 'reddedildi' : 
+                           'yanıt sıfırlandı';
+        NotificationService.success('Başarılı', `Teklif ${responseText} olarak işaretlendi`);
+        fetchOffers();
+        
+        // Popconfirm'ı kapat
+        setTimeout(() => {
+          document.body.click();
+        }, 100);
+      } else {
+        NotificationService.error('Hata', updateResponse.data.message || 'Müşteri yanıtı güncellenemedi');
+      }
+    } catch (error) {
+      console.error('Customer response error:', error);
+      NotificationService.error('Hata', 'Müşteri yanıtı güncellenirken hata oluştu');
+    }
+  };
+
   const handleSubmit = async (values) => {
     try {
       if (editingOffer) {
@@ -1194,6 +1319,41 @@ const Offers = () => {
       },
     },
     {
+      title: 'Durum',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      sorter: (a, b) => (a.status || 'draft').localeCompare(b.status || 'draft', 'tr'),
+      render: (status) => (
+        <Tag color={status === 'sent' ? 'green' : 'blue'}>
+          {status === 'sent' ? 'Gönderildi' : 'Taslak'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Müşteri Yanıtı',
+      dataIndex: 'customer_response',
+      key: 'customer_response',
+      width: 130,
+      sorter: (a, b) => {
+        const aResponse = a.customer_response || 'pending';
+        const bResponse = b.customer_response || 'pending';
+        return aResponse.localeCompare(bResponse, 'tr');
+      },
+      render: (response) => {
+        if (!response) {
+          return <Tag icon={<QuestionCircleOutlined />} color="default">Bekliyor</Tag>;
+        }
+        if (response === 'accepted') {
+          return <Tag icon={<CheckOutlined />} color="success">Kabul</Tag>;
+        }
+        if (response === 'rejected') {
+          return <Tag icon={<CloseOutlined />} color="error">Red</Tag>;
+        }
+        return <Tag color="default">{response}</Tag>;
+      },
+    },
+    {
       title: 'Hazırlayan',
       dataIndex: 'created_by_name',
       key: 'created_by_name',
@@ -1210,9 +1370,10 @@ const Offers = () => {
     {
       title: 'İşlemler',
       key: 'actions',
-      width: 250,
+      width: 320,
       render: (_, record) => (
         <Space>
+          {/* 1. Düzenle */}
           <Button
             type="primary"
             size="small"
@@ -1220,6 +1381,8 @@ const Offers = () => {
             onClick={() => handleEdit(record)}
             title="Düzenle"
           />
+          
+          {/* 2. Revizyon Oluştur */}
           <Button
             type="default"
             size="small"
@@ -1227,6 +1390,8 @@ const Offers = () => {
             onClick={() => handleCreateRevision(record)}
             title="Revizyon Oluştur"
           />
+          
+          {/* 3. Gönderildi İşaretle */}
           <Button
             type="default"
             size="small"
@@ -1238,6 +1403,91 @@ const Offers = () => {
               borderColor: record.status === 'sent' ? '#52c41a' : '#1890ff'
             }}
           />
+          
+                            {/* 4. Müşteri Yanıtı */}
+                            <Popconfirm
+                              title={record.status === 'sent' ? "Müşteri yanıtını seçin:" : "Bu teklif henüz gönderilmemiş"}
+                              description={
+                                record.status === 'sent' ? (
+                                  <div style={{ marginTop: 8 }}>
+                                    <Button
+                                      size="small"
+                                      icon={<CheckOutlined />}
+                                      onClick={() => handleCustomerResponse(record, 'accepted')}
+                                      disabled={record.customer_response === 'accepted'}
+                                      style={{ 
+                                        marginRight: 8,
+                                        color: record.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
+                                        borderColor: record.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
+                                        backgroundColor: record.customer_response === 'accepted' ? '#f6ffed' : 'transparent'
+                                      }}
+                                    >
+                                      Kabul
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      icon={<CloseOutlined />}
+                                      onClick={() => handleCustomerResponse(record, 'rejected')}
+                                      disabled={record.customer_response === 'rejected'}
+                                      style={{ 
+                                        marginRight: 8,
+                                        color: record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                        borderColor: record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                        backgroundColor: record.customer_response === 'rejected' ? '#fff2f0' : 'transparent'
+                                      }}
+                                    >
+                                      Red
+                                    </Button>
+                                    {record.customer_response && (
+                                      <Button
+                                        size="small"
+                                        icon={<QuestionCircleOutlined />}
+                                        onClick={() => handleCustomerResponse(record, null)}
+                                        style={{ 
+                                          color: '#faad14',
+                                          borderColor: '#faad14'
+                                        }}
+                                      >
+                                        Sıfırla
+                                      </Button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                                    Önce teklifin gönderildi olarak işaretlenmesi gerekiyor.
+                                  </div>
+                                )
+                              }
+                              showCancel={false}
+                              showOk={false}
+                              okButtonProps={{ style: { display: 'none' } }}
+                              cancelButtonProps={{ style: { display: 'none' } }}
+                              trigger="click"
+                              disabled={record.status !== 'sent'}
+                            >
+                              <Button
+                                size="small"
+                                icon={
+                                  record.customer_response === 'accepted' ? <CheckOutlined /> :
+                                  record.customer_response === 'rejected' ? <CloseOutlined /> :
+                                  <QuestionCircleOutlined />
+                                }
+                                title="Müşteri Yanıtı"
+                                disabled={record.status !== 'sent'}
+                                style={{ 
+                                  color: record.status !== 'sent' ? '#d9d9d9' : 
+                                         record.customer_response === 'accepted' ? '#52c41a' : 
+                                         record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                  borderColor: record.status !== 'sent' ? '#d9d9d9' : 
+                                              record.customer_response === 'accepted' ? '#52c41a' : 
+                                              record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                  backgroundColor: record.status !== 'sent' ? '#fafafa' :
+                                                  record.customer_response === 'accepted' ? '#f6ffed' : 
+                                                  record.customer_response === 'rejected' ? '#fff2f0' : 'transparent',
+                                  cursor: record.status !== 'sent' ? 'not-allowed' : 'pointer'
+                                }}
+                              />
+                            </Popconfirm>          {/* 5. Excel'e Aktar */}
           <Button
             type="default"
             size="small"
@@ -1249,6 +1499,24 @@ const Offers = () => {
               borderColor: '#52c41a'
             }}
           />
+          
+          {/* 6. PDF'e Aktar */}
+          <Button
+            type="default"
+            size="small"
+            icon={<FilePdfOutlined />}
+            onClick={() => {
+              // TODO: PDF export fonksiyonu eklenecek
+              console.log('PDF export:', record);
+            }}
+            title="PDF'e Aktar"
+            style={{ 
+              color: '#ff4d4f',
+              borderColor: '#ff4d4f'
+            }}
+          />
+          
+          {/* 7. Sil */}
           <Popconfirm
             title="Teklifi silmek istediğinizden emin misiniz?"
             onConfirm={() => handleDelete(record.id)}
@@ -1272,14 +1540,6 @@ const Offers = () => {
     <>
       <style>
         {`
-          .sent-offer-row td {
-            background-color: #f6ffed !important;
-            border-color: #b7eb8f !important;
-          }
-          .sent-offer-row:hover td {
-            background-color: #d9f7be !important;
-          }
-          
           /* Revizyon tablosu için özel stiller */
           .ant-table-expanded-row > td {
             padding: 0 !important;
@@ -1308,15 +1568,148 @@ const Offers = () => {
       </div>
 
       <Card>
-        <div style={{ marginBottom: '16px' }}>
-          <Search
-            placeholder="Teklif ara..."
-            allowClear
-            onSearch={handleSearch}
-            onChange={(e) => handleSearch(e.target.value)}
-            style={{ width: 300 }}
-            prefix={<SearchOutlined />}
-          />
+        {/* Filtreleme Alanı */}
+        <div style={{ 
+          marginBottom: '24px',
+          padding: '16px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '6px',
+          border: '1px solid #e9ecef'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '16px',
+            fontWeight: 'bold',
+            color: '#495057'
+          }}>
+            <FilterOutlined style={{ marginRight: 8 }} />
+            Filtreler
+          </div>
+          
+          <Row gutter={[16, 16]}>
+            {/* İlk satır: Teklif No, Durum, Müşteri Yanıtı, Hazırlayan */}
+            <Col xs={24} sm={12} md={6}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Teklif No</div>
+              <Input
+                value={filters.offerNo}
+                onChange={(e) => handleFilterChange('offerNo', e.target.value)}
+                placeholder="Teklif no ara..."
+                allowClear
+                prefix={<SearchOutlined />}
+              />
+            </Col>
+            
+            <Col xs={24} sm={12} md={6}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Durum</div>
+              <Select
+                value={filters.status}
+                onChange={(value) => handleFilterChange('status', value)}
+                style={{ width: '100%' }}
+                placeholder="Tüm Durumlar"
+              >
+                <Option value="all">Tüm Durumlar</Option>
+                <Option value="draft">Taslak</Option>
+                <Option value="sent">Gönderildi</Option>
+              </Select>
+            </Col>
+            
+            <Col xs={24} sm={12} md={6}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Müşteri Yanıtı</div>
+              <Select
+                value={filters.customerResponse}
+                onChange={(value) => handleFilterChange('customerResponse', value)}
+                style={{ width: '100%' }}
+                placeholder="Tüm Yanıtlar"
+              >
+                <Option value="all">Tüm Yanıtlar</Option>
+                <Option value="pending">Bekliyor</Option>
+                <Option value="accepted">Kabul Edildi</Option>
+                <Option value="rejected">Reddedildi</Option>
+              </Select>
+            </Col>
+            
+            <Col xs={24} sm={12} md={6}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Hazırlayan</div>
+              <Select
+                value={filters.createdBy}
+                onChange={(value) => handleFilterChange('createdBy', value)}
+                style={{ width: '100%' }}
+                placeholder="Tüm Kullanıcılar"
+                showSearch
+                optionFilterProp="children"
+              >
+                <Option value="all">Tüm Kullanıcılar</Option>
+                {availableUsers.map(user => (
+                  <Option key={user} value={user}>{user}</Option>
+                ))}
+              </Select>
+            </Col>
+          </Row>
+          
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            {/* İkinci satır: Firma, Oluşturma Tarihi, Temizle butonu */}
+            <Col xs={24} sm={12} md={8}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Firma</div>
+              <Select
+                value={filters.company}
+                onChange={(value) => handleFilterChange('company', value)}
+                style={{ width: '100%' }}
+                placeholder="Tüm Firmalar"
+                showSearch
+                optionFilterProp="children"
+              >
+                <Option value="all">Tüm Firmalar</Option>
+                {availableCompanies.map(company => (
+                  <Option key={company} value={company}>{company}</Option>
+                ))}
+              </Select>
+            </Col>
+            
+            <Col xs={24} sm={12} md={8}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Oluşturma Tarihi</div>
+              <RangePicker
+                value={filters.dateRange}
+                onChange={(dates) => handleFilterChange('dateRange', dates)}
+                style={{ width: '100%' }}
+                placeholder={['Başlangıç', 'Bitiş']}
+                format="DD/MM/YYYY"
+              />
+            </Col>
+            
+            <Col xs={24} sm={12} md={8}>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>&nbsp;</div>
+              <Button
+                icon={<ClearOutlined />}
+                onClick={clearFilters}
+                style={{ width: '100%' }}
+              >
+                Temizle
+              </Button>
+            </Col>
+          </Row>
+          
+          {/* Aktif filtre sayısı gösterimi */}
+          {(() => {
+            const activeFilters = [
+              filters.status !== 'all' ? 'Durum' : null,
+              filters.company !== 'all' ? 'Firma' : null,
+              filters.createdBy !== 'all' ? 'Hazırlayan' : null,
+              filters.offerNo.trim() ? 'Teklif No' : null,
+              filters.dateRange ? 'Tarih' : null
+            ].filter(Boolean);
+            
+            return activeFilters.length > 0 && (
+              <div style={{ 
+                marginTop: '12px', 
+                fontSize: '12px', 
+                color: '#6c757d' 
+              }}>
+                <strong>{filteredOffers.length}</strong> teklif gösteriliyor 
+                ({activeFilters.length} filtre aktif: {activeFilters.join(', ')})
+              </div>
+            );
+          })()}
         </div>
 
         <Table
@@ -1324,7 +1717,6 @@ const Offers = () => {
           dataSource={parentOffers}
           rowKey="id"
           loading={loading}
-          rowClassName={(record) => record.status === 'sent' ? 'sent-offer-row' : ''}
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
@@ -1382,6 +1774,41 @@ const Offers = () => {
                         render: (date) => new Date(date).toLocaleDateString('tr-TR'),
                       },
                       {
+                        title: 'Durum',
+                        dataIndex: 'status',
+                        key: 'status',
+                        width: 120,
+                        sorter: (a, b) => (a.status || 'draft').localeCompare(b.status || 'draft', 'tr'),
+                        render: (status) => (
+                          <Tag color={status === 'sent' ? 'green' : 'blue'}>
+                            {status === 'sent' ? 'Gönderildi' : 'Taslak'}
+                          </Tag>
+                        ),
+                      },
+                      {
+                        title: 'Müşteri Yanıtı',
+                        dataIndex: 'customer_response',
+                        key: 'customer_response',
+                        width: 130,
+                        sorter: (a, b) => {
+                          const aResponse = a.customer_response || 'pending';
+                          const bResponse = b.customer_response || 'pending';
+                          return aResponse.localeCompare(bResponse, 'tr');
+                        },
+                        render: (response) => {
+                          if (!response) {
+                            return <Tag icon={<QuestionCircleOutlined />} color="default">Bekliyor</Tag>;
+                          }
+                          if (response === 'accepted') {
+                            return <Tag icon={<CheckOutlined />} color="success">Kabul</Tag>;
+                          }
+                          if (response === 'rejected') {
+                            return <Tag icon={<CloseOutlined />} color="error">Red</Tag>;
+                          }
+                          return <Tag color="default">{response}</Tag>;
+                        },
+                      },
+                      {
                         title: 'Hazırlayan',
                         dataIndex: 'created_by_name',
                         key: 'created_by_name',
@@ -1396,9 +1823,10 @@ const Offers = () => {
                       {
                         title: 'İşlemler',
                         key: 'actions',
-                        width: 250,
+                        width: 320,
                         render: (_, revRecord) => (
                           <Space>
+                            {/* 1. Düzenle */}
                             <Button
                               type="primary"
                               size="small"
@@ -1406,6 +1834,8 @@ const Offers = () => {
                               onClick={() => handleEdit(revRecord)}
                               title="Düzenle"
                             />
+                            
+                            {/* 2. Revizyon Oluştur */}
                             <Button
                               type="default"
                               size="small"
@@ -1413,6 +1843,8 @@ const Offers = () => {
                               onClick={() => handleCreateRevision(revRecord)}
                               title="Revizyon Oluştur"
                             />
+                            
+                            {/* 3. Gönderildi İşaretle */}
                             <Button
                               type="default"
                               size="small"
@@ -1424,6 +1856,93 @@ const Offers = () => {
                                 borderColor: revRecord.status === 'sent' ? '#52c41a' : '#1890ff'
                               }}
                             />
+                            
+                            {/* 4. Müşteri Yanıtı */}
+                            <Popconfirm
+                              title={revRecord.status === 'sent' ? "Müşteri yanıtını seçin:" : "Bu teklif henüz gönderilmemiş"}
+                              description={
+                                revRecord.status === 'sent' ? (
+                                  <div style={{ marginTop: 8 }}>
+                                    <Button
+                                      size="small"
+                                      icon={<CheckOutlined />}
+                                      onClick={() => handleCustomerResponse(revRecord, 'accepted')}
+                                      disabled={revRecord.customer_response === 'accepted'}
+                                      style={{ 
+                                        marginRight: 8,
+                                        color: revRecord.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
+                                        borderColor: revRecord.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
+                                        backgroundColor: revRecord.customer_response === 'accepted' ? '#f6ffed' : 'transparent'
+                                      }}
+                                    >
+                                      Kabul
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      icon={<CloseOutlined />}
+                                      onClick={() => handleCustomerResponse(revRecord, 'rejected')}
+                                      disabled={revRecord.customer_response === 'rejected'}
+                                      style={{ 
+                                        marginRight: 8,
+                                        color: revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                        borderColor: revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                        backgroundColor: revRecord.customer_response === 'rejected' ? '#fff2f0' : 'transparent'
+                                      }}
+                                    >
+                                      Red
+                                    </Button>
+                                    {revRecord.customer_response && (
+                                      <Button
+                                        size="small"
+                                        icon={<QuestionCircleOutlined />}
+                                        onClick={() => handleCustomerResponse(revRecord, null)}
+                                        style={{ 
+                                          color: '#faad14',
+                                          borderColor: '#faad14'
+                                        }}
+                                      >
+                                        Sıfırla
+                                      </Button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                                    Önce teklifin gönderildi olarak işaretlenmesi gerekiyor.
+                                  </div>
+                                )
+                              }
+                              showCancel={false}
+                              showOk={false}
+                              okButtonProps={{ style: { display: 'none' } }}
+                              cancelButtonProps={{ style: { display: 'none' } }}
+                              trigger="click"
+                              disabled={revRecord.status !== 'sent'}
+                            >
+                              <Button
+                                size="small"
+                                icon={
+                                  revRecord.customer_response === 'accepted' ? <CheckOutlined /> :
+                                  revRecord.customer_response === 'rejected' ? <CloseOutlined /> :
+                                  <QuestionCircleOutlined />
+                                }
+                                title="Müşteri Yanıtı"
+                                disabled={revRecord.status !== 'sent'}
+                                style={{ 
+                                  color: revRecord.status !== 'sent' ? '#d9d9d9' : 
+                                         revRecord.customer_response === 'accepted' ? '#52c41a' : 
+                                         revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                  borderColor: revRecord.status !== 'sent' ? '#d9d9d9' : 
+                                              revRecord.customer_response === 'accepted' ? '#52c41a' : 
+                                              revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                                  backgroundColor: revRecord.status !== 'sent' ? '#fafafa' :
+                                                  revRecord.customer_response === 'accepted' ? '#f6ffed' : 
+                                                  revRecord.customer_response === 'rejected' ? '#fff2f0' : 'transparent',
+                                  cursor: revRecord.status !== 'sent' ? 'not-allowed' : 'pointer'
+                                }}
+                              />
+                            </Popconfirm>
+                            
+                            {/* 5. Excel'e Aktar */}
                             <Button
                               type="default"
                               size="small"
@@ -1435,6 +1954,24 @@ const Offers = () => {
                                 borderColor: '#52c41a'
                               }}
                             />
+                            
+                            {/* 6. PDF'e Aktar */}
+                            <Button
+                              type="default"
+                              size="small"
+                              icon={<FilePdfOutlined />}
+                              onClick={() => {
+                                // TODO: PDF export fonksiyonu eklenecek
+                                console.log('PDF export:', revRecord);
+                              }}
+                              title="PDF'e Aktar"
+                              style={{ 
+                                color: '#ff4d4f',
+                                borderColor: '#ff4d4f'
+                              }}
+                            />
+                            
+                            {/* 7. Sil */}
                             <Popconfirm
                               title="Revizyonu silmek istediğinizden emin misiniz?"
                               onConfirm={() => handleDelete(revRecord.id)}
@@ -1455,7 +1992,6 @@ const Offers = () => {
                     ]}
                     dataSource={revisions}
                     rowKey="id"
-                    rowClassName={(record) => record.status === 'sent' ? 'sent-offer-row' : ''}
                     pagination={false}
                     size="small"
                     style={{ 
