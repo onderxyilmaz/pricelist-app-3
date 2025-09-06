@@ -239,20 +239,6 @@ const ImportExcel = () => {
         setSheetAssignments(assignments);
         setCurrentStep(1);
         
-        NotificationService.success(
-        'Import Başarılı', 
-        `${tasksToImport.length} yeni ürün eklendi${updateTasks.length > 0 ? `, ${updateTasks.length} ürüne ad/açıklama eklendi` : ''}`
-      );
-      
-      // Reset form to initial state
-      setCurrentStep(0);
-      setExcelFile(null);
-      setWorkbook(null);
-      setSheetData({});
-      setSelectedRows({});
-      setSheetAssignments({});
-      setImporting(false);
-      setImportProgress(0);
       } catch (error) {
         console.error('Excel parse error:', error);
         NotificationService.error('Hata', 'Excel dosyası okunamadı');
@@ -334,7 +320,8 @@ const ImportExcel = () => {
               pricelistId,
               item: {
                 product_id: item.product_id || '',
-                name: item.name || 'İsimsiz Ürün',
+                name_tr: item.name_tr || '',
+                name_en: item.name_en || '',
                 description_tr: item.description_tr || '',
                 description_en: item.description_en || '',
                 stock: item.stock || 0,
@@ -492,10 +479,10 @@ const ImportExcel = () => {
               // Mevcut ürün bilgilerini koru, sadece eksik açıklama ve adları ekle
               const updatedItem = {
                 product_id: existingItem.product_id,
-                name_tr: existingItem.name_tr || item.name_tr,
-                name_en: existingItem.name_en || item.name_en,
-                description_tr: existingItem.description_tr || item.description_tr,
-                description_en: existingItem.description_en || item.description_en,
+                name_tr: item.name_tr || existingItem.name_tr,
+                name_en: item.name_en || existingItem.name_en,
+                description_tr: item.description_tr || existingItem.description_tr,
+                description_en: item.description_en || existingItem.description_en,
                 price: existingItem.price,
                 stock: existingItem.stock,
                 unit: existingItem.unit
