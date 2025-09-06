@@ -48,6 +48,7 @@ const ImportExcel = () => {
   const [sheetAssignments, setSheetAssignments] = useState({});
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState('tr'); // 'tr' veya 'en'
 
   useEffect(() => {
     document.title = 'Price List App v3 - Import Excel';
@@ -175,24 +176,31 @@ const ImportExcel = () => {
               const dataRows = filteredData.slice(headerRowIndex + 1);
               
               const rows = dataRows.map((row, index) => {
+                // Açıklama alanını seçilen dile göre ata
+                const description = columnMapping.product_description !== undefined ? (row[columnMapping.product_description] || '') : '';
+                // Ürün adını seçilen dile göre ata
+                const productName = row[columnMapping.product_name] || `Ürün ${index + 1}`;
+                
                 return {
                   key: index,
                   product_id: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || '') : `AUTO-${index + 1}`,
-                  name: row[columnMapping.product_name] || `Ürün ${index + 1}`,
-                  description: columnMapping.product_description !== undefined ? (row[columnMapping.product_description] || '') : '',
+                  name_tr: selectedLanguage === 'tr' ? productName : '',
+                  name_en: selectedLanguage === 'en' ? productName : '',
+                  description_tr: selectedLanguage === 'tr' ? description : '',
+                  description_en: selectedLanguage === 'en' ? description : '',
                   stock: columnMapping.stock !== undefined ? (parseInt(row[columnMapping.stock]) || 0) : 0,
                   price: parseFloat(row[columnMapping.price]) || 0,
                   // Display kolonları (tablo için)
                   col_0: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || `AUTO-${index + 1}`) : `AUTO-${index + 1}`,
-                  col_1: row[columnMapping.product_name] || '',
-                  col_2: columnMapping.product_description !== undefined ? (row[columnMapping.product_description] || '') : '',
+                  col_1: productName,
+                  col_2: description,
                   col_3: columnMapping.stock !== undefined ? (row[columnMapping.stock] || '0') : '0',
                   col_4: row[columnMapping.price] || '0'
                 };
               }).filter(row => 
                 // Boş satırları filtrele (en az product name olmalı ve geçerli fiyat)
-                row.name.toString().trim() !== '' && 
-                row.name !== `Ürün ${row.key + 1}` &&
+                row.col_1.toString().trim() !== '' && 
+                row.col_1 !== `Ürün ${row.key + 1}` &&
                 row.price > 0
               );
               
@@ -231,7 +239,20 @@ const ImportExcel = () => {
         setSheetAssignments(assignments);
         setCurrentStep(1);
         
-        NotificationService.success('Başarılı', `${validSheetCount} geçerli sheet başarıyla yüklendi`);
+        NotificationService.success(
+        'Import Başarılı', 
+        `${tasksToImport.length} yeni ürün eklendi${updateTasks.length > 0 ? `, ${updateTasks.length} ürüne ad/açıklama eklendi` : ''}`
+      );
+      
+      // Reset form to initial state
+      setCurrentStep(0);
+      setExcelFile(null);
+      setWorkbook(null);
+      setSheetData({});
+      setSelectedRows({});
+      setSheetAssignments({});
+      setImporting(false);
+      setImportProgress(0);
       } catch (error) {
         console.error('Excel parse error:', error);
         NotificationService.error('Hata', 'Excel dosyası okunamadı');
@@ -314,7 +335,8 @@ const ImportExcel = () => {
               item: {
                 product_id: item.product_id || '',
                 name: item.name || 'İsimsiz Ürün',
-                description: item.description || '',
+                description_tr: item.description_tr || '',
+                description_en: item.description_en || '',
                 stock: item.stock || 0,
                 price: item.price || 0,
                 unit: 'adet'
@@ -351,34 +373,53 @@ const ImportExcel = () => {
         console.error('Tüm fiyat listeleri alınamadı:', error);
       }
       
-      // Duplikasyon kontrolü (tüm fiyat listelerinde)
+      // Duplikasyon kontrolü ve akıllı güncelleme
       const tasksToImport = [];
       const duplicateTasks = [];
+      const updateTasks = []; // Açıklama güncellemesi için
       
       importTasks.forEach(task => {
         let isDuplicate = false;
         let duplicateLocation = null;
+        let existingItem = null;
         
         // Tüm fiyat listelerinde kontrol et
         for (const [pricelistId, pricelistData] of Object.entries(allPricelistItems)) {
           const existingItems = pricelistData.items || [];
-          const foundDuplicate = existingItems.some(existingItem => 
-            existingItem.name.toLowerCase().trim() === task.item.name.toLowerCase().trim() &&
+          const foundItem = existingItems.find(existingItem => 
             existingItem.product_id === task.item.product_id
           );
           
-          if (foundDuplicate) {
+          if (foundItem) {
             isDuplicate = true;
             duplicateLocation = pricelistData.name;
+            existingItem = foundItem;
             break;
           }
         }
         
         if (isDuplicate) {
-          duplicateTasks.push({
-            ...task,
-            duplicateLocation
-          });
+          // Akıllı güncelleme kontrolü - hem açıklama hem de ad için
+          const canUpdateDescription = 
+            (task.item.description_tr && !existingItem.description_tr) || // Türkçe açıklama eklenebilir
+            (task.item.description_en && !existingItem.description_en);   // İngilizce açıklama eklenebilir
+            
+          const canUpdateName = 
+            (task.item.name_tr && !existingItem.name_tr) || // Türkçe ad eklenebilir
+            (task.item.name_en && !existingItem.name_en);   // İngilizce ad eklenebilir
+          
+          if (canUpdateDescription || canUpdateName) {
+            updateTasks.push({
+              ...task,
+              existingItem,
+              duplicateLocation
+            });
+          } else {
+            duplicateTasks.push({
+              ...task,
+              duplicateLocation
+            });
+          }
         } else {
           tasksToImport.push(task);
         }
@@ -403,9 +444,10 @@ const ImportExcel = () => {
         })));
       }
       
-
+      // Toplam işlem sayısını hesapla
+      const totalOperations = tasksToImport.length + updateTasks.length;
       
-      if (tasksToImport.length === 0) {
+      if (totalOperations === 0) {
         NotificationService.warning('Uyarı', 'Tüm seçilen ürünler zaten mevcut, import edilecek yeni ürün yok');
         
         // Reset form to initial state
@@ -420,7 +462,7 @@ const ImportExcel = () => {
         return;
       }
       
-      // Import işlemlerini batch'ler halinde yap
+      // Önce yeni ürünleri ekle
       const batchSize = 10;
       let completed = 0;
       
@@ -432,9 +474,38 @@ const ImportExcel = () => {
             try {
               await axios.post(`http://localhost:3001/api/pricelists/${pricelistId}/items`, item);
               completed++;
-              setImportProgress((completed / tasksToImport.length) * 100);
+              setImportProgress((completed / totalOperations) * 100);
             } catch (error) {
               console.error('Import error:', error);
+            }
+          })
+        );
+      }
+      
+      // Sonra mevcut ürünleri güncelle (açıklama ekleme)
+      for (let i = 0; i < updateTasks.length; i += batchSize) {
+        const batch = updateTasks.slice(i, i + batchSize);
+        
+        await Promise.all(
+          batch.map(async ({ item, existingItem }) => {
+            try {
+              // Mevcut ürün bilgilerini koru, sadece eksik açıklama ve adları ekle
+              const updatedItem = {
+                product_id: existingItem.product_id,
+                name_tr: existingItem.name_tr || item.name_tr,
+                name_en: existingItem.name_en || item.name_en,
+                description_tr: existingItem.description_tr || item.description_tr,
+                description_en: existingItem.description_en || item.description_en,
+                price: existingItem.price,
+                stock: existingItem.stock,
+                unit: existingItem.unit
+              };
+              
+              await axios.put(`http://localhost:3001/api/items/${existingItem.id}`, updatedItem);
+              completed++;
+              setImportProgress((completed / totalOperations) * 100);
+            } catch (error) {
+              console.error('Update error:', error);
             }
           })
         );
@@ -480,6 +551,21 @@ const ImportExcel = () => {
           type="info"
           style={{ margin: '16px 0', textAlign: 'left' }}
         />
+        
+        <div style={{ margin: '24px 0', textAlign: 'center' }}>
+          <Text strong style={{ marginRight: '12px' }}>Açıklama Dili:</Text>
+          <Select
+            value={selectedLanguage}
+            onChange={setSelectedLanguage}
+            style={{ width: 200 }}
+          >
+            <Option value="tr">🇹🇷 Türkçe</Option>
+            <Option value="en">🇺🇸 İngilizce</Option>
+          </Select>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+            Excel'deki açıklamalar seçilen dile kaydedilecek
+          </div>
+        </div>
         
         <div style={{ marginTop: '24px' }}>
           <Dragger
