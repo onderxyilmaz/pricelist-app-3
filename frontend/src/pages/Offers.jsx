@@ -92,6 +92,13 @@ const Offers = () => {
   const [offerData, setOfferData] = useState({}); // Adım 1 verisi
   const [selectedItems, setSelectedItems] = useState([]); // Adım 2 verisi
   const [itemNotes, setItemNotes] = useState({}); // {itemId: note}
+  
+  // Açıklama ürünü kontrolü (adet 0 ve açıklama var)
+  const isDescriptionItem = (record) => {
+    const note = itemNotes[record.id];
+    return record.quantity === 0 && note && note.trim() !== '';
+  };
+  
   const [itemDiscounts, setItemDiscounts] = useState({}); // {itemId: discount_rate}
   const [discountData, setDiscountData] = useState({}); // Adım 3 indirim verisi: {pricelistId: [{rate: number, description: string}]}
   const [profitData, setProfitData] = useState({}); // Adım 4 kar verisi: {pricelistId: [{rate: number, description: string}]}
@@ -1186,8 +1193,10 @@ const Offers = () => {
         worksheet.addRow([]);
       });
 
-      // Genel toplam
-      const totalAmount = Object.values(groupedItems).flat().reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+      // Genel toplam - açıklama ürünlerini hariç tut
+      const totalAmount = Object.values(groupedItems).flat()
+        .filter(item => !isDescriptionItem(item))
+        .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
       worksheet.addRow(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
 
       // Sütun genişliklerini ayarla
@@ -2623,6 +2632,10 @@ const Offers = () => {
                 }}>
                   {groupItemsByPricelist().map((group) => {
                     const groupTotal = group.items.reduce((total, item) => {
+                      // Açıklama ürünlerini toplama dahil etme
+                      if (isDescriptionItem(item)) {
+                        return total;
+                      }
                       return total + (calculateItemFinalPrice(item, group.pricelist.id) * item.quantity);
                     }, 0);
 
@@ -2761,6 +2774,13 @@ const Offers = () => {
                             width: 120,
                             align: 'right',
                             render: (price, record) => {
+                              // Açıklama ürünü ise sadece birim fiyatı göster
+                              if (isDescriptionItem(record)) {
+                                return <span style={{ color: '#722ed1' }}>
+                                  {formatCurrency(record.price, group.pricelist.currency)}
+                                </span>;
+                              }
+                              
                               const finalPrice = calculateItemFinalPrice(record, group.pricelist.id);
                               const unitPrice = finalPrice / record.quantity;
                               const isManual = manualPrices[record.id] && manualPrices[record.id].enabled;
@@ -2790,6 +2810,16 @@ const Offers = () => {
                             width: 120,
                             align: 'right',
                             render: (_, record) => {
+                              // Açıklama ürünü ise açıklamayı göster
+                              if (isDescriptionItem(record)) {
+                                const note = itemNotes[record.id];
+                                return <span style={{ 
+                                  color: '#722ed1'
+                                }}>
+                                  {note}
+                                </span>;
+                              }
+                              
                               const finalPrice = calculateItemFinalPrice(record, group.pricelist.id);
                               const isManual = manualPrices[record.id] && manualPrices[record.id].enabled;
                               return <span style={{ 
@@ -2807,6 +2837,15 @@ const Offers = () => {
                             width: 120,
                             align: 'right',
                             render: (_, record) => {
+                              // Açıklama ürünü ise liste fiyatını göster
+                              if (isDescriptionItem(record)) {
+                                return <span style={{ 
+                                  color: '#bfbfbf'
+                                }}>
+                                  {formatCurrency(record.price, group.pricelist.currency)}
+                                </span>;
+                              }
+                              
                               const netPrice = calculateItemNetPrice(record, group.pricelist.id);
                               return <span style={{ color: '#bfbfbf' }}>
                                 {formatCurrency(netPrice, group.pricelist.currency)}
@@ -2820,6 +2859,15 @@ const Offers = () => {
                             width: 150,
                             align: 'right',
                             render: (total, record) => {
+                              // Açıklama ürünü ise liste fiyatını göster
+                              if (isDescriptionItem(record)) {
+                                return <span style={{ 
+                                  color: '#bfbfbf'
+                                }}>
+                                  {formatCurrency(record.price, group.pricelist.currency)}
+                                </span>;
+                              }
+                              
                               const note = record.note;
                               return note && note.trim() !== ''
                                 ? <span style={{ color: '#faad14' }}>{note}</span>
