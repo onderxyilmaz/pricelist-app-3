@@ -38,7 +38,9 @@ CREATE TABLE IF NOT EXISTS pricelist_items (
     id SERIAL PRIMARY KEY,
     pricelist_id INTEGER REFERENCES pricelists(id) ON DELETE CASCADE,
     product_id VARCHAR(50) NOT NULL,
-    name VARCHAR(200) NOT NULL,
+    name VARCHAR(200), -- Legacy field, kept for backward compatibility
+    name_tr VARCHAR(200),
+    name_en VARCHAR(200),
     description_tr TEXT,
     description_en TEXT,
     price DECIMAL(10,2) NOT NULL,
@@ -173,7 +175,9 @@ CREATE TABLE IF NOT EXISTS offer_items (
     offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
     pricelist_item_id INTEGER REFERENCES pricelist_items(id),
     product_id VARCHAR(50) NOT NULL,
-    product_name VARCHAR(200) NOT NULL,
+    product_name VARCHAR(200), -- Legacy field, kept for backward compatibility
+    product_name_tr VARCHAR(200),
+    product_name_en VARCHAR(200),
     description TEXT,
     quantity INTEGER NOT NULL,
     price DECIMAL(10,2) NOT NULL,
@@ -199,6 +203,29 @@ ALTER TABLE offers ALTER COLUMN company DROP NOT NULL;
 ALTER TABLE offers 
 ADD COLUMN IF NOT EXISTS customer_response VARCHAR(20) DEFAULT NULL 
 CHECK (customer_response IN ('accepted', 'rejected', NULL));
+
+-- 9. DUAL LANGUAGE SUPPORT (add_dual_language_names.sql)
+-- ======================================================
+
+-- Add dual language name columns to pricelist_items if they don't exist
+ALTER TABLE pricelist_items 
+ADD COLUMN IF NOT EXISTS name_tr VARCHAR(200),
+ADD COLUMN IF NOT EXISTS name_en VARCHAR(200);
+
+-- Migrate existing name data to name_tr (assuming it's Turkish by default)
+UPDATE pricelist_items 
+SET name_tr = name 
+WHERE name_tr IS NULL AND name IS NOT NULL;
+
+-- Add dual language name columns to offer_items if they don't exist
+ALTER TABLE offer_items 
+ADD COLUMN IF NOT EXISTS product_name_tr VARCHAR(200),
+ADD COLUMN IF NOT EXISTS product_name_en VARCHAR(200);
+
+-- Migrate existing product_name data to product_name_tr
+UPDATE offer_items 
+SET product_name_tr = product_name 
+WHERE product_name_tr IS NULL AND product_name IS NOT NULL;
 
 -- ====================================
 -- KURULUM TAMAMLANDI!
