@@ -98,12 +98,16 @@ const Offers = () => {
   const [manualPrices, setManualPrices] = useState({}); // Adım 5 manuel fiyat verisi: {itemId: {enabled: boolean, price: number}}
 
   // Diğer state'ler
+  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState(null);
   const [companyOptions, setCompanyOptions] = useState([]);
   const [pricelists, setPricelists] = useState([]);
   const [productFilter, setProductFilter] = useState('');
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  
+  // Language selection state
+  const [selectedLanguage, setSelectedLanguage] = useState('tr');
 
   // Step 1'de Teklif No alanına autofocus
   useEffect(() => {
@@ -363,8 +367,9 @@ const Offers = () => {
           price: item.price,
           total_price: item.total_price,
           product_id: item.product_id,
-          product_name: item.name,
-          description: itemNotes[item.id] || item.description || '',
+          product_name_tr: item.name_tr,
+          product_name_en: item.name_en,
+          description: itemNotes[item.id] || item.description_tr || item.description_en || '',
           unit: item.unit,
           currency: item.currency || 'EUR',
           pricelist_id: item.pricelist_id
@@ -454,9 +459,10 @@ const Offers = () => {
           .find(pi => pi.id === itemId);
         if (!originalItem) return item;
         if (quantity > originalItem.stock) {
+          const itemName = originalItem.name_tr || originalItem.name_en || originalItem.name;
           NotificationService.warning(
             'Stok Uyarısı', 
-            `"${originalItem.name}" ürünü için maksimum ${originalItem.stock} ${originalItem.unit} seçebilirsiniz. Mevcut stok: ${originalItem.stock}`
+            `"${itemName}" ürünü için maksimum ${originalItem.stock} ${originalItem.unit} seçebilirsiniz. Mevcut stok: ${originalItem.stock}`
           );
           return item;
         }
@@ -476,9 +482,12 @@ const Offers = () => {
     
     const filterLower = productFilter.toLowerCase();
     return items.filter(item => 
-      item.name.toLowerCase().includes(filterLower) ||
+      (item.name_tr && item.name_tr.toLowerCase().includes(filterLower)) ||
+      (item.name_en && item.name_en.toLowerCase().includes(filterLower)) ||
+      (item.name && item.name.toLowerCase().includes(filterLower)) ||
       item.product_id.toLowerCase().includes(filterLower) ||
-      (item.description && item.description.toLowerCase().includes(filterLower))
+      (item.description_tr && item.description_tr.toLowerCase().includes(filterLower)) ||
+      (item.description_en && item.description_en.toLowerCase().includes(filterLower))
     );
   };
 
@@ -785,8 +794,9 @@ const Offers = () => {
           return {
             id: item.pricelist_item_id,
             product_id: item.product_id,
-            name: item.product_name,
-            description: originalItem ? originalItem.description : '', // Orijinal ürün açıklaması
+            name_tr: item.product_name_tr,
+            name_en: item.product_name_en,
+            description: originalItem ? (originalItem.description_tr || originalItem.description_en || '') : '', // Orijinal ürün açıklaması
             price: parseFloat(item.price),
             unit: item.unit,
             currency: item.currency,
@@ -806,7 +816,7 @@ const Offers = () => {
             .find(pi => pi.id === item.pricelist_item_id);
           
           // Eğer teklif kalemindeki açıklama orijinal açıklamadan farklıysa, kullanıcının özel açıklaması
-          if (item.description && originalItem && item.description !== originalItem.description) {
+          if (item.description && originalItem && item.description !== (originalItem.description_tr || originalItem.description_en || '')) {
             notes[item.pricelist_item_id] = item.description;
           }
         });
@@ -903,8 +913,9 @@ const Offers = () => {
           return {
             id: item.pricelist_item_id,
             product_id: item.product_id,
-            name: item.product_name,
-            description: originalItem ? originalItem.description : '', // Orijinal ürün açıklaması
+            name_tr: item.product_name_tr,
+            name_en: item.product_name_en,
+            description: originalItem ? (originalItem.description_tr || originalItem.description_en || '') : '', // Orijinal ürün açıklaması
             price: parseFloat(item.price),
             unit: item.unit,
             currency: item.currency,
@@ -924,7 +935,7 @@ const Offers = () => {
             .find(pi => pi.id === item.pricelist_item_id);
           
           // Eğer teklif kalemindeki açıklama orijinal açıklamadan farklıysa, kullanıcının özel açıklaması
-          if (item.description && originalItem && item.description !== originalItem.description) {
+          if (item.description && originalItem && item.description !== (originalItem.description_tr || originalItem.description_en || '')) {
             notes[item.pricelist_item_id] = item.description;
           }
         });
@@ -1717,6 +1728,27 @@ const Offers = () => {
           dataSource={parentOffers}
           rowKey="id"
           loading={loading}
+          onRow={(record) => ({
+            onClick: (event) => {
+              // Eğer tıklanan element bir buton, input veya link ise satır tıklamasını engelle
+              const target = event.target;
+              const clickableElements = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA'];
+              const isClickableElement = clickableElements.includes(target.tagName) || 
+                                       target.closest('button') || 
+                                       target.closest('a') || 
+                                       target.closest('.ant-btn') ||
+                                       target.closest('.ant-popconfirm') ||
+                                       target.closest('.ant-dropdown');
+              
+              // Eğer buton vs. tıklanmışsa Ant Design'ın kendi expand işlemini engelle
+              if (isClickableElement) {
+                event.stopPropagation();
+              }
+            },
+            style: {
+              cursor: getRevisions(record.id).length > 0 ? 'pointer' : 'default'
+            }
+          })}
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
@@ -2004,11 +2036,18 @@ const Offers = () => {
                 </div>
               );
             },
+            expandedRowKeys: expandedRowKeys,
+            onExpand: (expanded, record) => {
+              setExpandedRowKeys(expanded 
+                ? [...expandedRowKeys, record.id] 
+                : expandedRowKeys.filter(key => key !== record.id)
+              );
+            },
             rowExpandable: (record) => {
               const revisions = getRevisions(record.id);
               return revisions.length > 0;
             },
-            expandRowByClick: false,
+            expandRowByClick: true,
           }}
         />
       </Card>
@@ -2047,6 +2086,28 @@ const Offers = () => {
               <Step title="Manuel Fiyat" description="Ürün bazında fiyat düzenleme" />
               <Step title="Ön İzleme" description="Teklif özeti ve kontrol" />
             </Steps>
+
+            {/* Language Selection for Steps 1 and above */}
+            {currentStep >= 1 && (
+              <div style={{ marginBottom: 16, textAlign: 'center' }}>
+                <Button.Group>
+                  <Button
+                    type={selectedLanguage === 'tr' ? 'primary' : 'default'}
+                    onClick={() => setSelectedLanguage('tr')}
+                    size="small"
+                  >
+                    TR
+                  </Button>
+                  <Button
+                    type={selectedLanguage === 'en' ? 'primary' : 'default'}
+                    onClick={() => setSelectedLanguage('en')}
+                    size="small"
+                  >
+                    EN
+                  </Button>
+                </Button.Group>
+              </div>
+            )}
 
             {currentStep === 0 && (
               <Form
@@ -2151,9 +2212,9 @@ const Offers = () => {
                               onChange={(e) => handleItemSelection({...item, pricelist_id: pricelist.id, currency: pricelist.currency}, e.target.checked)}
                             />
                             <div style={{ flex: 1, marginLeft: 12 }}>
-                              <div><strong>{item.name}</strong> ({item.product_id})</div>
+                              <div><strong>{selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)}</strong> ({item.product_id})</div>
                               <div style={{ fontSize: '12px', color: '#666' }}>
-                                {item.description} | {item.price} {pricelist.currency} | 
+                                {(selectedLanguage === 'tr' ? (item.description_tr || item.description_en || item.description) : (item.description_en || item.description_tr || item.description)) || 'Açıklama yok'} | {item.price} {pricelist.currency} | 
                                 <span style={{ 
                                   color: item.stock <= 0 ? '#ff4d4f' : item.stock < 10 ? '#ff4d4f' : item.stock < 50 ? '#faad14' : '#52c41a',
                                   fontWeight: 'bold',
@@ -2228,7 +2289,7 @@ const Offers = () => {
                     <div style={{ marginTop: 8 }}>
                       {selectedItems.map(item => (
                         <div key={item.id} style={{ fontSize: '12px' }}>
-                          {item.name} x {item.quantity} = {item.total_price} {item.currency}
+                          {selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)} x {item.quantity} = {item.total_price} {item.currency}
                         </div>
                       ))}
                     </div>
@@ -2487,9 +2548,12 @@ const Offers = () => {
                             borderRadius: 6
                           }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                              <div style={{ fontWeight: 'bold' }}>{selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)}</div>
                               <div style={{ fontSize: '12px', color: '#666' }}>
                                 {item.product_id} | Adet: {item.quantity}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#999', marginTop: 2 }}>
+                                {(selectedLanguage === 'tr' ? (item.description_tr || item.description_en || item.description) : (item.description_en || item.description_tr || item.description)) || 'Açıklama yok'}
                               </div>
                             </div>
                             
@@ -2661,16 +2725,27 @@ const Offers = () => {
                           },
                           {
                             title: 'Name',
-                            dataIndex: 'name',
                             key: 'name',
                             ellipsis: true,
+                            render: (_, record) => {
+                              const displayName = selectedLanguage === 'tr' 
+                                ? (record.name_tr || record.name_en || record.name || '-')
+                                : (record.name_en || record.name_tr || record.name || '-');
+                              
+                              return displayName;
+                            },
                           },
                           {
                             title: 'Description',
-                            dataIndex: 'description',
                             key: 'description',
                             ellipsis: true,
-                            render: (text) => text || '-'
+                            render: (_, record) => {
+                              const displayDescription = selectedLanguage === 'tr' 
+                                ? (record.description_tr || record.description_en || record.description || '-')
+                                : (record.description_en || record.description_tr || record.description || '-');
+                              
+                              return displayDescription;
+                            }
                           },
                           {
                             title: 'Qty',

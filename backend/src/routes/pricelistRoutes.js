@@ -88,13 +88,13 @@ async function pricelistRoutes(fastify, options) {
   fastify.post('/pricelists/:id/items', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { product_id, name, description, price, stock = 0, unit = 'adet' } = request.body;
+      const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet' } = request.body;
       const client = await fastify.pg.connect();
       
-      // Duplikasyon kontrolü - tüm fiyat listelerinde product_id ve name kombinasyonu kontrol et
+      // Duplikasyon kontrolü - tüm fiyat listelerinde product_id kontrolü
       const duplicateCheck = await client.query(
-        'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE LOWER(TRIM(pi.name)) = LOWER(TRIM($1)) AND pi.product_id = $2',
-        [name, product_id]
+        'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE pi.product_id = $1',
+        [product_id]
       );
       
       if (duplicateCheck.rows.length > 0) {
@@ -103,13 +103,14 @@ async function pricelistRoutes(fastify, options) {
         return reply.status(400).send({
           success: false,
           message: `Bu ürün zaten "${existingItem.pricelist_name}" fiyat listesinde mevcut`,
-          duplicateInPricelist: existingItem.pricelist_name
+          duplicateInPricelist: existingItem.pricelist_name,
+          existingItem: existingItem
         });
       }
       
       const result = await client.query(
-        'INSERT INTO pricelist_items (pricelist_id, product_id, name, description, price, stock, unit) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-        [id, product_id, name, description, price, stock, unit]
+        'INSERT INTO pricelist_items (pricelist_id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+        [id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit]
       );
       
       client.release();
@@ -123,13 +124,13 @@ async function pricelistRoutes(fastify, options) {
   fastify.put('/items/:id', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { product_id, name, description, price, stock, unit } = request.body;
+      const { product_id, name_tr, name_en, description_tr, description_en, price, stock, unit } = request.body;
       const client = await fastify.pg.connect();
       
-      // Duplikasyon kontrolü - diğer ürünlerle product_id ve name kombinasyonu kontrol et (kendi hariç)
+      // Duplikasyon kontrolü - diğer ürünlerle product_id kontrolü (kendi hariç)
       const duplicateCheck = await client.query(
-        'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE LOWER(TRIM(pi.name)) = LOWER(TRIM($1)) AND pi.product_id = $2 AND pi.id != $3',
-        [name, product_id, id]
+        'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE pi.product_id = $1 AND pi.id != $2',
+        [product_id, id]
       );
       
       if (duplicateCheck.rows.length > 0) {
@@ -143,8 +144,8 @@ async function pricelistRoutes(fastify, options) {
       }
       
       const result = await client.query(
-        'UPDATE pricelist_items SET product_id = $1, name = $2, description = $3, price = $4, stock = $5, unit = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
-        [product_id, name, description, price, stock, unit, id]
+        'UPDATE pricelist_items SET product_id = $1, name_tr = $2, name_en = $3, description_tr = $4, description_en = $5, price = $6, stock = $7, unit = $8, updated_at = NOW() WHERE id = $9 RETURNING *',
+        [product_id, name_tr, name_en, description_tr, description_en, price, stock, unit, id]
       );
       
       client.release();
@@ -193,8 +194,10 @@ async function pricelistRoutes(fastify, options) {
         SELECT 
           pi.id,
           pi.product_id,
-          pi.name,
-          pi.description,
+          pi.name_tr,
+          pi.name_en,
+          pi.description_tr,
+          pi.description_en,
           pi.stock,
           pi.price,
           pi.unit,
@@ -233,10 +236,10 @@ async function pricelistRoutes(fastify, options) {
       for (const pricelist of pricelistsResult.rows) {
         const itemsResult = await client.query(`
           SELECT 
-            id, product_id, name, description, price, unit, stock, created_at
+            id, product_id, name_tr, name_en, description_tr, description_en, price, unit, stock, created_at
           FROM pricelist_items 
           WHERE pricelist_id = $1 
-          ORDER BY name ASC
+          ORDER BY name_tr ASC, name_en ASC
         `, [pricelist.id]);
         
         pricelists.push({
@@ -266,7 +269,7 @@ async function pricelistRoutes(fastify, options) {
 
       // En pahalı ürün
       const maxPriceResult = await client.query(`
-        SELECT pi.name, pi.price, p.currency, p.name as pricelist_name 
+        SELECT pi.name_tr, pi.name_en, pi.price, p.currency, p.name as pricelist_name 
         FROM pricelist_items pi 
         JOIN pricelists p ON pi.pricelist_id = p.id 
         ORDER BY pi.price DESC 
@@ -275,7 +278,7 @@ async function pricelistRoutes(fastify, options) {
 
       // En ucuz ürün
       const minPriceResult = await client.query(`
-        SELECT pi.name, pi.price, p.currency, p.name as pricelist_name 
+        SELECT pi.name_tr, pi.name_en, pi.price, p.currency, p.name as pricelist_name 
         FROM pricelist_items pi 
         JOIN pricelists p ON pi.pricelist_id = p.id 
         WHERE pi.price > 0
@@ -311,7 +314,7 @@ async function pricelistRoutes(fastify, options) {
 
       // Son 5 eklenen ürün
       const recentItemsResult = await client.query(`
-        SELECT pi.name, pi.price, p.currency, p.name as pricelist_name, pi.created_at
+        SELECT pi.name_tr, pi.name_en, pi.price, p.currency, p.name as pricelist_name, pi.created_at
         FROM pricelist_items pi
         JOIN pricelists p ON pi.pricelist_id = p.id
         ORDER BY pi.created_at DESC

@@ -341,7 +341,8 @@ async function offerRoutes(fastify, options) {
           oi.*,
           p.name as pricelist_name,
           p.currency as pricelist_currency,
-          oi.product_name,
+          oi.product_name_tr,
+          oi.product_name_en,
           oi.product_id as product_code,
           oi.description,
           oi.price as unit_price,
@@ -351,7 +352,7 @@ async function offerRoutes(fastify, options) {
         FROM offer_items oi
         LEFT JOIN pricelists p ON oi.pricelist_id = p.id
         WHERE oi.offer_id = $1
-        ORDER BY p.name, oi.product_name
+        ORDER BY p.name, oi.product_name_tr, oi.product_name_en
       `, [id]);
 
       // Verileri fiyat listesi ismine göre grupla
@@ -541,7 +542,8 @@ async function offerRoutes(fastify, options) {
             price,
             total_price,
             product_id,
-            product_name,
+            product_name_tr,
+            product_name_en,
             description,
             unit,
             currency,
@@ -551,11 +553,11 @@ async function offerRoutes(fastify, options) {
           await client.query(`
             INSERT INTO offer_items (
               offer_id, pricelist_item_id, quantity, price, total_price,
-              product_id, product_name, description, unit, currency, pricelist_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           `, [
             id, pricelist_item_id, quantity, price, total_price,
-            product_id, product_name, description, unit, currency, pricelist_id
+            product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id
           ]);
         }
         

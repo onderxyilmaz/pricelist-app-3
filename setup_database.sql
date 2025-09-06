@@ -39,9 +39,11 @@ CREATE TABLE IF NOT EXISTS pricelist_items (
     pricelist_id INTEGER REFERENCES pricelists(id) ON DELETE CASCADE,
     product_id VARCHAR(50) NOT NULL,
     name VARCHAR(200) NOT NULL,
-    description TEXT,
+    description_tr TEXT,
+    description_en TEXT,
     price DECIMAL(10,2) NOT NULL,
     unit VARCHAR(20) DEFAULT 'adet',
+    stock INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

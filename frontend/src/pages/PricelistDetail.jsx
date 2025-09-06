@@ -46,6 +46,9 @@ const PricelistDetail = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [nameLanguage, setNameLanguage] = useState('tr');
+  const [descriptionLanguage, setDescriptionLanguage] = useState('tr');
+  const [tableLanguage, setTableLanguage] = useState('tr'); // Tablo görünümü için dil seçimi
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -81,25 +84,34 @@ const PricelistDetail = () => {
 
   const handleSearch = (value) => {
     const filtered = items.filter(item => 
-      item.name.toLowerCase().includes(value.toLowerCase()) ||
+      (item.name_tr && item.name_tr.toLowerCase().includes(value.toLowerCase())) ||
+      (item.name_en && item.name_en.toLowerCase().includes(value.toLowerCase())) ||
       (item.product_id && item.product_id.toLowerCase().includes(value.toLowerCase())) ||
-      (item.description && item.description.toLowerCase().includes(value.toLowerCase()))
+      (item.description_tr && item.description_tr.toLowerCase().includes(value.toLowerCase())) ||
+      (item.description_en && item.description_en.toLowerCase().includes(value.toLowerCase()))
     );
     setFilteredItems(filtered);
   };
 
   const handleCreate = () => {
     setEditingItem(null);
+    setNameLanguage('tr');
+    setDescriptionLanguage('tr');
     form.resetFields();
     setModalVisible(true);
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
+    // Mevcut verilere göre dil seçimini ayarla
+    setNameLanguage(item.name_tr ? 'tr' : 'en');
+    setDescriptionLanguage(item.description_tr ? 'tr' : 'en');
     form.setFieldsValue({
       product_id: item.product_id,
-      name: item.name,
-      description: item.description,
+      name_tr: item.name_tr,
+      name_en: item.name_en,
+      description_tr: item.description_tr,
+      description_en: item.description_en,
       price: item.price,
       stock: item.stock,
       unit: item.unit
@@ -208,16 +220,25 @@ const PricelistDetail = () => {
     },
     {
       title: 'Ürün Adı',
-      dataIndex: 'name',
       key: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name, 'tr'),
+      sorter: (a, b) => {
+        const nameA = (tableLanguage === 'tr' ? a.name_tr : a.name_en) || a.name_tr || a.name_en || '';
+        const nameB = (tableLanguage === 'tr' ? b.name_tr : b.name_en) || b.name_tr || b.name_en || '';
+        return nameA.localeCompare(nameB, 'tr');
+      },
+      render: (_, record) => {
+        const displayName = tableLanguage === 'tr' ? record.name_tr : record.name_en;
+        return displayName || record.name_tr || record.name_en || '-';
+      },
     },
     {
       title: 'Açıklama',
-      dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      render: (text) => text || '-',
+      render: (_, record) => {
+        const displayDescription = tableLanguage === 'tr' ? record.description_tr : record.description_en;
+        return displayDescription || record.description_tr || record.description_en || '-';
+      },
     },
     {
       title: 'Stok',
@@ -388,14 +409,43 @@ const PricelistDetail = () => {
 
       <Card>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Search
-            placeholder="Ürün ara... (ID, İsim, Açıklama)"
-            allowClear
-            onSearch={handleSearch}
-            onChange={(e) => handleSearch(e.target.value)}
-            style={{ width: 400 }}
-            prefix={<SearchOutlined />}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Search
+              placeholder="Ürün ara... (ID, İsim, Açıklama)"
+              allowClear
+              onSearch={handleSearch}
+              onChange={(e) => handleSearch(e.target.value)}
+              style={{ width: 400 }}
+              prefix={<SearchOutlined />}
+            />
+            
+            {/* Tablo Dil Seçicisi */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Text strong>Görünüm:</Text>
+              <Button.Group>
+                <Button 
+                  type={tableLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setTableLanguage('tr')}
+                  style={{ 
+                    backgroundColor: tableLanguage === 'tr' ? '#1890ff' : '#f0f0f0',
+                    color: tableLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
+                </Button>
+                <Button 
+                  type={tableLanguage === 'en' ? 'primary' : 'default'}
+                  onClick={() => setTableLanguage('en')}
+                  style={{ 
+                    backgroundColor: tableLanguage === 'en' ? '#52c41a' : '#f0f0f0',
+                    color: tableLanguage === 'en' ? 'white' : '#000'
+                  }}
+                >
+                  EN
+                </Button>
+              </Button.Group>
+            </div>
+          </div>
           
           <Space>
             <Button 
@@ -451,7 +501,13 @@ const PricelistDetail = () => {
       <Modal
         title={editingItem ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'}
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingItem(null);
+          setNameLanguage('tr');
+          setDescriptionLanguage('tr');
+          form.resetFields();
+        }}
         footer={null}
         width={600}
         afterOpenChange={(open) => {
@@ -481,25 +537,105 @@ const PricelistDetail = () => {
           </Form.Item>
 
           <Form.Item
-            name="name"
             label="Ürün Adı"
-            rules={[{ required: true, message: 'Ürün adı gereklidir!' }]}
           >
-            <Input 
-              placeholder="Ürün adını girin" 
-              autoComplete="off"
-            />
+            <div style={{ marginBottom: 8 }}>
+              <Button.Group>
+                <Button 
+                  type={nameLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setNameLanguage('tr')}
+                  style={{ 
+                    backgroundColor: nameLanguage === 'tr' ? '#1890ff' : '#f0f0f0',
+                    color: nameLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
+                </Button>
+                <Button 
+                  type={nameLanguage === 'en' ? 'primary' : 'default'}
+                  onClick={() => setNameLanguage('en')}
+                  style={{ 
+                    backgroundColor: nameLanguage === 'en' ? '#52c41a' : '#f0f0f0',
+                    color: nameLanguage === 'en' ? 'white' : '#000'
+                  }}
+                >
+                  EN
+                </Button>
+              </Button.Group>
+            </div>
+            
+            {/* Her iki dil için de form item'ları, sadece biri görünür */}
+            <Form.Item
+              name="name_tr"
+              style={{ marginBottom: 0, display: nameLanguage === 'tr' ? 'block' : 'none' }}
+            >
+              <Input 
+                placeholder="Türkçe ürün adı" 
+                autoComplete="off"
+              />
+            </Form.Item>
+            
+            <Form.Item
+              name="name_en"
+              style={{ marginBottom: 0, display: nameLanguage === 'en' ? 'block' : 'none' }}
+            >
+              <Input 
+                placeholder="İngilizce ürün adı" 
+                autoComplete="off"
+              />
+            </Form.Item>
           </Form.Item>
 
           <Form.Item
-            name="description"
             label="Açıklama"
           >
-            <Input.TextArea 
-              rows={3} 
-              placeholder="Ürün açıklaması (opsiyonel)" 
-              autoComplete="off"
-            />
+            <div style={{ marginBottom: 8 }}>
+              <Button.Group>
+                <Button 
+                  type={descriptionLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setDescriptionLanguage('tr')}
+                  style={{ 
+                    backgroundColor: descriptionLanguage === 'tr' ? '#1890ff' : '#f0f0f0',
+                    color: descriptionLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
+                </Button>
+                <Button 
+                  type={descriptionLanguage === 'en' ? 'primary' : 'default'}
+                  onClick={() => setDescriptionLanguage('en')}
+                  style={{ 
+                    backgroundColor: descriptionLanguage === 'en' ? '#52c41a' : '#f0f0f0',
+                    color: descriptionLanguage === 'en' ? 'white' : '#000'
+                  }}
+                >
+                  EN
+                </Button>
+              </Button.Group>
+            </div>
+            
+            {/* Her iki dil için de form item'ları, sadece biri görünür */}
+            <Form.Item
+              name="description_tr"
+              style={{ marginBottom: 0, display: descriptionLanguage === 'tr' ? 'block' : 'none' }}
+            >
+              <Input.TextArea 
+                rows={2} 
+                placeholder="Türkçe açıklama (opsiyonel)" 
+                autoComplete="off"
+              />
+            </Form.Item>
+            
+            <Form.Item
+              name="description_en"
+              style={{ marginBottom: 0, display: descriptionLanguage === 'en' ? 'block' : 'none' }}
+            >
+              <Input.TextArea 
+                rows={2} 
+                placeholder="İngilizce açıklama (opsiyonel)" 
+                autoComplete="off"
+              />
+            </Form.Item>
           </Form.Item>
 
           <Row gutter={16}>
