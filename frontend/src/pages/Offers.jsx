@@ -2793,18 +2793,6 @@ const Offers = () => {
                             }
                           },
                           {
-                            title: 'Product Discount',
-                            key: 'product_discount',
-                            width: 120,
-                            align: 'center',
-                            render: (_, record) => {
-                              const discount = itemDiscounts[record.id] || 0;
-                              return discount > 0 
-                                ? <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>-{discount}%</span>
-                                : '-';
-                            }
-                          },
-                          {
                             title: 'Sales Price',
                             key: 'sales_price',
                             width: 120,
@@ -2874,6 +2862,18 @@ const Offers = () => {
                                 : <span style={{ color: '#bfbfbf' }}>
                                     {formatCurrency(total, group.pricelist.currency)}
                                   </span>;
+                            }
+                          },
+                          {
+                            title: <span style={{ color: '#bfbfbf' }}>Product Sales Discount</span>,
+                            key: 'product_sales_discount',
+                            width: 140,
+                            align: 'center',
+                            render: (_, record) => {
+                              const discount = itemDiscounts[record.id] || 0;
+                              return discount > 0 
+                                ? <span style={{ color: '#bfbfbf' }}>-{discount}%</span>
+                                : <span style={{ color: '#bfbfbf' }}>-</span>;
                             }
                           }
                         ]}
