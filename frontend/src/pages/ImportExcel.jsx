@@ -435,12 +435,12 @@ const ImportExcel = () => {
         if (isDuplicate) {
           // Akıllı güncelleme kontrolü - hem açıklama hem de ad için
           const canUpdateDescription = 
-            (task.item.description_tr && !existingItem.description_tr) || // Türkçe açıklama eklenebilir
-            (task.item.description_en && !existingItem.description_en);   // İngilizce açıklama eklenebilir
+            (task.item.description_en && !existingItem.description_en) ||   // İngilizce açıklama eklenebilir
+            (task.item.description_tr && !existingItem.description_tr); // Türkçe açıklama eklenebilir
             
           const canUpdateName = 
-            (task.item.name_tr && !existingItem.name_tr) || // Türkçe ad eklenebilir
-            (task.item.name_en && !existingItem.name_en);   // İngilizce ad eklenebilir
+            (task.item.name_en && !existingItem.name_en) ||   // İngilizce ad eklenebilir
+            (task.item.name_tr && !existingItem.name_tr); // Türkçe ad eklenebilir
           
           if (canUpdateDescription || canUpdateName) {
             updateTasks.push({
@@ -605,8 +605,8 @@ const ImportExcel = () => {
             placeholder="Dil seçin"
             style={{ width: 200 }}
           >
-            <Option value="tr">🇹🇷 Türkçe</Option>
             <Option value="en">🇺🇸 İngilizce</Option>
+            <Option value="tr">🇹🇷 Türkçe</Option>
           </Select>
           <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
             Excel'deki açıklamalar seçilen dile kaydedilecek
