@@ -48,7 +48,7 @@ const ImportExcel = () => {
   const [sheetAssignments, setSheetAssignments] = useState({});
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
-  const [selectedLanguage, setSelectedLanguage] = useState('tr'); // 'tr' veya 'en'
+  const [selectedLanguage, setSelectedLanguage] = useState(null); // null, 'tr' veya 'en'
 
   useEffect(() => {
     document.title = 'Price List App v3 - Import Excel';
@@ -72,7 +72,203 @@ const ImportExcel = () => {
     }
   };
 
+  // Excel parse etme fonksiyonu
+  const parseExcelFile = (wb, language) => {
+    // Beklenen sütun isimleri (dil seçimine göre)
+    const getExpectedColumns = (lang) => {
+      if (lang === 'tr') {
+        return {
+          'product_id': ['ürün id', 'ürün kodu', 'ürünid', 'ürünkodu', 'product id', 'productid', 'product_id', 'product code', 'productcode', 'product_code', 'id', 'item id', 'item_id'],
+          'product_name': ['ürün adı', 'ürün ad', 'ürün', 'ad'],
+          'product_description': ['ürün açıklaması', 'ürün açıklama', 'açıklama', 'açıklaması'],
+          'stock': ['stok', 'stock', 'quantity', 'qty', 'amount'],
+          'price': ['fiyat', 'price', 'cost', 'amount', 'value']
+        };
+      } else {
+        return {
+          'product_id': ['product id', 'productid', 'product_id', 'product code', 'productcode', 'product_code', 'id', 'item id', 'item_id'],
+          'product_name': ['product name', 'productname', 'product_name', 'name', 'item name', 'item_name', 'title'],
+          'product_description': ['product description', 'productdescription', 'product_description', 'description', 'desc'],
+          'stock': ['stock', 'quantity', 'qty', 'amount'],
+          'price': ['price', 'cost', 'amount', 'value']
+        };
+      }
+    };
+
+    const expectedColumns = getExpectedColumns(language);
+    
+    // Tüm sheet'leri parse et
+    const sheets = {};
+    const selections = {};
+    const assignments = {};
+    let validSheetCount = 0;
+    
+    wb.SheetNames.forEach(sheetName => {
+      const worksheet = wb.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      // Boş satırları filtrele
+      const filteredData = jsonData.filter(row => 
+        row.some(cell => cell !== undefined && cell !== null && cell !== '')
+      );
+      
+      if (filteredData.length > 0) {
+        // İlk birkaç satırı header için kontrol et
+        let headerRowIndex = -1;
+        let headers = [];
+        
+        // İlk 3 satırda gerçek headerı ara
+        for (let i = 0; i < Math.min(3, filteredData.length); i++) {
+          const rowHeaders = filteredData[i].map(h => String(h || '').toLowerCase().trim().replace(/[^a-z0-9]/g, ''));
+          
+          // Bu satırda beklenen sütunlar var mı?
+          const columnMapping = {};
+          let foundColumns = 0;
+          
+          Object.keys(expectedColumns).forEach(key => {
+            const possibleNames = expectedColumns[key];
+            for (let possibleName of possibleNames) {
+              const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const headerIndex = rowHeaders.findIndex(header => header === cleanName);
+              if (headerIndex !== -1) {
+                columnMapping[key] = headerIndex;
+                foundColumns++;
+                break;
+              }
+            }
+          });
+          
+          // En az 2 temel sütun bulundu mu?
+          const hasMinimumColumns = columnMapping.product_name !== undefined && 
+                                  columnMapping.price !== undefined;
+          
+          if (hasMinimumColumns) {
+            headerRowIndex = i;
+            headers = rowHeaders;
+            break;
+          }
+        }
+        
+        if (headerRowIndex === -1) {
+          console.warn(`Sheet '${sheetName}' uygun header bulunamadı:`, {
+            ilk3Satir: filteredData.slice(0, 3)
+          });
+          return;
+        }
+        
+        // Sütunları eşleştir
+        const columnMapping = {};
+        let foundColumns = 0;
+        
+        Object.keys(expectedColumns).forEach(key => {
+          const possibleNames = expectedColumns[key];
+          for (let possibleName of possibleNames) {
+            const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const headerIndex = headers.findIndex(header => header === cleanName);
+            if (headerIndex !== -1) {
+              columnMapping[key] = headerIndex;
+              foundColumns++;
+              break;
+            }
+          }
+        });
+        
+        // En az 2 temel sütun bulunmalı (product_name, price)
+        const hasMinimumColumns = columnMapping.product_name !== undefined && 
+                                columnMapping.price !== undefined;
+        
+        if (hasMinimumColumns) {
+          // Header satırından sonraki satırları al
+          const dataRows = filteredData.slice(headerRowIndex + 1);
+          
+          const rows = dataRows.map((row, index) => {
+            // Açıklama alanını seçilen dile göre ata
+            const description = columnMapping.product_description !== undefined ? (row[columnMapping.product_description] || '') : '';
+            // Ürün adını seçilen dile göre ata
+            const productName = row[columnMapping.product_name] || `Ürün ${index + 1}`;
+            
+            return {
+              key: index,
+              product_id: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || '') : `AUTO-${index + 1}`,
+              name_tr: language === 'tr' ? productName : '',
+              name_en: language === 'en' ? productName : '',
+              description_tr: language === 'tr' ? description : '',
+              description_en: language === 'en' ? description : '',
+              stock: columnMapping.stock !== undefined ? (parseInt(row[columnMapping.stock]) || 0) : 0,
+              price: parseFloat(row[columnMapping.price]) || 0,
+              // Display kolonları (tablo için)
+              col_0: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || `AUTO-${index + 1}`) : `AUTO-${index + 1}`,
+              col_1: productName,
+              col_2: description,
+              col_3: columnMapping.stock !== undefined ? (row[columnMapping.stock] || '0') : '0',
+              col_4: row[columnMapping.price] || '0'
+            };
+          }).filter(row => 
+            // Boş satırları filtrele (en az product name olmalı ve geçerli fiyat)
+            row.col_1.toString().trim() !== '' && 
+            row.col_1 !== `Ürün ${row.key + 1}` &&
+            row.price > 0
+          );
+          
+          if (rows.length > 0) {
+            // Başlıkları dile göre ayarla - ID/Code esnekliği ile
+            const headers = language === 'tr' 
+              ? ['Ürün ID/Kodu', 'Ürün Adı', 'Ürün Açıklaması', 'Stok', 'Fiyat']
+              : ['Product ID/Code', 'Product Name', 'Product Description', 'Stock', 'Price'];
+              
+            sheets[sheetName] = {
+              headers,
+              rows,
+              rawData: filteredData,
+              columnMapping
+            };
+            
+            selections[sheetName] = [];
+            assignments[sheetName] = null;
+            validSheetCount++;
+          }
+        } else {
+          console.warn(`Sheet '${sheetName}' yetersiz sütuna sahip:`, {
+            bulunanlar: Object.keys(columnMapping),
+            headerlar: headers,
+            eslestirme: columnMapping
+          });
+        }
+      }
+    });
+    
+    if (validSheetCount === 0) {
+      const errorTitle = language === 'tr' ? 'Geçersiz Excel Formatı' : 'Invalid Excel Format';
+      const errorMessage = language === 'tr' 
+        ? `Hiçbir sheet uygun sütunlara sahip değil. Seçtiğiniz dil: ${language.toUpperCase()}. Gerekli sütunlar: "Ürün Adı" ve "Fiyat" (veya "Stok"). Console'u kontrol edin.`
+        : `No sheet has appropriate columns. Selected language: ${language.toUpperCase()}. Required columns: "Product Name" and "Price" (or "Stock"). Check console.`;
+        
+      NotificationService.error(errorTitle, errorMessage);
+      return null;
+    }
+    
+    return { sheets, selections, assignments };
+  };
+
+  // Excel dosyası yeniden parse etme (dil değiştiğinde)
+  useEffect(() => {
+    if (workbook && currentStep >= 1) {
+      const result = parseExcelFile(workbook, selectedLanguage);
+      if (result) {
+        setSheetData(result.sheets);
+        setSelectedRows(result.selections);
+        setSheetAssignments(result.assignments);
+      }
+    }
+  }, [selectedLanguage, workbook]);
+
   const handleFileUpload = (file) => {
+    // Dil seçimi kontrolü
+    if (!selectedLanguage) {
+      NotificationService.error('Hata', 'Önce açıklama dilini seçin');
+      return false;
+    }
+    
     setExcelFile(file);
     const reader = new FileReader();
     
@@ -82,162 +278,13 @@ const ImportExcel = () => {
         const wb = XLSX.read(data, { type: 'array' });
         setWorkbook(wb);
         
-        // Beklenen sütun isimleri (büyük/küçük harf ve boşluk farkı yapmadan)
-        const expectedColumns = {
-          'product_id': ['product id', 'productid', 'product_id', 'id', 'item id', 'item_id'],
-          'product_name': ['product name', 'productname', 'product_name', 'name', 'item name', 'item_name', 'title'],
-          'product_description': ['product description', 'productdescription', 'product_description', 'description', 'desc'],
-          'stock': ['stock', 'quantity', 'qty', 'amount', 'stok'],
-          'price': ['price', 'cost', 'amount', 'value', 'fiyat']
-        };
-        
-        // Tüm sheet'leri parse et
-        const sheets = {};
-        const selections = {};
-        const assignments = {};
-        let validSheetCount = 0;
-        
-        wb.SheetNames.forEach(sheetName => {
-          const worksheet = wb.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          
-          // Boş satırları filtrele
-          const filteredData = jsonData.filter(row => 
-            row.some(cell => cell !== undefined && cell !== null && cell !== '')
-          );
-          
-          if (filteredData.length > 0) {
-            // İlk birkaç satırı header için kontrol et
-            let headerRowIndex = -1;
-            let headers = [];
-            
-            // İlk 3 satırda gerçek headerı ara
-            for (let i = 0; i < Math.min(3, filteredData.length); i++) {
-              const rowHeaders = filteredData[i].map(h => String(h || '').toLowerCase().trim().replace(/[^a-z0-9]/g, ''));
-              
-              // Bu satırda beklenen sütunlar var mı?
-              const columnMapping = {};
-              let foundColumns = 0;
-              
-              Object.keys(expectedColumns).forEach(key => {
-                const possibleNames = expectedColumns[key];
-                for (let possibleName of possibleNames) {
-                  const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                  const headerIndex = rowHeaders.findIndex(header => header === cleanName);
-                  if (headerIndex !== -1) {
-                    columnMapping[key] = headerIndex;
-                    foundColumns++;
-                    break;
-                  }
-                }
-              });
-              
-              // En az 2 temel sütun bulundu mu?
-              const hasMinimumColumns = columnMapping.product_name !== undefined && 
-                                      columnMapping.price !== undefined;
-              
-              if (hasMinimumColumns) {
-                headerRowIndex = i;
-                headers = rowHeaders;
-                break;
-              }
-            }
-            
-            if (headerRowIndex === -1) {
-              console.warn(`Sheet '${sheetName}' uygun header bulunamadı:`, {
-                ilk3Satir: filteredData.slice(0, 3)
-              });
-              return;
-            }
-            
-            // Sütunları eşleştir
-            const columnMapping = {};
-            let foundColumns = 0;
-            
-            Object.keys(expectedColumns).forEach(key => {
-              const possibleNames = expectedColumns[key];
-              for (let possibleName of possibleNames) {
-                const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const headerIndex = headers.findIndex(header => header === cleanName);
-                if (headerIndex !== -1) {
-                  columnMapping[key] = headerIndex;
-                  foundColumns++;
-                  break;
-                }
-              }
-            });
-            
-            // En az 2 temel sütun bulunmalı (product_name, price)
-            const hasMinimumColumns = columnMapping.product_name !== undefined && 
-                                    columnMapping.price !== undefined;
-            
-            if (hasMinimumColumns) {
-              // Header satırından sonraki satırları al
-              const dataRows = filteredData.slice(headerRowIndex + 1);
-              
-              const rows = dataRows.map((row, index) => {
-                // Açıklama alanını seçilen dile göre ata
-                const description = columnMapping.product_description !== undefined ? (row[columnMapping.product_description] || '') : '';
-                // Ürün adını seçilen dile göre ata
-                const productName = row[columnMapping.product_name] || `Ürün ${index + 1}`;
-                
-                return {
-                  key: index,
-                  product_id: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || '') : `AUTO-${index + 1}`,
-                  name_tr: selectedLanguage === 'tr' ? productName : '',
-                  name_en: selectedLanguage === 'en' ? productName : '',
-                  description_tr: selectedLanguage === 'tr' ? description : '',
-                  description_en: selectedLanguage === 'en' ? description : '',
-                  stock: columnMapping.stock !== undefined ? (parseInt(row[columnMapping.stock]) || 0) : 0,
-                  price: parseFloat(row[columnMapping.price]) || 0,
-                  // Display kolonları (tablo için)
-                  col_0: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || `AUTO-${index + 1}`) : `AUTO-${index + 1}`,
-                  col_1: productName,
-                  col_2: description,
-                  col_3: columnMapping.stock !== undefined ? (row[columnMapping.stock] || '0') : '0',
-                  col_4: row[columnMapping.price] || '0'
-                };
-              }).filter(row => 
-                // Boş satırları filtrele (en az product name olmalı ve geçerli fiyat)
-                row.col_1.toString().trim() !== '' && 
-                row.col_1 !== `Ürün ${row.key + 1}` &&
-                row.price > 0
-              );
-              
-              if (rows.length > 0) {
-                sheets[sheetName] = {
-                  headers: ['Product ID', 'Product Name', 'Product Description', 'Stock', 'Price'],
-                  rows,
-                  rawData: filteredData,
-                  columnMapping
-                };
-                
-                selections[sheetName] = [];
-                assignments[sheetName] = null;
-                validSheetCount++;
-              }
-            } else {
-              console.warn(`Sheet '${sheetName}' yetersiz sütuna sahip:`, {
-                bulunanlar: Object.keys(columnMapping),
-                headerlar: headers,
-                eslestirme: columnMapping
-              });
-            }
-          }
-        });
-        
-        if (validSheetCount === 0) {
-          NotificationService.error(
-            'Geçersiz Excel Formatı', 
-            'Hiçbir sheet uygun sütunlara sahip değil. En az şu sütunlar gerekli: Ürün Adı/Name ve Fiyat/Price. Console\'u kontrol edin.'
-          );
-          return;
+        const result = parseExcelFile(wb, selectedLanguage);
+        if (result) {
+          setSheetData(result.sheets);
+          setSelectedRows(result.selections);
+          setSheetAssignments(result.assignments);
+          setCurrentStep(1);
         }
-        
-        setSheetData(sheets);
-        setSelectedRows(selections);
-        setSheetAssignments(assignments);
-        setCurrentStep(1);
         
       } catch (error) {
         console.error('Excel parse error:', error);
@@ -451,7 +498,8 @@ const ImportExcel = () => {
       
       // Önce yeni ürünleri ekle
       const batchSize = 10;
-      let completed = 0;
+      let newItemsAdded = 0;
+      let existingItemsUpdated = 0;
       
       for (let i = 0; i < tasksToImport.length; i += batchSize) {
         const batch = tasksToImport.slice(i, i + batchSize);
@@ -460,8 +508,8 @@ const ImportExcel = () => {
           batch.map(async ({ pricelistId, item }) => {
             try {
               await axios.post(`http://localhost:3001/api/pricelists/${pricelistId}/items`, item);
-              completed++;
-              setImportProgress((completed / totalOperations) * 100);
+              newItemsAdded++;
+              setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
             } catch (error) {
               console.error('Import error:', error);
             }
@@ -489,8 +537,8 @@ const ImportExcel = () => {
               };
               
               await axios.put(`http://localhost:3001/api/items/${existingItem.id}`, updatedItem);
-              completed++;
-              setImportProgress((completed / totalOperations) * 100);
+              existingItemsUpdated++;
+              setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
             } catch (error) {
               console.error('Update error:', error);
             }
@@ -498,7 +546,17 @@ const ImportExcel = () => {
         );
       }
       
-      let successMessage = `${completed} ürün başarıyla import edildi`;
+      // Başarı mesajını yeni eklenen ve güncellenen ürünlere göre oluştur
+      let successMessage = '';
+      
+      if (newItemsAdded > 0 && existingItemsUpdated > 0) {
+        successMessage = `${newItemsAdded} yeni ürün eklendi, ${existingItemsUpdated} mevcut ürün güncellendi`;
+      } else if (newItemsAdded > 0) {
+        successMessage = `${newItemsAdded} ürün başarıyla import edildi`;
+      } else if (existingItemsUpdated > 0) {
+        successMessage = `${existingItemsUpdated} mevcut ürün başarıyla güncellendi`;
+      }
+      
       if (duplicateInfo.length > 0) {
         const duplicateDetails = duplicateInfo.map(info => 
           `${info.pricelistName}: ${info.items.join(', ')}${info.count > info.items.length ? ` ve ${info.count - info.items.length} ürün daha` : ''}`
@@ -544,6 +602,7 @@ const ImportExcel = () => {
           <Select
             value={selectedLanguage}
             onChange={setSelectedLanguage}
+            placeholder="Dil seçin"
             style={{ width: 200 }}
           >
             <Option value="tr">🇹🇷 Türkçe</Option>
@@ -554,17 +613,36 @@ const ImportExcel = () => {
           </div>
         </div>
         
+        {!selectedLanguage && (
+          <Alert
+            message="Önce açıklama dilini seçin"
+            description="Excel dosyası yüklemek için önce açıklama dilini seçmeniz gerekiyor."
+            type="warning"
+            style={{ margin: '16px 0' }}
+          />
+        )}
+        
         <div style={{ marginTop: '24px' }}>
           <Dragger
             accept=".xls,.xlsx"
-            beforeUpload={handleFileUpload}
+            beforeUpload={selectedLanguage ? handleFileUpload : () => false}
             showUploadList={false}
-            style={{ padding: '20px' }}
+            disabled={!selectedLanguage}
+            style={{ 
+              padding: '20px',
+              opacity: selectedLanguage ? 1 : 0.5,
+              pointerEvents: selectedLanguage ? 'auto' : 'none'
+            }}
           >
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
-            <p className="ant-upload-text">Dosyayı buraya sürükleyin veya tıklayın</p>
+            <p className="ant-upload-text">
+              {selectedLanguage 
+                ? "Dosyayı buraya sürükleyin veya tıklayın" 
+                : "Önce açıklama dilini seçin"
+              }
+            </p>
             <p className="ant-upload-hint">Sadece .xls ve .xlsx dosyaları</p>
           </Dragger>
         </div>
