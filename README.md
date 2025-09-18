@@ -6,16 +6,37 @@ Modern bir fiyat listesi yönetim uygulaması. Dashboard, Excel import, kullanı
 
 ### Backend
 - **Node.js** - JavaScript runtime
-- **Fastify** - Web framework
-- **PostgreSQL** - Veritabanı
-- **@fastify/postgres** - PostgreSQL bağlantısı
-- **@fastify/cors** - CORS desteği
+- **Fastify** v4.24.3 - Hızlı ve hafif web framework
+- **PostgreSQL** - İlişkisel veritabanı
+- **@fastify/postgres** v5.2.2 - PostgreSQL bağlantısı ve sorgu işlemleri
+- **@fastify/cors** v8.5.0 - Cross-Origin Resource Sharing desteği
+- **@fastify/multipart** v8.0.0 - Dosya upload desteği
+- **@fastify/static** v6.12.0 - Statik dosya servisi
+- **bcryptjs** v3.0.2 - Şifre hashleme
+- **dotenv** v16.3.1 - Ortam değişkenleri yönetimi
+- **fs-extra** v11.2.0 - Dosya sistemi işlemleri
+- **pg** v8.11.3 - PostgreSQL driver
+- **path** v0.12.7 - Dosya yolu işlemleri
+
+**Geliştirme Araçları:**
+- **nodemon** v3.0.2 - Otomatik sunucu yeniden başlatma
 
 ### Frontend
-- **React** - UI framework
-- **Ant Design** - UI komponenti kütüphanesi
-- **React Router** - Sayfa yönlendirme
-- **Axios** - HTTP client
+- **React** v19.1.1 - Modern UI framework
+- **Vite** v7.1.2 - Hızlı build tool ve dev server
+- **Ant Design** v5.27.0 - Profesyonel UI komponenti kütüphanesi
+- **@ant-design/icons** v6.0.0 - Ant Design ikon seti
+- **React Router DOM** v7.8.1 - Single Page Application routing
+- **Axios** v1.11.0 - HTTP client ve API istekleri
+- **ExcelJS** v4.4.0 - Excel dosyası oluşturma ve okuma
+- **XLSX** v0.18.5 - Excel dosyası parsing
+
+**Geliştirme Araçları:**
+- **ESLint** v9.33.0 - Kod kalitesi ve syntax kontrolü
+- **@vitejs/plugin-react** v5.0.0 - React entegrasyonu
+- **@types/react** v19.1.10 - React TypeScript tipleri
+- **eslint-plugin-react-hooks** v5.2.0 - React Hooks linting
+- **eslint-plugin-react-refresh** v0.4.20 - Hot reload desteği
 
 ## Hızlı Kurulum
 
