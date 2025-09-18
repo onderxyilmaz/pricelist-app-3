@@ -31,6 +31,7 @@ import {
 import ExcelJS from 'exceljs';
 import axios from 'axios';
 import NotificationService from '../utils/notification';
+import { useLocation } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
@@ -49,11 +50,16 @@ const ImportExcel = () => {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState(null); // null, 'tr' veya 'en'
+  const location = useLocation();
 
   useEffect(() => {
     document.title = 'Price List App v3 - Import Excel';
     fetchPricelists();
   }, []);
+
+  useEffect(() => {
+    setSelectedLanguage(null);
+  }, [location.pathname]);
 
   useEffect(() => {
     return () => {
@@ -483,6 +489,7 @@ const ImportExcel = () => {
       
       if (totalOperations === 0) {
         NotificationService.warning('Uyarı', 'Tüm seçilen ürünler zaten mevcut, import edilecek yeni ürün yok');
+        setSelectedLanguage(null);
         
         // Reset form to initial state
         setCurrentStep(0);
@@ -566,6 +573,7 @@ const ImportExcel = () => {
       }
       
       NotificationService.success('Başarılı', successMessage);
+      setSelectedLanguage(null);
       
       // Reset form
       setCurrentStep(0);
