@@ -114,7 +114,7 @@ const Offers = () => {
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   
   // Language selection state
-  const [selectedLanguage, setSelectedLanguage] = useState('tr');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
 
   // Step 1'de Teklif No alanına autofocus
   useEffect(() => {
@@ -2102,18 +2102,26 @@ const Offers = () => {
               <div style={{ marginBottom: 16, textAlign: 'center' }}>
                 <Button.Group>
                   <Button
-                    type={selectedLanguage === 'tr' ? 'primary' : 'default'}
-                    onClick={() => setSelectedLanguage('tr')}
-                    size="small"
-                  >
-                    TR
-                  </Button>
-                  <Button
                     type={selectedLanguage === 'en' ? 'primary' : 'default'}
                     onClick={() => setSelectedLanguage('en')}
                     size="small"
+                    style={{ 
+                      backgroundColor: selectedLanguage === 'en' ? '#1890ff' : '#f0f0f0',
+                      color: selectedLanguage === 'en' ? 'white' : '#000'
+                    }}
                   >
                     EN
+                  </Button>
+                  <Button
+                    type={selectedLanguage === 'tr' ? 'primary' : 'default'}
+                    onClick={() => setSelectedLanguage('tr')}
+                    size="small"
+                    style={{ 
+                      backgroundColor: selectedLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                      color: selectedLanguage === 'tr' ? 'white' : '#000'
+                    }}
+                  >
+                    TR
                   </Button>
                 </Button.Group>
               </div>
