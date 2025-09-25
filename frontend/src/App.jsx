@@ -150,6 +150,8 @@ function App() {
     setUser(null);
     localStorage.removeItem('user');
     setShowRegister(false);
+    // Logout sonrası login sayfasına yönlendir
+    window.location.href = '/login';
   };
 
   const switchToRegister = () => {
