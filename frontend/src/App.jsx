@@ -11,6 +11,7 @@ import LogoutHandler from './components/LogoutHandler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Pricelist from './pages/Pricelist.jsx';
+import PricelistList from './pages/PricelistList.jsx';
 import PricelistDetail from './pages/PricelistDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import CreatePricelist from './pages/CreatePricelist.jsx';
@@ -59,7 +60,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile user={user} onUserUpdate={onUserUpdate} />} />
-                <Route path="/pricelists" element={<Pricelist />} />
+                <Route path="/pricelists" element={<PricelistList />} />
                 <Route path="/pricelists/create" element={<CreatePricelist />} />
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
                 <Route path="/all-products" element={<AllProducts />} />

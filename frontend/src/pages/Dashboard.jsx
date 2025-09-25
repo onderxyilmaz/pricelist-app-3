@@ -18,6 +18,7 @@ const { Title, Paragraph } = Typography;
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tableLanguage, setTableLanguage] = useState('tr'); // Tablo görünümü için dil seçimi
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +37,8 @@ const Dashboard = () => {
       const response = await axios.get('http://localhost:3001/api/dashboard/stats');
       if (response.data.success) {
         setStats(response.data.stats);
+        console.log('Dashboard stats:', response.data.stats);
+        console.log('Recent Products:', response.data.stats.recentProducts);
       }
     } catch (error) {
       NotificationService.error('Hata', 'Dashboard verileri yüklenemedi');
@@ -55,6 +58,14 @@ const Dashboard = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      render: (text, record) => {
+        // Dil seçimine göre ürün adını göster
+        const productName = tableLanguage === 'tr' 
+          ? (record.name_tr || record.name || record.name_en || 'Ad bulunamadı')
+          : (record.name_en || record.name || record.name_tr || 'Name not found');
+        
+        return productName;
+      },
     },
     {
       title: 'Fiyat',
@@ -162,7 +173,27 @@ const Dashboard = () => {
       {/* Son Eklenen Ürünler */}
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card title="Son Eklenen Ürünler">
+          <Card 
+            title="Son Eklenen Ürünler"
+            extra={
+              <Space>
+                <Button.Group size="small">
+                  <Button
+                    type={tableLanguage === 'tr' ? 'primary' : 'default'}
+                    onClick={() => setTableLanguage('tr')}
+                  >
+                    TR
+                  </Button>
+                  <Button
+                    type={tableLanguage === 'en' ? 'primary' : 'default'}
+                    onClick={() => setTableLanguage('en')}
+                  >
+                    EN
+                  </Button>
+                </Button.Group>
+              </Space>
+            }
+          >
             <Table
               columns={recentProductsColumns}
               dataSource={stats?.recentItems || []}
