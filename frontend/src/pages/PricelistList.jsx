@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Card, 
   Typography, 
@@ -35,6 +35,7 @@ const PricelistList = () => {
   const [editingPricelist, setEditingPricelist] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const searchRef = useRef(null);
 
   // Random renkler için
   const getRandomColor = () => {
@@ -46,9 +47,49 @@ const PricelistList = () => {
   };
 
   useEffect(() => {
+    console.log('PricelistList component mounted/updated');
     document.title = 'Price List App v3 - Price Lists';
     fetchPricelists();
+    
+    // Component mount olduktan hemen sonra focus ver - birden fazla yöntem dene
+    const timer = setTimeout(() => {
+      console.log('Attempting to apply autofocus...');
+      // Yöntem 1: Ref ile
+      if (searchRef.current) {
+        searchRef.current.focus();
+        console.log('Focus applied via ref on mount');
+        return;
+      }
+      
+      // Yöntem 2: DOM query ile
+      const input = document.querySelector('input[placeholder="Fiyat listesi ara..."]');
+      if (input) {
+        input.focus();
+        console.log('Focus applied via DOM query on mount');
+        return;
+      }
+      
+      console.log('No input found for autofocus');
+    }, 200);
+    
+    return () => {
+      console.log('PricelistList component unmounting');
+      clearTimeout(timer);
+    };
   }, []);
+  
+  // Router değişikliklerini de yakalayalım
+  useEffect(() => {
+    console.log('PricelistList effect triggered');
+    const timer = setTimeout(() => {
+      if (searchRef.current) {
+        searchRef.current.focus();
+        console.log('Focus applied on route change');
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  });
 
   useEffect(() => {
     return () => {
@@ -277,13 +318,18 @@ const PricelistList = () => {
 
       <Card>
         <div style={{ marginBottom: '16px' }}>
-          <Search
+          <Input
+            ref={searchRef}
             placeholder="Fiyat listesi ara..."
             allowClear
-            onSearch={handleSearch}
             onChange={(e) => handleSearch(e.target.value)}
+            onClick={() => console.log('Search input clicked!')}
+            onFocus={() => console.log('Search input focused!')}
+            onBlur={() => console.log('Search input blurred!')}
             style={{ width: 300 }}
             prefix={<SearchOutlined />}
+            autoComplete="off"
+            tabIndex={1}
           />
         </div>
 

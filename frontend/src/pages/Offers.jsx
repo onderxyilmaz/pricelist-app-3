@@ -1617,6 +1617,7 @@ const Offers = () => {
                 placeholder="Teklif no ara..."
                 allowClear
                 prefix={<SearchOutlined />}
+                autoFocus
               />
             </Col>
             
@@ -2096,8 +2097,8 @@ const Offers = () => {
               <Step title="Ön İzleme" description="Teklif özeti ve kontrol" />
             </Steps>
 
-            {/* Language Selection for Steps 1 and above */}
-            {currentStep >= 1 && (
+            {/* Language Selection for Steps 2, 5 and 6 only */}
+            {(currentStep === 1 || currentStep === 4 || currentStep === 5) && (
               <div style={{ marginBottom: 16, textAlign: 'center' }}>
                 <Button.Group>
                   <Button
