@@ -18,7 +18,7 @@ const { Title, Paragraph } = Typography;
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tableLanguage, setTableLanguage] = useState('tr'); // Tablo görünümü için dil seçimi
+  const [tableLanguage, setTableLanguage] = useState('en'); // Tablo görünümü için dil seçimi
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -179,16 +179,24 @@ const Dashboard = () => {
               <Space>
                 <Button.Group size="small">
                   <Button
-                    type={tableLanguage === 'tr' ? 'primary' : 'default'}
-                    onClick={() => setTableLanguage('tr')}
-                  >
-                    TR
-                  </Button>
-                  <Button
                     type={tableLanguage === 'en' ? 'primary' : 'default'}
                     onClick={() => setTableLanguage('en')}
+                    style={{ 
+                      backgroundColor: tableLanguage === 'en' ? '#1890ff' : '#f0f0f0',
+                      color: tableLanguage === 'en' ? 'white' : '#000'
+                    }}
                   >
                     EN
+                  </Button>
+                  <Button
+                    type={tableLanguage === 'tr' ? 'primary' : 'default'}
+                    onClick={() => setTableLanguage('tr')}
+                    style={{ 
+                      backgroundColor: tableLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                      color: tableLanguage === 'tr' ? 'white' : '#000'
+                    }}
+                  >
+                    TR
                   </Button>
                 </Button.Group>
               </Space>

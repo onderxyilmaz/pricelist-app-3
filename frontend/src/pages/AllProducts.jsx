@@ -45,9 +45,9 @@ const AllProducts = () => {
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [nameLanguage, setNameLanguage] = useState('tr');
-  const [descriptionLanguage, setDescriptionLanguage] = useState('tr');
-  const [tableLanguage, setTableLanguage] = useState('tr'); // Tablo görünümü için dil seçimi
+  const [nameLanguage, setNameLanguage] = useState('en');
+  const [descriptionLanguage, setDescriptionLanguage] = useState('en');
+  const [tableLanguage, setTableLanguage] = useState('en'); // Tablo görünümü için dil seçimi
   const [editForm] = Form.useForm();
 
   useEffect(() => {
@@ -422,26 +422,26 @@ const AllProducts = () => {
               <Text strong style={{ fontSize: '12px' }}>Görünüm:</Text>
               <Button.Group>
                 <Button 
-                  type={tableLanguage === 'tr' ? 'primary' : 'default'}
-                  onClick={() => setTableLanguage('tr')}
-                  size="small"
-                  style={{ 
-                    backgroundColor: tableLanguage === 'tr' ? '#1890ff' : '#f0f0f0',
-                    color: tableLanguage === 'tr' ? 'white' : '#000'
-                  }}
-                >
-                  TR
-                </Button>
-                <Button 
                   type={tableLanguage === 'en' ? 'primary' : 'default'}
                   onClick={() => setTableLanguage('en')}
                   size="small"
                   style={{ 
-                    backgroundColor: tableLanguage === 'en' ? '#52c41a' : '#f0f0f0',
+                    backgroundColor: tableLanguage === 'en' ? '#1890ff' : '#f0f0f0',
                     color: tableLanguage === 'en' ? 'white' : '#000'
                   }}
                 >
                   EN
+                </Button>
+                <Button 
+                  type={tableLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setTableLanguage('tr')}
+                  size="small"
+                  style={{ 
+                    backgroundColor: tableLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                    color: tableLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
                 </Button>
               </Button.Group>
             </div>
@@ -606,24 +606,24 @@ const AllProducts = () => {
             <div style={{ marginBottom: 8 }}>
               <Button.Group>
                 <Button 
-                  type={nameLanguage === 'tr' ? 'primary' : 'default'}
-                  onClick={() => setNameLanguage('tr')}
-                  style={{ 
-                    backgroundColor: nameLanguage === 'tr' ? '#1890ff' : '#f0f0f0',
-                    color: nameLanguage === 'tr' ? 'white' : '#000'
-                  }}
-                >
-                  TR
-                </Button>
-                <Button 
                   type={nameLanguage === 'en' ? 'primary' : 'default'}
                   onClick={() => setNameLanguage('en')}
                   style={{ 
-                    backgroundColor: nameLanguage === 'en' ? '#52c41a' : '#f0f0f0',
+                    backgroundColor: nameLanguage === 'en' ? '#1890ff' : '#f0f0f0',
                     color: nameLanguage === 'en' ? 'white' : '#000'
                   }}
                 >
                   EN
+                </Button>
+                <Button 
+                  type={nameLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setNameLanguage('tr')}
+                  style={{ 
+                    backgroundColor: nameLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                    color: nameLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
                 </Button>
               </Button.Group>
             </div>
@@ -656,24 +656,24 @@ const AllProducts = () => {
             <div style={{ marginBottom: 8 }}>
               <Button.Group>
                 <Button 
-                  type={descriptionLanguage === 'tr' ? 'primary' : 'default'}
-                  onClick={() => setDescriptionLanguage('tr')}
-                  style={{ 
-                    backgroundColor: descriptionLanguage === 'tr' ? '#1890ff' : '#f0f0f0',
-                    color: descriptionLanguage === 'tr' ? 'white' : '#000'
-                  }}
-                >
-                  TR
-                </Button>
-                <Button 
                   type={descriptionLanguage === 'en' ? 'primary' : 'default'}
                   onClick={() => setDescriptionLanguage('en')}
                   style={{ 
-                    backgroundColor: descriptionLanguage === 'en' ? '#52c41a' : '#f0f0f0',
+                    backgroundColor: descriptionLanguage === 'en' ? '#1890ff' : '#f0f0f0',
                     color: descriptionLanguage === 'en' ? 'white' : '#000'
                   }}
                 >
                   EN
+                </Button>
+                <Button 
+                  type={descriptionLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setDescriptionLanguage('tr')}
+                  style={{ 
+                    backgroundColor: descriptionLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                    color: descriptionLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
                 </Button>
               </Button.Group>
             </div>
