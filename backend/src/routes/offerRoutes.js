@@ -617,6 +617,239 @@ async function offerRoutes(fastify, options) {
       return { success: false, message: err.message };
     }
   });
+
+  // ====================================
+  // OFFER TEMPLATES ENDPOINTS
+  // ====================================
+
+  // Get all offer templates
+  fastify.get('/offer-templates', async (request, reply) => {
+    try {
+      const client = await fastify.pg.connect();
+      
+      const result = await client.query(`
+        SELECT 
+          ot.id,
+          ot.name,
+          ot.description,
+          ot.created_at,
+          ot.updated_at,
+          ot.created_by,
+          ot.updated_by,
+          creator.first_name as creator_first_name,
+          creator.last_name as creator_last_name,
+          updater.first_name as updater_first_name,
+          updater.last_name as updater_last_name,
+          COUNT(oti.id) as item_count
+        FROM offer_templates ot
+        LEFT JOIN offer_template_items oti ON ot.id = oti.template_id
+        LEFT JOIN users creator ON ot.created_by = creator.id
+        LEFT JOIN users updater ON ot.updated_by = updater.id
+        GROUP BY ot.id, ot.name, ot.description, ot.created_at, ot.updated_at, ot.created_by, ot.updated_by,
+                 creator.first_name, creator.last_name, updater.first_name, updater.last_name
+        ORDER BY ot.created_at DESC
+      `);
+      
+      client.release();
+      return { success: true, templates: result.rows };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
+  // Get template items
+  fastify.get('/offer-templates/:id/items', async (request, reply) => {
+    try {
+      const { id } = request.params;
+      const client = await fastify.pg.connect();
+      
+      const result = await client.query(`
+        SELECT 
+          oti.id,
+          oti.product_id,
+          oti.pricelist_id,
+          oti.name_tr,
+          oti.name_en,
+          oti.description_tr,
+          oti.description_en,
+          oti.quantity,
+          oti.price,
+          oti.total_price,
+          oti.currency,
+          oti.unit,
+          oti.note
+        FROM offer_template_items oti
+        WHERE oti.template_id = $1
+        ORDER BY oti.created_at ASC
+      `, [id]);
+      
+      client.release();
+      return { success: true, items: result.rows };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
+  // Create new offer template
+  fastify.post('/offer-templates', async (request, reply) => {
+    try {
+      const { name, description, items, created_by } = request.body;
+      
+      if (!name || !items || items.length === 0) {
+        return { success: false, message: 'Template adı ve en az bir ürün gereklidir' };
+      }
+
+      if (!created_by) {
+        return { success: false, message: 'Kullanıcı kimliği gereklidir' };
+      }
+
+      const client = await fastify.pg.connect();
+      
+      // Start transaction
+      await client.query('BEGIN');
+      
+      try {
+        // Insert template
+        const templateResult = await client.query(
+          'INSERT INTO offer_templates (name, description, created_by) VALUES ($1, $2, $3) RETURNING id',
+          [name, description, created_by]
+        );
+        
+        const templateId = templateResult.rows[0].id;
+        
+        // Insert template items
+        for (const item of items) {
+          await client.query(`
+            INSERT INTO offer_template_items (
+              template_id, product_id, pricelist_id, name_tr, name_en, 
+              description_tr, description_en, quantity, price, total_price, 
+              currency, unit, note
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          `, [
+            templateId,
+            item.product_id,
+            item.pricelist_id,
+            item.name_tr,
+            item.name_en,
+            item.description_tr,
+            item.description_en,
+            item.quantity,
+            item.price,
+            item.total_price,
+            item.currency,
+            item.unit || 'adet',
+            item.note || ''
+          ]);
+        }
+        
+        await client.query('COMMIT');
+        client.release();
+        
+        return { success: true, message: 'Template başarıyla oluşturuldu', templateId };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        client.release();
+        throw err;
+      }
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
+  // Update offer template
+  fastify.put('/offer-templates/:id', async (request, reply) => {
+    try {
+      const { id } = request.params;
+      const { name, description, items, updated_by } = request.body;
+      
+      if (!name || !items || items.length === 0) {
+        return { success: false, message: 'Template adı ve en az bir ürün gereklidir' };
+      }
+
+      if (!updated_by) {
+        return { success: false, message: 'Kullanıcı kimliği gereklidir' };
+      }
+
+      const client = await fastify.pg.connect();
+      
+      // Start transaction
+      await client.query('BEGIN');
+      
+      try {
+        // Update template
+        const templateResult = await client.query(
+          'UPDATE offer_templates SET name = $1, description = $2, updated_by = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id',
+          [name, description, updated_by, id]
+        );
+        
+        if (templateResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          client.release();
+          return { success: false, message: 'Template bulunamadı' };
+        }
+        
+        // Delete existing items
+        await client.query('DELETE FROM offer_template_items WHERE template_id = $1', [id]);
+        
+        // Insert new items
+        for (const item of items) {
+          await client.query(`
+            INSERT INTO offer_template_items (
+              template_id, product_id, pricelist_id, name_tr, name_en, 
+              description_tr, description_en, quantity, price, total_price, 
+              currency, unit, note
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          `, [
+            id,
+            item.product_id,
+            item.pricelist_id,
+            item.name_tr,
+            item.name_en,
+            item.description_tr,
+            item.description_en,
+            item.quantity,
+            item.price,
+            item.total_price,
+            item.currency,
+            item.unit || 'adet',
+            item.note || ''
+          ]);
+        }
+        
+        await client.query('COMMIT');
+        client.release();
+        
+        return { success: true, message: 'Template başarıyla güncellendi' };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        client.release();
+        throw err;
+      }
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
+
+  // Delete offer template
+  fastify.delete('/offer-templates/:id', async (request, reply) => {
+    try {
+      const { id } = request.params;
+      
+      const client = await fastify.pg.connect();
+      
+      const result = await client.query('DELETE FROM offer_templates WHERE id = $1 RETURNING *', [id]);
+      
+      if (result.rows.length === 0) {
+        client.release();
+        return { success: false, message: 'Template bulunamadı' };
+      }
+      
+      client.release();
+      return { success: true, message: 'Template silindi' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
 }
 
 module.exports = offerRoutes;

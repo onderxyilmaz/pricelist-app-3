@@ -9,7 +9,8 @@ import {
   ProfileOutlined,
   AppstoreOutlined,
   FileTextOutlined,
-  BankOutlined
+  BankOutlined,
+  FormOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
@@ -44,6 +45,12 @@ const Sidebar = ({ user }) => {
       icon: <FileTextOutlined />,
       label: 'Teklifler',
       onClick: () => navigate('/offers')
+    },
+    {
+      key: '/offer-templates',
+      icon: <FormOutlined />,
+      label: 'Teklif Templates',
+      onClick: () => navigate('/offer-templates')
     },
     {
       key: '/companies',
