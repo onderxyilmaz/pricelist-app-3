@@ -21,7 +21,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  FormOutlined
+  FormOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import NotificationService from '../utils/notification';
@@ -37,6 +38,12 @@ const OfferTemplates = () => {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // Preview modal states
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [previewItems, setPreviewItems] = useState([]);
+  const [previewLanguage, setPreviewLanguage] = useState('en');
   
   // Template creation states
   const [pricelists, setPricelists] = useState([]);
@@ -246,6 +253,47 @@ const OfferTemplates = () => {
     }
   };
 
+  const handlePreview = async (template) => {
+    try {
+      setLoading(true);
+      
+      // Template items ve fiyat listesi bilgilerini al
+      const [itemsResponse, pricelistsResponse] = await Promise.all([
+        axios.get(`http://localhost:3001/api/offer-templates/${template.id}/items`),
+        axios.get('http://localhost:3001/api/pricelists-with-items')
+      ]);
+      
+      if (itemsResponse.data.success && pricelistsResponse.data.success) {
+        // Fiyat listesi bilgilerini template items ile eşleştir
+        const pricelistsMap = {};
+        pricelistsResponse.data.pricelists.forEach(pricelist => {
+          pricelistsMap[pricelist.id] = {
+            name: pricelist.name,
+            color: pricelist.color || '#1890ff'
+          };
+        });
+        
+        // Template items'lara fiyat listesi bilgilerini ekle
+        const enrichedItems = itemsResponse.data.items.map(item => ({
+          ...item,
+          pricelistName: pricelistsMap[item.pricelist_id]?.name || `Fiyat Listesi ${item.pricelist_id}`,
+          pricelistColor: pricelistsMap[item.pricelist_id]?.color || '#1890ff'
+        }));
+        
+        setPreviewTemplate(template);
+        setPreviewItems(enrichedItems);
+        setPreviewModalVisible(true);
+      } else {
+        NotificationService.error('Hata', 'Template öğeleri yüklenemedi');
+      }
+    } catch (error) {
+      console.error('Preview error:', error);
+      NotificationService.error('Hata', 'Template önizlemesi yüklenemedi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filterItems = (items) => {
     if (!productFilter.trim()) return items || [];
     
@@ -379,9 +427,16 @@ const OfferTemplates = () => {
     {
       title: 'İşlemler',
       key: 'actions',
-      width: 120,
+      width: 160,
       render: (_, record) => (
         <Space>
+          <Button
+            type="default"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handlePreview(record)}
+            title="Önizleme"
+          />
           <Button
             type="primary"
             size="small"
@@ -644,6 +699,191 @@ const OfferTemplates = () => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Preview Modal */}
+      <Modal
+        title={`Template Önizlemesi: ${previewTemplate?.name}`}
+        visible={previewModalVisible}
+        onCancel={() => setPreviewModalVisible(false)}
+        width={1200}
+        footer={[
+          <Space key="preview-actions" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            <Space>
+              <span style={{ fontWeight: 'bold', marginRight: 8 }}>Dil:</span>
+              <Button.Group>
+                <Button 
+                  type={previewLanguage === 'en' ? 'primary' : 'default'}
+                  onClick={() => setPreviewLanguage('en')}
+                  style={{ 
+                    backgroundColor: previewLanguage === 'en' ? '#1890ff' : '#f0f0f0',
+                    borderColor: previewLanguage === 'en' ? '#1890ff' : '#d9d9d9',
+                    color: previewLanguage === 'en' ? 'white' : '#666'
+                  }}
+                >
+                  EN
+                </Button>
+                <Button 
+                  type={previewLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setPreviewLanguage('tr')}
+                  style={{ 
+                    backgroundColor: previewLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                    borderColor: previewLanguage === 'tr' ? '#52c41a' : '#d9d9d9',
+                    color: previewLanguage === 'tr' ? 'white' : '#666'
+                  }}
+                >
+                  TR
+                </Button>
+              </Button.Group>
+            </Space>
+            <Button onClick={() => setPreviewModalVisible(false)}>Kapat</Button>
+          </Space>
+        ]}
+      >
+        <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {previewTemplate && (
+            <div style={{ marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0, marginBottom: 8 }}>
+                {previewTemplate.name}
+              </Title>
+              {previewTemplate.description && (
+                <p style={{ color: '#666', margin: 0, marginBottom: 16 }}>
+                  {previewTemplate.description}
+                </p>
+              )}
+            </div>
+          )}
+          
+          {(() => {
+            // Ürünleri fiyat listesine göre grupla
+            const groupedItems = previewItems.reduce((groups, item) => {
+              const pricelistId = item.pricelist_id;
+              if (!groups[pricelistId]) {
+                groups[pricelistId] = {
+                  items: [],
+                  pricelistName: item.pricelistName || `Fiyat Listesi ${pricelistId}`,
+                  pricelistColor: item.pricelistColor || '#1890ff'
+                };
+              }
+              groups[pricelistId].items.push(item);
+              return groups;
+            }, {});
+
+            const groupedEntries = Object.entries(groupedItems);
+            if (groupedEntries.length === 0) {
+              return <p>Bu template'de ürün bulunmuyor.</p>;
+            }
+
+            return (
+              <Collapse defaultActiveKey={groupedEntries.map((_, index) => index.toString())}>
+                {groupedEntries.map(([pricelistId, group], index) => {
+                  const pricelistTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+                  const currency = group.items.length > 0 ? group.items[0].currency : 'EUR';
+                  
+                  return (
+                    <Panel 
+                      key={index.toString()}
+                      header={
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                          <span style={{ display: 'flex', alignItems: 'center' }}>
+                            <div 
+                              style={{ 
+                                width: 12, 
+                                height: 12, 
+                                backgroundColor: group.pricelistColor,
+                                borderRadius: '50%', 
+                                marginRight: 8 
+                              }} 
+                            />
+                            {group.pricelistName}
+                          </span>
+                          <Tag color="blue" style={{ margin: 0 }}>
+                            {group.items.length} ürün - {pricelistTotal.toFixed(2)} {currency}
+                          </Tag>
+                        </div>
+                      }
+                    >
+                      <Table
+                        columns={[
+                          {
+                            title: 'Ürün Kodu',
+                            dataIndex: 'product_id',
+                            key: 'product_id',
+                            width: 120,
+                          },
+                          {
+                            title: 'Ürün Adı',
+                            key: 'product_name',
+                            render: (_, record) => {
+                              return previewLanguage === 'tr' ? 
+                                (record.name_tr || record.name_en || '-') : 
+                                (record.name_en || record.name_tr || '-');
+                            },
+                          },
+                          {
+                            title: 'Açıklama',
+                            key: 'description',
+                            ellipsis: true,
+                            render: (_, record) => {
+                              return previewLanguage === 'tr' ? 
+                                (record.description_tr || record.description_en || '-') : 
+                                (record.description_en || record.description_tr || '-');
+                            },
+                          },
+                          {
+                            title: 'Miktar',
+                            dataIndex: 'quantity',
+                            key: 'quantity',
+                            width: 80,
+                            align: 'center',
+                          },
+                          {
+                            title: 'Birim Fiyat',
+                            key: 'price',
+                            width: 120,
+                            align: 'right',
+                            render: (_, record) => `${record.price} ${record.currency}`,
+                          },
+                          {
+                            title: 'Toplam',
+                            key: 'total_price',
+                            width: 120,
+                            align: 'right',
+                            render: (_, record) => `${record.total_price} ${record.currency}`,
+                          },
+                          {
+                            title: 'Not',
+                            dataIndex: 'note',
+                            key: 'note',
+                            ellipsis: true,
+                            render: (note) => note || '-',
+                          },
+                        ]}
+                        dataSource={group.items}
+                        rowKey="id"
+                        pagination={false}
+                        size="small"
+                      />
+                    </Panel>
+                  );
+                })}
+              </Collapse>
+            );
+          })()}
+          
+          {/* Genel Toplam */}
+          <div style={{ 
+            marginTop: 16, 
+            padding: 16, 
+            backgroundColor: '#f5f5f5', 
+            borderRadius: 6,
+            textAlign: 'right' 
+          }}>
+            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+              Genel Toplam: {previewItems.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0).toFixed(2)} {previewItems.length > 0 ? previewItems[0].currency : 'EUR'}
+            </Title>
+          </div>
+        </div>
       </Modal>
     </div>
   );
