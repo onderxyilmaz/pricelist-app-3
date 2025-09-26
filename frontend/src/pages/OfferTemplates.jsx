@@ -53,6 +53,10 @@ const OfferTemplates = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [expandedPanels, setExpandedPanels] = useState([]);
 
+  // Filtreleme state'leri
+  const [templateFilter, setTemplateFilter] = useState('');
+  const [filteredTemplates, setFilteredTemplates] = useState([]);
+
   useEffect(() => {
     document.title = 'Price List App v3 - Teklif Templates';
     
@@ -84,6 +88,25 @@ const OfferTemplates = () => {
       setLoading(false);
     }
   };
+
+  // Filtreleme fonksiyonu
+  const applyFilters = () => {
+    let filtered = [...templates];
+
+    // Template adı filtresi
+    if (templateFilter.trim()) {
+      filtered = filtered.filter(template =>
+        template.name.toLowerCase().includes(templateFilter.toLowerCase())
+      );
+    }
+
+    setFilteredTemplates(filtered);
+  };
+
+  // Templates ve filtre değiştiğinde filtrelemeyi uygula
+  useEffect(() => {
+    applyFilters();
+  }, [templates, templateFilter]);
 
   const fetchPricelists = async () => {
     try {
@@ -477,9 +500,23 @@ const OfferTemplates = () => {
       </div>
 
       <Card>
+        <div style={{ marginBottom: '16px' }}>
+          <Search
+            placeholder="Template ara..."
+            allowClear
+            onSearch={(value) => setTemplateFilter(value)}
+            onChange={(e) => setTemplateFilter(e.target.value)}
+            style={{ width: 300 }}
+            prefix={<SearchOutlined />}
+            autoFocus
+          />
+        </div>
+      </Card>
+
+      <Card>
         <Table
           columns={columns}
-          dataSource={templates}
+          dataSource={filteredTemplates}
           rowKey="id"
           loading={loading}
           pagination={{
