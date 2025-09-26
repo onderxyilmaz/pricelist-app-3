@@ -127,6 +127,7 @@ const Offers = () => {
   const [isTemplateMode, setIsTemplateMode] = useState(false);
   const [availableTemplates, setAvailableTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [templateFilter, setTemplateFilter] = useState('');
 
   // Step 1'de Teklif No alanına autofocus
   useEffect(() => {
@@ -143,6 +144,21 @@ const Offers = () => {
       setTimeout(() => tryFocus(), 50);
     }
   }, [modalVisible, editingOffer, currentStep]);
+
+  // Template seçim adımında (step 1) arama alanına autofocus
+  useEffect(() => {
+    if (modalVisible && isTemplateMode && currentStep === 1) {
+      const tryFocus = (attempt = 0) => {
+        const templateSearchInput = document.querySelector('input[placeholder="Template ara..."]');
+        if (templateSearchInput && templateSearchInput.offsetParent !== null) {
+          templateSearchInput.focus();
+        } else if (attempt < 5) {
+          setTimeout(() => tryFocus(attempt + 1), 100);
+        }
+      };
+      setTimeout(() => tryFocus(), 100);
+    }
+  }, [modalVisible, isTemplateMode, currentStep]);
 
   useEffect(() => {
     document.title = 'Price List App v3 - Teklifler';
@@ -415,6 +431,7 @@ const Offers = () => {
       // Template state'lerini sıfırla
       setSelectedTemplate(null);
       setIsTemplateMode(false);
+      setTemplateFilter('');
       fetchOffers(); // Listeyi yenile
       
     } catch (error) {
@@ -727,6 +744,7 @@ const Offers = () => {
       // Template state'lerini sıfırla
       setSelectedTemplate(null);
       setIsTemplateMode(false);
+      setTemplateFilter('');
     }
   };
 
@@ -746,6 +764,7 @@ const Offers = () => {
     // Template state'lerini sıfırla
     setSelectedTemplate(null);
     setIsTemplateMode(false);
+    setTemplateFilter('');
   };
 
   // Seçilen ürünleri fiyat listelerine göre grupla
@@ -1118,6 +1137,17 @@ const Offers = () => {
       console.error('Template fetch error:', error);
       NotificationService.error('Hata', 'Template\'ler yüklenemedi');
     }
+  };
+
+  // Template filtreleme fonksiyonu
+  const getFilteredTemplates = () => {
+    if (!templateFilter.trim()) {
+      return availableTemplates;
+    }
+    
+    return availableTemplates.filter(template =>
+      template.name.toLowerCase().includes(templateFilter.toLowerCase())
+    );
   };
 
   const handleTemplateSelect = async (template) => {
@@ -2435,6 +2465,7 @@ const Offers = () => {
                       // Template state'lerini sıfırla
                       setSelectedTemplate(null);
                       setIsTemplateMode(false);
+                      setTemplateFilter('');
                     }}>İptal</Button>
                     <Button type="primary" htmlType="submit">Sonraki Adım</Button>
                   </Space>
@@ -2451,6 +2482,18 @@ const Offers = () => {
 
                 <div style={{ marginBottom: 16 }}>
                   <p style={{ color: '#666' }}>Bir template seçin:</p>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <Search
+                    placeholder="Template ara..."
+                    allowClear
+                    value={templateFilter}
+                    onChange={(e) => setTemplateFilter(e.target.value)}
+                    onSearch={(value) => setTemplateFilter(value)}
+                    style={{ width: 300 }}
+                    prefix={<SearchOutlined />}
+                  />
                 </div>
 
                 <Table
@@ -2507,7 +2550,7 @@ const Offers = () => {
                       ),
                     },
                   ]}
-                  dataSource={availableTemplates}
+                  dataSource={getFilteredTemplates()}
                   rowKey="id"
                   pagination={false}
                   loading={loading}
