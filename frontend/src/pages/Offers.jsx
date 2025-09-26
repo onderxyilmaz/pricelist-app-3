@@ -123,6 +123,11 @@ const Offers = () => {
   const [previewItems, setPreviewItems] = useState([]);
   const [previewLanguage, setPreviewLanguage] = useState('en');
 
+  // Template mode states
+  const [isTemplateMode, setIsTemplateMode] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+
   // Step 1'de Teklif No alanına autofocus
   useEffect(() => {
     if (modalVisible && !editingOffer && currentStep === 0) {
@@ -313,7 +318,7 @@ const Offers = () => {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (templateMode = false) => {
   setEditingOffer(null);
   form.resetFields();
   setCurrentStep(0);
@@ -326,6 +331,14 @@ const Offers = () => {
   setDiscountData({});
   setProfitData({});
   setManualPrices({});
+  setIsTemplateMode(templateMode);
+  setSelectedTemplate(null);
+  
+  if (templateMode) {
+    // Template mode ise template'leri yükle
+    await fetchTemplates();
+  }
+  
   await fetchPricelistsWithItems();
   setModalVisible(true);
   };
@@ -468,12 +481,30 @@ const Offers = () => {
     if (quantity < 0) return;
     setSelectedItems(prev => prev.map(item => {
       if (item.id === itemId) {
-        const originalItem = pricelists
+        // Önce direkt ID ile bul (normal ürünler için)
+        let originalItem = pricelists
           .flatMap(p => p.items)
           .find(pi => pi.id === itemId);
-        if (!originalItem) return item;
+        
+        // Bulunamazsa product_id ve pricelist_id ile bul (template ürünleri için)
+        if (!originalItem && item.product_id && item.pricelist_id) {
+          const pricelist = pricelists.find(p => p.id === item.pricelist_id);
+          if (pricelist) {
+            originalItem = pricelist.items.find(pi => pi.product_id === item.product_id);
+          }
+        }
+        
+        if (!originalItem) {
+          // Template ürünü için stock bilgisi yoksa mevcut item'dan al
+          return {
+            ...item,
+            quantity,
+            total_price: (item.price * quantity).toFixed(2)
+          };
+        }
+        
         if (quantity > originalItem.stock) {
-          const itemName = originalItem.name_tr || originalItem.name_en || originalItem.name;
+          const itemName = originalItem.name_tr || originalItem.name_en || originalItem.name || item.name_tr || item.name_en;
           NotificationService.warning(
             'Stok Uyarısı', 
             `"${itemName}" ürünü için maksimum ${originalItem.stock} ${originalItem.unit} seçebilirsiniz. Mevcut stok: ${originalItem.stock}`
@@ -1068,6 +1099,74 @@ const Offers = () => {
     }
   };
 
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/offer-templates');
+      if (response.data.success) {
+        setAvailableTemplates(response.data.templates);
+      }
+    } catch (error) {
+      console.error('Template fetch error:', error);
+      NotificationService.error('Hata', 'Template\'ler yüklenemedi');
+    }
+  };
+
+  const handleTemplateSelect = async (template) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`http://localhost:3001/api/offer-templates/${template.id}/items`);
+      if (response.data.success) {
+        setSelectedTemplate(template);
+        setTemplateItems(response.data.items);
+        // Her ürün için default miktar 1 yap
+        const defaultQuantities = {};
+        response.data.items.forEach(item => {
+          defaultQuantities[item.id] = item.quantity || 1;
+        });
+        setTemplateQuantities(defaultQuantities);
+      } else {
+        NotificationService.error('Hata', 'Template ürünleri yüklenemedi');
+      }
+    } catch (error) {
+      console.error('Template items fetch error:', error);
+      NotificationService.error('Hata', 'Template ürünleri yüklenemedi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateOfferFromTemplate = () => {
+    if (!selectedTemplate || templateItems.length === 0) {
+      NotificationService.warning('Uyarı', 'Lütfen bir template seçin');
+      return;
+    }
+
+    // Template'den seçilen ürünleri wizard'a aktar
+    const wizardItems = templateItems.map(item => ({
+      ...item,
+      quantity: templateQuantities[item.id] || 1,
+      total_price: (templateQuantities[item.id] || 1) * item.price,
+      // Template'deki ID'yi kullan ama product_id ve pricelist_id bilgilerini de koru
+      name_tr: item.name_tr,
+      name_en: item.name_en,
+      description_tr: item.description_tr,
+      description_en: item.description_en,
+      // Eşleşme için gerekli alanlar
+      product_id: item.product_id,
+      pricelist_id: item.pricelist_id
+    }));
+
+    // Wizard state'ini ayarla
+    setSelectedItems(wizardItems);
+    
+    // Template modalını kapat ve wizard'ı aç
+    setTemplateModalVisible(false);
+    setModalVisible(true);
+    setCurrentStep(isTemplateMode ? 2 : 1); // Template seçildi, ürün seçimi adımına geç
+    
+    NotificationService.success('Başarılı', `${selectedTemplate.name} template'i yüklendi`);
+  };
+
   const handlePreview = async (offer) => {
     try {
       setLoading(true);
@@ -1653,7 +1752,7 @@ const Offers = () => {
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
-          onClick={handleCreate}
+          onClick={() => handleCreate(true)} // Direkt template mode'da aç
         >
           Yeni Teklif
         </Button>
@@ -2162,6 +2261,7 @@ const Offers = () => {
         <div>
           <Steps current={currentStep} style={{ marginBottom: 24 }}>
               <Step title="Teklif Bilgileri" description="Teklif No ve Firma" />
+              {isTemplateMode && <Step title="Template Seçimi" description="Hazır template seç" />}
               <Step title="Ürün Seçimi" description="Fiyat listesi ve ürünler" />
               <Step title="İndirim Oranı" description="Liste bazında indirimler" />
               <Step title="Kar Oranı" description="Liste bazında kar marjları" />
@@ -2170,7 +2270,12 @@ const Offers = () => {
             </Steps>
 
             {/* Language Selection for Steps 2, 5 and 6 only */}
-            {(currentStep === 1 || currentStep === 4 || currentStep === 5) && (
+            {(() => {
+              const productSelectionStep = isTemplateMode ? 2 : 1;
+              const manualPriceStep = isTemplateMode ? 5 : 4;
+              const previewStep = isTemplateMode ? 6 : 5;
+              return (currentStep === productSelectionStep || currentStep === manualPriceStep || currentStep === previewStep);
+            })() && (
               <div style={{ marginBottom: 16, textAlign: 'center' }}>
                 <Button.Group>
                   <Button
@@ -2243,7 +2348,132 @@ const Offers = () => {
               </Form>
             )}
 
-            {currentStep === 1 && (
+            {/* Template Selection Step - Only in template mode */}
+            {isTemplateMode && currentStep === 1 && (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ color: '#666' }}>Bir template seçin:</p>
+                </div>
+
+                <Table
+                  columns={[
+                    {
+                      title: 'Template Adı',
+                      dataIndex: 'name',
+                      key: 'name',
+                    },
+                    {
+                      title: 'Açıklama',
+                      dataIndex: 'description',
+                      key: 'description',
+                      ellipsis: true,
+                    },
+                    {
+                      title: 'Ürün Sayısı',
+                      dataIndex: 'item_count',
+                      key: 'item_count',
+                      width: 100,
+                      align: 'center',
+                      render: (count) => <Tag color="blue">{count} ürün</Tag>,
+                    },
+                    {
+                      title: 'Oluşturan',
+                      key: 'creator',
+                      width: 120,
+                      render: (_, record) => {
+                        if (record.creator_first_name && record.creator_last_name) {
+                          return `${record.creator_first_name} ${record.creator_last_name}`;
+                        }
+                        return '-';
+                      },
+                    },
+                    {
+                      title: 'Seç',
+                      key: 'select',
+                      width: 80,
+                      render: (_, record) => (
+                        <Button
+                          type={selectedTemplate?.id === record.id ? 'primary' : 'default'}
+                          size="small"
+                          onClick={() => {
+                            // Toggle seçimi: eğer zaten seçiliyse kaldır, değilse seç
+                            if (selectedTemplate?.id === record.id) {
+                              setSelectedTemplate(null);
+                            } else {
+                              setSelectedTemplate(record);
+                            }
+                          }}
+                        >
+                          {selectedTemplate?.id === record.id ? 'Seçildi' : 'Seç'}
+                        </Button>
+                      ),
+                    },
+                  ]}
+                  dataSource={availableTemplates}
+                  rowKey="id"
+                  pagination={false}
+                  loading={loading}
+                  size="small"
+                />
+
+                <div style={{ marginTop: 16, textAlign: 'right' }}>
+                  <Space>
+                    <Button onClick={() => setCurrentStep(0)}>Önceki Adım</Button>
+                    <Button 
+                      type="primary"
+                      loading={loading}
+                      onClick={async () => {
+                        if (selectedTemplate) {
+                          // Template seçilmişse template items'ları yükle
+                          try {
+                            setLoading(true);
+                            const response = await axios.get(`http://localhost:3001/api/offer-templates/${selectedTemplate.id}/items`);
+                            if (response.data.success) {
+                              // Template'den gelen ürünleri selectedItems'a ekle
+                              const templateItems = response.data.items.map(item => ({
+                                ...item,
+                                quantity: item.quantity,
+                                total_price: item.quantity * item.price,
+                                // Template'deki ID'yi kullan ama product_id ve pricelist_id bilgilerini de koru
+                                name_tr: item.name_tr,
+                                name_en: item.name_en,
+                                description_tr: item.description_tr,
+                                description_en: item.description_en,
+                                // Eşleşme için gerekli alanlar
+                                product_id: item.product_id,
+                                pricelist_id: item.pricelist_id
+                              }));
+                              setSelectedItems(templateItems);
+                              setCurrentStep(2); // Ürün seçimi adımına geç
+                            }
+                          } catch (error) {
+                            console.error('Template items error:', error);
+                            NotificationService.error('Hata', 'Template ürünleri yüklenemedi');
+                          } finally {
+                            setLoading(false);
+                          }
+                        } else {
+                          // Template seçilmemişse direkt ürün seçimi adımına geç
+                          setSelectedItems([]);
+                          setCurrentStep(2);
+                        }
+                      }}
+                    >
+                      {selectedTemplate ? 'Template ile Sonraki Adım' : 'Sonraki Adım'}
+                    </Button>
+                  </Space>
+                </div>
+              </div>
+            )}
+
+            {(() => {
+              const productSelectionStep = isTemplateMode ? 2 : 1;
+              return currentStep === productSelectionStep;
+            })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
                   <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
@@ -2288,7 +2518,10 @@ const Offers = () => {
                         key={pricelist.id}
                       >
                         {filteredItems.map(item => {
-                        const selectedItem = selectedItems.find(selected => selected.id === item.id);
+                        const selectedItem = selectedItems.find(selected => 
+                          selected.id === item.id || 
+                          (selected.product_id === item.product_id && selected.pricelist_id === pricelist.id)
+                        );
                         const isSelected = !!selectedItem;
                         return (
                           <div key={item.id} style={{ 
@@ -2323,7 +2556,7 @@ const Offers = () => {
                                   min={0}
                                   max={item.stock <= 0 ? 0 : item.stock}
                                   value={selectedItem.quantity}
-                                  onChange={(value) => handleQuantityChange(item.id, value)}
+                                  onChange={(value) => handleQuantityChange(selectedItem.id, value)}
                                   disabled={item.stock <= 0}
                                   style={{ width: 80 }}
                                 />
@@ -2393,7 +2626,10 @@ const Offers = () => {
                     <Button 
                       type="primary" 
                       disabled={selectedItems.length === 0}
-                      onClick={() => setCurrentStep(2)}
+                      onClick={() => {
+                        const nextStep = isTemplateMode ? 3 : 2;
+                        setCurrentStep(nextStep);
+                      }}
                     >
                       Sonraki Adım
                     </Button>
@@ -2402,7 +2638,10 @@ const Offers = () => {
               </div>
             )}
 
-            {currentStep === 2 && (
+            {(() => {
+              const discountStep = isTemplateMode ? 3 : 2;
+              return currentStep === discountStep;
+            })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
                   <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
@@ -2491,7 +2730,10 @@ const Offers = () => {
                     <Button onClick={handleModalClose}>İptal</Button>
                     <Button 
                       type="primary"
-                      onClick={() => setCurrentStep(3)}
+                      onClick={() => {
+                        const nextStep = isTemplateMode ? 4 : 3;
+                        setCurrentStep(nextStep);
+                      }}
                     >
                       Sonraki Adım
                     </Button>
@@ -2500,7 +2742,10 @@ const Offers = () => {
               </div>
             )}
 
-            {currentStep === 3 && (
+            {(() => {
+              const profitStep = isTemplateMode ? 4 : 3;
+              return currentStep === profitStep;
+            })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
                   <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
@@ -2595,7 +2840,10 @@ const Offers = () => {
                     <Button onClick={handleModalClose}>İptal</Button>
                     <Button 
                       type="primary"
-                      onClick={() => setCurrentStep(4)}
+                      onClick={() => {
+                        const nextStep = isTemplateMode ? 5 : 4;
+                        setCurrentStep(nextStep);
+                      }}
                     >
                       Sonraki Adım
                     </Button>
@@ -2604,7 +2852,10 @@ const Offers = () => {
               </div>
             )}
 
-            {currentStep === 4 && (
+            {(() => {
+              const manualPriceStep = isTemplateMode ? 5 : 4;
+              return currentStep === manualPriceStep;
+            })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
                   <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
@@ -2742,7 +2993,10 @@ const Offers = () => {
                     <Button onClick={handleModalClose}>İptal</Button>
                     <Button 
                       type="primary"
-                      onClick={() => setCurrentStep(5)}
+                      onClick={() => {
+                        const nextStep = isTemplateMode ? 6 : 5;
+                        setCurrentStep(nextStep);
+                      }}
                     >
                       Sonraki Adım
                     </Button>
@@ -2751,7 +3005,10 @@ const Offers = () => {
               </div>
             )}
 
-            {currentStep === 5 && (
+            {(() => {
+              const previewStep = isTemplateMode ? 6 : 5;
+              return currentStep === previewStep;
+            })() && (
               <div>
                 {/* Başlık Bölümü */}
                 <div style={{ 
