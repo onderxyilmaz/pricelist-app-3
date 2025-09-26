@@ -2378,15 +2378,127 @@ const Offers = () => {
       >
         {/* Hem yeni teklif hem düzenleme modu - wizard */}
         <div>
-          <Steps current={currentStep} style={{ marginBottom: 24 }}>
-              <Step title="Teklif Bilgileri" description="Teklif No ve Firma" />
-              {isTemplateMode && <Step title="Template Seçimi" description="Hazır template seç" />}
-              <Step title="Ürün Seçimi" description="Fiyat listesi ve ürünler" />
-              <Step title="İndirim Oranı" description="Liste bazında indirimler" />
-              <Step title="Kar Oranı" description="Liste bazında kar marjları" />
-              <Step title="Manuel Fiyat" description="Ürün bazında fiyat düzenleme" />
-              <Step title="Ön İzleme" description="Teklif özeti ve kontrol" />
-            </Steps>
+          {/* Custom Steps Navigation */}
+          <div style={{ 
+            marginBottom: 24,
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '1px solid #e9ecef'
+          }}>
+            {/* Step 1 - Teklif Bilgileri */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === 0 ? '#1890ff' : currentStep > 0 ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= 0 ? '#fff' : '#666',
+              position: 'relative',
+              clipPath: currentStep === 0 || (!isTemplateMode && currentStep > 0) || (isTemplateMode && currentStep > 0) 
+                ? 'polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)' 
+                : 'none'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step 1</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teklif No ve Firma</div>
+            </div>
+
+            {/* Step 2 - Template Seçimi (sadece template mode'da) */}
+            {isTemplateMode && (
+              <div style={{
+                flex: 1,
+                padding: '12px 16px',
+                backgroundColor: currentStep === 1 ? '#1890ff' : currentStep > 1 ? '#52c41a' : '#f8f9fa',
+                color: currentStep >= 1 ? '#fff' : '#666',
+                position: 'relative',
+                marginLeft: '-20px',
+                clipPath: currentStep === 1 || currentStep > 1 
+                  ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                  : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: '600' }}>Step 2</div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>Hazır template seç</div>
+              </div>
+            )}
+
+            {/* Step 3/2 - Ürün Seçimi */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 2 : 1) ? '#1890ff' : currentStep > (isTemplateMode ? 2 : 1) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 2 : 1) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 2 : 1) || currentStep > (isTemplateMode ? 2 : 1)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 3 : 2}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Fiyat listesi ve ürünler</div>
+            </div>
+
+            {/* Step 4/3 - İndirim Oranı */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 3 : 2) ? '#1890ff' : currentStep > (isTemplateMode ? 3 : 2) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 3 : 2) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 3 : 2) || currentStep > (isTemplateMode ? 3 : 2)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 4 : 3}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Liste bazında indirimler</div>
+            </div>
+
+            {/* Step 5/4 - Kar Oranı */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 4 : 3) ? '#1890ff' : currentStep > (isTemplateMode ? 4 : 3) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 4 : 3) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 4 : 3) || currentStep > (isTemplateMode ? 4 : 3)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 5 : 4}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Liste bazında kar marjları</div>
+            </div>
+
+            {/* Step 6/5 - Manuel Fiyat */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 5 : 4) ? '#1890ff' : currentStep > (isTemplateMode ? 5 : 4) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 5 : 4) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 5 : 4) || currentStep > (isTemplateMode ? 5 : 4)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 6 : 5}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Ürün bazında fiyat düzenleme</div>
+            </div>
+
+            {/* Step 7/6 - Ön İzleme */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 6 : 5) ? '#1890ff' : currentStep > (isTemplateMode ? 6 : 5) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 6 : 5) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 7 : 6}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teklif özeti ve kontrol</div>
+            </div>
+          </div>
 
             {/* Language Selection for Steps 2, 5 and 6 only */}
             {(() => {
