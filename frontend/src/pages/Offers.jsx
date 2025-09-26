@@ -412,6 +412,9 @@ const Offers = () => {
 
       NotificationService.success('Başarılı', editingOffer ? 'Teklif başarıyla güncellendi' : 'Teklif başarıyla oluşturuldu');
       setModalVisible(false);
+      // Template state'lerini sıfırla
+      setSelectedTemplate(null);
+      setIsTemplateMode(false);
       fetchOffers(); // Listeyi yenile
       
     } catch (error) {
@@ -721,6 +724,9 @@ const Offers = () => {
       setCancelConfirmVisible(true);
     } else {
       setModalVisible(false);
+      // Template state'lerini sıfırla
+      setSelectedTemplate(null);
+      setIsTemplateMode(false);
     }
   };
 
@@ -737,6 +743,9 @@ const Offers = () => {
     setDiscountData({});
     setProfitData({});
     setManualPrices({});
+    // Template state'lerini sıfırla
+    setSelectedTemplate(null);
+    setIsTemplateMode(false);
   };
 
   // Seçilen ürünleri fiyat listelerine göre grupla
@@ -2341,7 +2350,12 @@ const Offers = () => {
 
                 <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
                   <Space>
-                    <Button onClick={() => setModalVisible(false)}>İptal</Button>
+                    <Button onClick={() => {
+                      setModalVisible(false);
+                      // Template state'lerini sıfırla
+                      setSelectedTemplate(null);
+                      setIsTemplateMode(false);
+                    }}>İptal</Button>
                     <Button type="primary" htmlType="submit">Sonraki Adım</Button>
                   </Space>
                 </Form.Item>
