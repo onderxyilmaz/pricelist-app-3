@@ -1569,7 +1569,10 @@ const Offers = () => {
             type="default"
             size="small"
             icon={<EyeOutlined />}
-            onClick={() => handlePreview(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePreview(record);
+            }}
             title="Önizleme"
           />
 
@@ -1578,7 +1581,10 @@ const Offers = () => {
             type="primary"
             size="small"
             icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(record);
+            }}
             title="Düzenle"
           />
           
@@ -1587,7 +1593,10 @@ const Offers = () => {
             type="default"
             size="small"
             icon={<BranchesOutlined />}
-            onClick={() => handleCreateRevision(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCreateRevision(record);
+            }}
             title="Revizyon Oluştur"
           />
           
@@ -1596,7 +1605,10 @@ const Offers = () => {
             type="default"
             size="small"
             icon={<SendOutlined />}
-            onClick={() => handleToggleStatus(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleStatus(record);
+            }}
             title={record.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
             style={{ 
               color: record.status === 'sent' ? '#52c41a' : '#1890ff',
@@ -1613,7 +1625,10 @@ const Offers = () => {
                                     <Button
                                       size="small"
                                       icon={<CheckOutlined />}
-                                      onClick={() => handleCustomerResponse(record, 'accepted')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCustomerResponse(record, 'accepted');
+                                      }}
                                       disabled={record.customer_response === 'accepted'}
                                       style={{ 
                                         marginRight: 8,
@@ -1627,7 +1642,10 @@ const Offers = () => {
                                     <Button
                                       size="small"
                                       icon={<CloseOutlined />}
-                                      onClick={() => handleCustomerResponse(record, 'rejected')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCustomerResponse(record, 'rejected');
+                                      }}
                                       disabled={record.customer_response === 'rejected'}
                                       style={{ 
                                         marginRight: 8,
@@ -1642,7 +1660,10 @@ const Offers = () => {
                                       <Button
                                         size="small"
                                         icon={<QuestionCircleOutlined />}
-                                        onClick={() => handleCustomerResponse(record, null)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCustomerResponse(record, null);
+                                        }}
                                         style={{ 
                                           color: '#faad14',
                                           borderColor: '#faad14'
@@ -1692,7 +1713,10 @@ const Offers = () => {
             type="default"
             size="small"
             icon={<FileExcelOutlined />}
-            onClick={() => handleExportToExcel(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleExportToExcel(record);
+            }}
             title="Excel'e Aktar"
             style={{ 
               color: '#52c41a',
@@ -1705,7 +1729,8 @@ const Offers = () => {
             type="default"
             size="small"
             icon={<FilePdfOutlined />}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               // TODO: PDF export fonksiyonu eklenecek
               console.log('PDF export:', record);
             }}
@@ -1922,17 +1947,37 @@ const Offers = () => {
             onClick: (event) => {
               // Eğer tıklanan element bir buton, input veya link ise satır tıklamasını engelle
               const target = event.target;
-              const clickableElements = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA'];
+              const clickableElements = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'SVG', 'PATH'];
               const isClickableElement = clickableElements.includes(target.tagName) || 
                                        target.closest('button') || 
                                        target.closest('a') || 
                                        target.closest('.ant-btn') ||
                                        target.closest('.ant-popconfirm') ||
-                                       target.closest('.ant-dropdown');
+                                       target.closest('.ant-dropdown') ||
+                                       target.closest('svg') ||
+                                       target.closest('[role="img"]') ||
+                                       target.closest('.anticon');
               
-              // Eğer buton vs. tıklanmışsa Ant Design'ın kendi expand işlemini engelle
+              // Eğer buton vs. tıklanmışsa expand işlemini engelle
               if (isClickableElement) {
                 event.stopPropagation();
+                return;
+              }
+              
+              // Sadece ana teklif satırlarında expand çalışsın (revizyonlarda değil)
+              if (record.parent_offer_id) {
+                return;
+              }
+              
+              // Ana teklif satırında ve revizyon varsa expand/collapse yap
+              const revisions = getRevisions(record.id);
+              if (revisions.length > 0) {
+                const isExpanded = expandedRowKeys.includes(record.id);
+                setExpandedRowKeys(prev => 
+                  isExpanded 
+                    ? prev.filter(key => key !== record.id)
+                    : [...prev, record.id]
+                );
               }
             },
             style: {
@@ -2048,30 +2093,51 @@ const Offers = () => {
                         width: 320,
                         render: (_, revRecord) => (
                           <Space>
-                            {/* 1. Düzenle */}
+                            {/* 1. Önizleme */}
+                            <Button
+                              type="default"
+                              size="small"
+                              icon={<EyeOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePreview(revRecord);
+                              }}
+                              title="Önizleme"
+                            />
+
+                            {/* 2. Düzenle */}
                             <Button
                               type="primary"
                               size="small"
                               icon={<EditOutlined />}
-                              onClick={() => handleEdit(revRecord)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(revRecord);
+                              }}
                               title="Düzenle"
                             />
                             
-                            {/* 2. Revizyon Oluştur */}
+                            {/* 3. Revizyon Oluştur */}
                             <Button
                               type="default"
                               size="small"
                               icon={<BranchesOutlined />}
-                              onClick={() => handleCreateRevision(revRecord)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCreateRevision(revRecord);
+                              }}
                               title="Revizyon Oluştur"
                             />
                             
-                            {/* 3. Gönderildi İşaretle */}
+                            {/* 4. Gönderildi İşaretle */}
                             <Button
                               type="default"
                               size="small"
                               icon={<SendOutlined />}
-                              onClick={() => handleToggleStatus(revRecord)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleStatus(revRecord);
+                              }}
                               title={revRecord.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
                               style={{ 
                                 color: revRecord.status === 'sent' ? '#52c41a' : '#1890ff',
@@ -2088,7 +2154,10 @@ const Offers = () => {
                                     <Button
                                       size="small"
                                       icon={<CheckOutlined />}
-                                      onClick={() => handleCustomerResponse(revRecord, 'accepted')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCustomerResponse(revRecord, 'accepted');
+                                      }}
                                       disabled={revRecord.customer_response === 'accepted'}
                                       style={{ 
                                         marginRight: 8,
@@ -2102,7 +2171,10 @@ const Offers = () => {
                                     <Button
                                       size="small"
                                       icon={<CloseOutlined />}
-                                      onClick={() => handleCustomerResponse(revRecord, 'rejected')}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCustomerResponse(revRecord, 'rejected');
+                                      }}
                                       disabled={revRecord.customer_response === 'rejected'}
                                       style={{ 
                                         marginRight: 8,
@@ -2117,7 +2189,10 @@ const Offers = () => {
                                       <Button
                                         size="small"
                                         icon={<QuestionCircleOutlined />}
-                                        onClick={() => handleCustomerResponse(revRecord, null)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCustomerResponse(revRecord, null);
+                                        }}
                                         style={{ 
                                           color: '#faad14',
                                           borderColor: '#faad14'
@@ -2169,7 +2244,10 @@ const Offers = () => {
                               type="default"
                               size="small"
                               icon={<FileExcelOutlined />}
-                              onClick={() => handleExportToExcel(revRecord)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleExportToExcel(revRecord);
+                              }}
                               title="Excel'e Aktar"
                               style={{ 
                                 color: '#52c41a',
@@ -2182,7 +2260,8 @@ const Offers = () => {
                               type="default"
                               size="small"
                               icon={<FilePdfOutlined />}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 // TODO: PDF export fonksiyonu eklenecek
                                 console.log('PDF export:', revRecord);
                               }}
@@ -2205,6 +2284,7 @@ const Offers = () => {
                                 danger
                                 size="small"
                                 icon={<DeleteOutlined />}
+                                onClick={(e) => e.stopPropagation()}
                                 title="Sil"
                               />
                             </Popconfirm>
