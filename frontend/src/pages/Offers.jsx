@@ -218,12 +218,42 @@ const Offers = () => {
       filtered = filtered.filter(offer => offer.created_by_name === filters.createdBy);
     }
 
-    // Teklif No filtresi
+    // Teklif No filtresi - hem ana tekliflerde hem revizyonlarda ara
     if (filters.offerNo.trim()) {
       const searchTerm = filters.offerNo.toLowerCase();
-      filtered = filtered.filter(offer => 
+      
+      // Arama terimiyle eşleşen tüm teklifleri bul (ana + revizyon)
+      const matchingOffers = filtered.filter(offer => 
         offer.offer_no.toLowerCase().includes(searchTerm)
       );
+      
+      // Eşleşen tekliflerin parent_offer_id'lerini topla
+      const matchingParentIds = new Set();
+      
+      matchingOffers.forEach(offer => {
+        if (offer.parent_offer_id) {
+          // Bu bir revizyon, parent_id'sini ekle
+          matchingParentIds.add(offer.parent_offer_id);
+        } else {
+          // Bu bir ana teklif, kendi id'sini ekle
+          matchingParentIds.add(offer.id);
+        }
+      });
+      
+      // Ana teklifleri ve ilgili revizyonları filtrele
+      filtered = filtered.filter(offer => {
+        // Eğer bu teklif arama sonuçlarında varsa dahil et
+        if (matchingOffers.some(m => m.id === offer.id)) {
+          return true;
+        }
+        
+        // Eğer bu ana teklifin revizyonlarından biri eşleşiyorsa ana teklifi de dahil et
+        if (!offer.parent_offer_id && matchingParentIds.has(offer.id)) {
+          return true;
+        }
+        
+        return false;
+      });
     }
 
     // Tarih aralığı filtresi
@@ -1502,7 +1532,32 @@ const Offers = () => {
   };
 
   // Ana teklifleri filtrele (parent_offer_id null olanlar)
-  const parentOffers = filteredOffers.filter(offer => !offer.parent_offer_id);
+  // Arama sonucunda revizyonlar da olabilir, bu durumda ana teklifleri doğru şekilde göster
+  const getUniqueParentOffers = () => {
+    const parentIds = new Set();
+    const parentOffersList = [];
+    
+    // Önce filtrelenmiş sonuçlardan ana teklifleri topla
+    filteredOffers.forEach(offer => {
+      if (!offer.parent_offer_id) {
+        if (!parentIds.has(offer.id)) {
+          parentIds.add(offer.id);
+          parentOffersList.push(offer);
+        }
+      } else {
+        // Bu bir revizyon, ana teklifini bul ve ekle
+        const parentOffer = offers.find(o => o.id === offer.parent_offer_id);
+        if (parentOffer && !parentIds.has(parentOffer.id)) {
+          parentIds.add(parentOffer.id);
+          parentOffersList.push(parentOffer);
+        }
+      }
+    });
+    
+    return parentOffersList;
+  };
+  
+  const parentOffers = getUniqueParentOffers();
   
   // Her ana teklifin revizyonlarını bul
   const getRevisions = (parentOfferId) => {
