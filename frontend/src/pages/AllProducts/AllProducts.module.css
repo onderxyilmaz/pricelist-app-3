@@ -1,0 +1,298 @@
+/* AllProducts Page Styles */
+
+/* Main Container */
+.container {
+  padding: 0;
+}
+
+/* Title */
+.title {
+  margin-bottom: 24px;
+  color: #262626;
+}
+
+/* Filter Card */
+.filterCard {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.filterRow {
+  align-items: center;
+}
+
+/* Search Input */
+.searchInput {
+  width: 100%;
+}
+
+/* Pricelist Filter */
+.pricelistSelect {
+  width: 100%;
+}
+
+/* Language Toggle */
+.languageToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.languageLabel {
+  font-weight: 600;
+  font-size: 12px;
+  color: #666;
+}
+
+.languageButtonGroup {
+  border-radius: 6px;
+}
+
+.languageButton {
+  transition: all 0.2s ease;
+}
+
+.languageButtonEn {
+  background-color: #1890ff !important;
+  color: white !important;
+}
+
+.languageButtonEnDefault {
+  background-color: #f0f0f0 !important;
+  color: #000 !important;
+}
+
+.languageButtonTr {
+  background-color: #52c41a !important;
+  color: white !important;
+}
+
+.languageButtonTrDefault {
+  background-color: #f0f0f0 !important;
+  color: #000 !important;
+}
+
+/* Clear Filters Button */
+.clearFiltersButton {
+  width: 100%;
+}
+
+/* Statistics and Export */
+.statsContainer {
+  text-align: right;
+}
+
+.statsText {
+  margin-right: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.exportButton {
+  transition: all 0.2s ease;
+}
+
+/* Main Content Card */
+.contentCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Table Styles */
+.table {
+  border-radius: 8px;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+/* Modal Styles */
+.modal {
+  border-radius: 8px;
+}
+
+.modalContent {
+  padding: 0;
+}
+
+/* Export Modal */
+.exportModalDescription {
+  margin-bottom: 16px;
+}
+
+.exportModalSubText {
+  color: #666;
+  font-size: 12px;
+  margin: 0;
+}
+
+.columnCheckboxGroup {
+  width: 100%;
+}
+
+.columnCheckboxRow {
+  margin: 0;
+}
+
+.exportModalFooter {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selectAllButtons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Edit Modal */
+.editModal {
+  border-radius: 8px;
+}
+
+.editForm {
+  margin: 0;
+}
+
+.formLanguageToggle {
+  margin-bottom: 8px;
+}
+
+.formLanguageButtonGroup {
+  border-radius: 6px;
+}
+
+.hiddenFormItem {
+  margin-bottom: 0;
+  display: none;
+}
+
+.visibleFormItem {
+  margin-bottom: 0;
+  display: block;
+}
+
+.formActions {
+  margin-bottom: 0;
+  text-align: right;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .filterRow {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .filterRow > * {
+    width: 100% !important;
+  }
+  
+  .statsContainer {
+    text-align: center;
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .languageToggle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .exportModalFooter {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .selectAllButtons {
+    justify-content: center;
+  }
+}
+
+/* Loading States */
+.loadingOverlay {
+  position: relative;
+}
+
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Error States */
+.errorMessage {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ff4d4f;
+}
+
+/* Empty States */
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+/* Animations */
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes */
+.fullWidth {
+  width: 100%;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.textRight {
+  text-align: right;
+}
+
+.marginBottom16 {
+  margin-bottom: 16px;
+}
+
+.marginBottom24 {
+  margin-bottom: 24px;
+}
+
+.padding16 {
+  padding: 16px;
+}

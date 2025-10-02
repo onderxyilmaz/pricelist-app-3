@@ -10,17 +10,16 @@ import Navbar from './components/Navbar.jsx';
 import LogoutHandler from './components/LogoutHandler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Sidebar from './components/Sidebar.jsx';
-import Pricelist from './pages/Pricelist.jsx';
-import PricelistList from './pages/PricelistList.jsx';
+import Pricelist from './pages/Pricelist/index.jsx';
 import PricelistDetail from './pages/PricelistDetail.jsx';
-import Profile from './pages/Profile.jsx';
+import Profile from './pages/Profile/index.jsx';
 import CreatePricelist from './pages/CreatePricelist.jsx';
 import ImportExcel from './pages/ImportExcel.jsx';
 import UserManagement from './pages/UserManagement.jsx';
-import AllProducts from './pages/AllProducts.jsx';
+import AllProducts from './pages/AllProducts/index.jsx';
 import Offers from './pages/Offers.jsx';
 import OfferTemplates from './pages/OfferTemplates.jsx';
-import Companies from './pages/Companies.jsx';
+import Companies from './pages/Companies/index.jsx';
 import './App.css';
 
 const { Content } = Layout;
@@ -61,7 +60,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile user={user} onUserUpdate={onUserUpdate} />} />
-                <Route path="/pricelists" element={<PricelistList />} />
+                <Route path="/pricelists" element={<Pricelist />} />
                 <Route path="/pricelists/create" element={<CreatePricelist />} />
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
                 <Route path="/all-products" element={<AllProducts />} />

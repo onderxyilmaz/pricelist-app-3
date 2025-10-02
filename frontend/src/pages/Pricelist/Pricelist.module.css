@@ -1,0 +1,275 @@
+/* Pricelist Page Styles */
+
+/* Main Container */
+.container {
+  padding: 24px;
+}
+
+/* Header */
+.header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  color: #262626;
+}
+
+.newButton {
+  transition: all 0.2s ease;
+}
+
+.newButton:hover {
+  transform: translateY(-1px);
+}
+
+/* Main Card */
+.mainCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Search Section */
+.searchContainer {
+  margin-bottom: 16px;
+}
+
+.searchInput {
+  width: 300px;
+}
+
+/* Table Styles */
+.table {
+  border-radius: 8px;
+}
+
+/* Color Circle */
+.colorCircle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #d9d9d9;
+  display: inline-block;
+}
+
+/* Name Link */
+.nameLink {
+  padding: 0;
+  height: auto;
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.nameLink:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Actions */
+.actionsContainer {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  transform: scale(1.05);
+}
+
+/* Modal Styles */
+.modal {
+  border-radius: 8px;
+}
+
+.modalContent {
+  padding: 0;
+}
+
+/* Form */
+.form {
+  margin: 0;
+}
+
+.formItem {
+  margin-bottom: 24px;
+}
+
+.formActions {
+  margin-bottom: 0;
+  text-align: right;
+}
+
+.formActionsContainer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Input Styles */
+.input {
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.textarea {
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.textarea:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Currency Select */
+.currencySelect {
+  width: 100%;
+}
+
+/* Color Picker */
+.colorPicker {
+  border-radius: 6px;
+}
+
+/* Delete Confirmation */
+.deleteConfirm {
+  border-radius: 6px;
+}
+
+.deleteConfirmWarning {
+  color: #ff4d4f;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+/* Tags */
+.currencyTag {
+  border-radius: 4px;
+}
+
+.itemCountTag {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .newButton {
+    width: 100%;
+  }
+  
+  .searchInput {
+    width: 100%;
+  }
+  
+  .table {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .header {
+    margin-bottom: 16px;
+  }
+  
+  .formActionsContainer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .formActionsContainer button {
+    width: 100%;
+  }
+}
+
+/* Loading States */
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Empty States */
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+/* Animations */
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes */
+.fullWidth {
+  width: 100%;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.marginBottom16 {
+  margin-bottom: 16px;
+}
+
+.marginBottom24 {
+  margin-bottom: 24px;
+}
+
+.padding16 {
+  padding: 16px;
+}
+
+/* Focus States */
+.focusable:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Hover Effects */
+.hoverCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}

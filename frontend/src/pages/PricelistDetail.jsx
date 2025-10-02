@@ -417,6 +417,7 @@ const PricelistDetail = () => {
               onChange={(e) => handleSearch(e.target.value)}
               style={{ width: 400 }}
               prefix={<SearchOutlined />}
+              autoFocus
             />
             
             {/* Tablo Dil Seçicisi */}

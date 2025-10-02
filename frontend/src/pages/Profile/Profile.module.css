@@ -1,0 +1,302 @@
+/* Profile Page Styles */
+
+/* Main Container */
+.container {
+  padding: 24px;
+}
+
+/* Title */
+.title {
+  color: #262626;
+  margin-bottom: 24px;
+}
+
+/* Profile Card */
+.profileCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+/* Avatar Section */
+.avatarSection {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.avatarContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar {
+  border: 4px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.avatar:hover {
+  border-color: #1890ff;
+}
+
+.avatarSuperAdmin {
+  background-color: #ff7a00 !important;
+}
+
+.avatarDefault {
+  background-color: #1890ff !important;
+}
+
+.avatarUploadButton {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.avatarUploadButton:hover {
+  transform: scale(1.1);
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+/* Form Styles */
+.formContainer {
+  width: 100%;
+}
+
+.formItem {
+  margin-bottom: 24px;
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.formInput {
+  transition: all 0.2s ease;
+}
+
+.formInput:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.formInputDisabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.passwordInput {
+  transition: all 0.2s ease;
+}
+
+.passwordInput:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Save Button */
+.saveButton {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.saveButton:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.saveButtonDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.saveButtonLoading {
+  cursor: wait;
+}
+
+/* Responsive Grid */
+.profileRow {
+  justify-content: center;
+}
+
+.profileCol {
+  transition: all 0.3s ease;
+}
+
+/* Avatar Dropdown Menu */
+.avatarDropdown {
+  border-radius: 8px;
+}
+
+.avatarMenuIcon {
+  margin-right: 8px;
+  color: #666;
+}
+
+.avatarMenuItem {
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.avatarMenuItem:hover {
+  background-color: #f5f5f5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .avatarSection {
+    margin-bottom: 24px;
+  }
+  
+  .avatar {
+    width: 100px !important;
+    height: 100px !important;
+  }
+  
+  .formItem {
+    margin-bottom: 16px;
+  }
+  
+  .saveButton {
+    height: 44px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .avatar {
+    width: 80px !important;
+    height: 80px !important;
+  }
+  
+  .avatarUploadButton {
+    width: 32px !important;
+    height: 32px !important;
+    border-width: 2px;
+  }
+  
+  .formLabel {
+    font-size: 14px;
+  }
+  
+  .saveButton {
+    height: 40px;
+    font-size: 14px;
+  }
+}
+
+/* Loading States */
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Validation States */
+.inputError {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+}
+
+.inputSuccess {
+  border-color: #52c41a !important;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2) !important;
+}
+
+/* Animations */
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes */
+.fullWidth {
+  width: 100%;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.marginBottom16 {
+  margin-bottom: 16px;
+}
+
+.marginBottom24 {
+  margin-bottom: 24px;
+}
+
+.padding16 {
+  padding: 16px;
+}
+
+/* Focus States */
+.focusable:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Upload Preview */
+.avatarPreview {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Success States */
+.successMessage {
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.errorMessage {
+  color: #ff4d4f;
+  font-weight: 500;
+}
