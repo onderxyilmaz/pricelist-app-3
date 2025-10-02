@@ -47,8 +47,8 @@ module.exports = async function (fastify, opts) {
 
       // Kullanıcıyı oluştur
       const result = await client.query(
-        'INSERT INTO users (first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, first_name, last_name, email, role, created_at',
-        [first_name, last_name, email, hashedPassword, role]
+        'INSERT INTO users (username, first_name, last_name, email, password, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, first_name, last_name, email, role, created_at',
+        [email, first_name, last_name, email, hashedPassword, role]
       );
       
       client.release();
