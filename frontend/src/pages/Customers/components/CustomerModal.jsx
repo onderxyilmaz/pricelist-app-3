@@ -1,12 +1,12 @@
 import React from 'react';
 import { Modal, Form, Input, Button, Space } from 'antd';
-import styles from '../Companies.module.css';
+import styles from '../Customers.module.css';
 
-const CompanyModal = ({
+const CustomerModal = ({
   visible,
   onCancel,
   onSubmit,
-  editingCompany,
+  editingCustomer,
   form
 }) => {
   const handleCancel = () => {
@@ -17,7 +17,7 @@ const CompanyModal = ({
   return (
     <Modal
       className={styles.modal}
-      title={editingCompany ? 'Firma Düzenle' : 'Yeni Firma'}
+      title={editingCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri'}
       open={visible}
       onCancel={handleCancel}
       footer={null}
@@ -25,7 +25,7 @@ const CompanyModal = ({
       afterOpenChange={(open) => {
         if (open) {
           setTimeout(() => {
-            const firstInput = document.querySelector('input[placeholder="Firma adını girin"]');
+            const firstInput = document.querySelector('input[placeholder="Müşteri adını girin"]');
             if (firstInput) {
               firstInput.focus();
               firstInput.select();
@@ -44,13 +44,13 @@ const CompanyModal = ({
         >
           <Form.Item
             name="name"
-            label="Firma Adı"
-            rules={[{ required: true, message: 'Firma adı gereklidir!' }]}
+            label="Müşteri Adı"
+            rules={[{ required: true, message: 'Müşteri adı gereklidir!' }]}
             className={styles.formItem}
           >
             <Input 
               className={styles.input}
-              placeholder="Firma adını girin" 
+              placeholder="Müşteri adını girin" 
               autoComplete="off"
               autoFocus
             />
@@ -62,7 +62,7 @@ const CompanyModal = ({
                 İptal
               </Button>
               <Button type="primary" htmlType="submit">
-                {editingCompany ? 'Güncelle' : 'Oluştur'}
+                {editingCustomer ? 'Güncelle' : 'Oluştur'}
               </Button>
             </div>
           </Form.Item>
@@ -72,4 +72,4 @@ const CompanyModal = ({
   );
 };
 
-export default CompanyModal;
+export default CustomerModal;

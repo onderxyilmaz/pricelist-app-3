@@ -1,206 +1,6 @@
 const fastify = require('fastify');
 
 async function offerRoutes(fastify, options) {
-  // Otomatik teklif numarası endpointi kaldırıldı
-
-  // Firma arama (autocomplete için)
-  fastify.get('/companies/search', async (request, reply) => {
-    try {
-      const { query } = request.query;
-      const client = await fastify.pg.connect();
-      
-      let searchQuery;
-      let params;
-      
-      if (query && query.trim() !== '') {
-        // Arama terimi varsa filtrele
-        searchQuery = `
-          SELECT name FROM companies 
-          WHERE name ILIKE $1 
-          ORDER BY name ASC 
-          LIMIT 10
-        `;
-        params = [`%${query.trim()}%`];
-      } else {
-        // Arama terimi yoksa en son kullanılanları getir
-        searchQuery = `
-          SELECT name FROM companies 
-          ORDER BY updated_at DESC 
-          LIMIT 10
-        `;
-        params = [];
-      }
-      
-      const result = await client.query(searchQuery, params);
-      client.release();
-      
-      return { success: true, companies: result.rows.map(row => row.name) };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
-
-  // Tüm firmaları getir (teklif sayısı ile birlikte)
-  fastify.get('/companies', async (request, reply) => {
-    try {
-      const client = await fastify.pg.connect();
-      const result = await client.query(`
-        SELECT 
-          c.id, 
-          c.name, 
-          c.created_at, 
-          c.updated_at,
-          COUNT(o.id) as offer_count
-        FROM companies c
-        LEFT JOIN offers o ON o.company = c.name
-        GROUP BY c.id, c.name, c.created_at, c.updated_at
-        ORDER BY c.name ASC
-      `);
-      client.release();
-      return { success: true, companies: result.rows };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
-
-  // Firma ekle (yeni firma varsa)
-  fastify.post('/companies', async (request, reply) => {
-    try {
-      const { name } = request.body;
-      
-      if (!name || name.trim() === '') {
-        return { success: false, message: 'Firma adı gereklidir' };
-      }
-      
-      const client = await fastify.pg.connect();
-      
-      // Firma varsa hata ver, yoksa ekle (CRUD sayfası için)
-      const existingCompany = await client.query('SELECT id FROM companies WHERE name = $1', [name.trim()]);
-      if (existingCompany.rows.length > 0) {
-        client.release();
-        return { success: false, message: 'Bu firma adı zaten kullanılıyor' };
-      }
-
-      const result = await client.query(`
-        INSERT INTO companies (name) VALUES ($1) RETURNING *
-      `, [name.trim()]);
-      
-      client.release();
-      return { success: true, company: result.rows[0] };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
-
-  // Firma güncelle
-  fastify.put('/companies/:id', async (request, reply) => {
-    try {
-      const { id } = request.params;
-      const { name } = request.body;
-      
-      if (!name || name.trim() === '') {
-        return { success: false, message: 'Firma adı gereklidir' };
-      }
-
-      const client = await fastify.pg.connect();
-      
-      try {
-        // Transaction başlat
-        await client.query('BEGIN');
-        
-        // Mevcut firmayı kontrol et
-        const existingCompany = await client.query('SELECT * FROM companies WHERE id = $1', [id]);
-        if (existingCompany.rows.length === 0) {
-          await client.query('ROLLBACK');
-          client.release();
-          return { success: false, message: 'Firma bulunamadı' };
-        }
-
-        const oldName = existingCompany.rows[0].name;
-
-        // Aynı isimde başka firma var mı kontrol et
-        const duplicateCheck = await client.query(
-          'SELECT id FROM companies WHERE name = $1 AND id != $2', 
-          [name.trim(), id]
-        );
-        if (duplicateCheck.rows.length > 0) {
-          await client.query('ROLLBACK');
-          client.release();
-          return { success: false, message: 'Bu firma adı zaten kullanılıyor' };
-        }
-
-        // Firmayı güncelle
-        const result = await client.query(`
-          UPDATE companies 
-          SET name = $1, updated_at = CURRENT_TIMESTAMP
-          WHERE id = $2 
-          RETURNING *
-        `, [name.trim(), id]);
-
-        // Tekliflerdeki firma adını da güncelle
-        await client.query(`
-          UPDATE offers 
-          SET company = $1 
-          WHERE company = $2
-        `, [name.trim(), oldName]);
-        
-        await client.query('COMMIT');
-        client.release();
-        return { success: true, company: result.rows[0] };
-      } catch (err) {
-        await client.query('ROLLBACK');
-        client.release();
-        throw err;
-      }
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
-
-  // Firma sil
-  fastify.delete('/companies/:id', async (request, reply) => {
-    try {
-      const { id } = request.params;
-      
-      const client = await fastify.pg.connect();
-      
-      try {
-        // Transaction başlat
-        await client.query('BEGIN');
-        
-        // Mevcut firmayı kontrol et
-        const existingCompany = await client.query('SELECT * FROM companies WHERE id = $1', [id]);
-        if (existingCompany.rows.length === 0) {
-          await client.query('ROLLBACK');
-          client.release();
-          return { success: false, message: 'Firma bulunamadı' };
-        }
-
-        const companyName = existingCompany.rows[0].name;
-        
-        // Bu firmayı kullanan teklifleri temizle (company field'ini NULL yap)
-        await client.query(`
-          UPDATE offers 
-          SET company = NULL 
-          WHERE company = $1
-        `, [companyName]);
-        
-        // Firmayı sil
-        const result = await client.query('DELETE FROM companies WHERE id = $1 RETURNING *', [id]);
-        
-        await client.query('COMMIT');
-        client.release();
-        return { success: true, message: 'Firma silindi ve tekliflerden kaldırıldı' };
-      } catch (err) {
-        await client.query('ROLLBACK');
-        client.release();
-        throw err;
-      }
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
-  });
-
   // Bu yıl için boş (silinmiş) teklif numaralarını getir
   fastify.get('/offers/available-numbers', async (request, reply) => {
     try {
@@ -243,11 +43,13 @@ async function offerRoutes(fastify, options) {
       const result = await client.query(`
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
-          o.company, o.status, o.customer_response, o.parent_offer_id,
+          c.name as customer, 
+          o.status, o.customer_response, o.parent_offer_id, o.customer_id,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o
         LEFT JOIN users u ON o.created_by = u.id
+        LEFT JOIN customers c ON o.customer_id = c.id
         ORDER BY o.created_at DESC
       `);
       client.release();
@@ -268,11 +70,13 @@ async function offerRoutes(fastify, options) {
       const offerResult = await client.query(`
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
-          o.company, o.status, o.customer_response, o.parent_offer_id, o.created_by,
+          c.name as customer, 
+          o.status, o.customer_response, o.parent_offer_id, o.created_by, o.customer_id,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o
         LEFT JOIN users u ON o.created_by = u.id
+        LEFT JOIN customers c ON o.customer_id = c.id
         WHERE o.id = $1
       `, [id]);
 
@@ -320,11 +124,13 @@ async function offerRoutes(fastify, options) {
       const offerResult = await client.query(`
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
-          o.company, o.status, o.parent_offer_id, o.created_by,
+          c.name as customer, 
+          o.status, o.parent_offer_id, o.created_by, o.customer_id,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o
         LEFT JOIN users u ON o.created_by = u.id
+        LEFT JOIN customers c ON o.customer_id = c.id
         WHERE o.id = $1
       `, [id]);
 
@@ -382,7 +188,7 @@ async function offerRoutes(fastify, options) {
   // Yeni teklif oluştur
   fastify.post('/offers', async (request, reply) => {
     try {
-      const { offer_no, company, created_by, parent_offer_id, revision_no } = request.body;
+      const { offer_no, customer, created_by, parent_offer_id, revision_no } = request.body;
       
       if (!offer_no || !created_by) {
         return { success: false, message: 'Teklif No ve Oluşturan gereklidir' };
@@ -402,18 +208,25 @@ async function offerRoutes(fastify, options) {
           return { success: false, message: 'Bu teklif numarası zaten kullanılıyor' };
         }
 
-        // Firma adı varsa companies tablosuna ekle
-        if (company && company.trim() !== '') {
+        // Müşteri adı varsa customers tablosuna ekle ve customer_id'yi al
+        let customerId = null;
+        if (customer && customer.trim() !== '') {
           await client.query(`
-            INSERT INTO companies (name) VALUES ($1)
+            INSERT INTO customers (name) VALUES ($1)
             ON CONFLICT (name) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
-          `, [company.trim()]);
+          `, [customer.trim()]);
+          
+          // Customer ID'yi al
+          const customerResult = await client.query('SELECT id FROM customers WHERE name = $1', [customer.trim()]);
+          if (customerResult.rows.length > 0) {
+            customerId = customerResult.rows[0].id;
+          }
         }
 
         // Teklif oluştur
         const result = await client.query(
-          'INSERT INTO offers (offer_no, company, created_by, parent_offer_id, revision_no) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [offer_no, company || null, created_by, parent_offer_id || null, revision_no || 0]
+          'INSERT INTO offers (offer_no, customer_id, created_by, parent_offer_id, revision_no) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [offer_no, customerId, created_by, parent_offer_id || null, revision_no || 0]
         );
         
         await client.query('COMMIT');
@@ -433,7 +246,7 @@ async function offerRoutes(fastify, options) {
   fastify.put('/offers/:id', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { offer_no, company, revision_no, status, parent_offer_id, customer_response } = request.body;
+      const { offer_no, customer, revision_no, status, parent_offer_id, customer_response } = request.body;
       
       if (!offer_no) {
         return { success: false, message: 'Teklif No gereklidir' };
@@ -464,12 +277,19 @@ async function offerRoutes(fastify, options) {
           return { success: false, message: 'Bu teklif numarası zaten kullanılıyor' };
         }
 
-        // Firma adı varsa companies tablosuna ekle
-        if (company && company.trim() !== '') {
+        // Müşteri adı varsa customers tablosuna ekle ve customer_id'yi al
+        let customerId = null;
+        if (customer && customer.trim() !== '') {
           await client.query(`
-            INSERT INTO companies (name) VALUES ($1)
+            INSERT INTO customers (name) VALUES ($1)
             ON CONFLICT (name) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
-          `, [company.trim()]);
+          `, [customer.trim()]);
+          
+          // Customer ID'yi al
+          const customerResult = await client.query('SELECT id FROM customers WHERE name = $1', [customer.trim()]);
+          if (customerResult.rows.length > 0) {
+            customerId = customerResult.rows[0].id;
+          }
         }
 
         // Eğer status 'draft'a döndürülüyorsa customer_response'u sıfırla
@@ -480,14 +300,15 @@ async function offerRoutes(fastify, options) {
 
         const updateQuery = `
           UPDATE offers 
-          SET offer_no = $1, company = $2, revision_no = $3, status = $4, parent_offer_id = $5, customer_response = $6, revised_at = CURRENT_TIMESTAMP
+          SET offer_no = $1, customer_id = $2, revision_no = $3, status = $4, parent_offer_id = $5, customer_response = $6, revised_at = CURRENT_TIMESTAMP
           WHERE id = $7 
           RETURNING *
         `;
         
         const result = await client.query(updateQuery, [
           offer_no, 
-          company || null, 
+          customerId, 
+          customerId,
           revision_no || existingOffer.rows[0].revision_no,
           status || existingOffer.rows[0].status || 'draft',
           parent_offer_id || existingOffer.rows[0].parent_offer_id,

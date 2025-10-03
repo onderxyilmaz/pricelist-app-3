@@ -1,17 +1,17 @@
 import React from 'react';
 import { Table, Button, Space, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import styles from '../Companies.module.css';
+import styles from '../Customers.module.css';
 
-const CompanyTable = ({ 
-  companies, 
+const CustomerTable = ({ 
+  customers, 
   loading, 
   onEdit, 
   onDelete 
 }) => {
   const columns = [
     {
-      title: 'Firma Adı',
+      title: 'Müşteri Adı',
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name, 'tr'),
@@ -56,12 +56,12 @@ const CompanyTable = ({
           />
           <Popconfirm
             className={styles.deleteConfirm}
-            title="Firmayı silmek istediğinizden emin misiniz?"
+            title="Müşteriyi silmek istediğinizden emin misiniz?"
             description={
               (record.offer_count || 0) > 0 
                 ? (
                   <div className={styles.deleteConfirmDescription}>
-                    Bu firma {record.offer_count} teklifte kullanılıyor. 
+                    Bu müşteri {record.offer_count} teklifte kullanılıyor. 
                     Silinirse tüm tekliflerden kaldırılacak.
                   </div>
                 )
@@ -89,7 +89,7 @@ const CompanyTable = ({
     <Table
       className={styles.table}
       columns={columns}
-      dataSource={companies}
+      dataSource={customers}
       rowKey="id"
       loading={loading}
       pagination={{
@@ -104,4 +104,4 @@ const CompanyTable = ({
   );
 };
 
-export default CompanyTable;
+export default CustomerTable;

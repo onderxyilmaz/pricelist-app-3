@@ -97,7 +97,26 @@ ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#1890ff';
 ALTER TABLE users 
 ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
 
--- 5. TEKLİFLER TABLOSU (add_offers_table.sql)
+-- 5. MÜŞTERİLER TABLOSU (add_customers_table.sql)
+-- =============================================
+
+-- Customers table
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
+
+-- Create trigger
+CREATE OR REPLACE TRIGGER update_customers_modtime 
+    BEFORE UPDATE ON customers 
+    FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- 6. TEKLİFLER TABLOSU (add_offers_table.sql)
 -- ===========================================
 
 -- Offers table
@@ -106,7 +125,7 @@ CREATE TABLE IF NOT EXISTS offers (
     offer_no VARCHAR(20) UNIQUE NOT NULL,
     revision_no INTEGER DEFAULT 0,
     parent_offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
-    company VARCHAR(255),
+    customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent')),
     customer_response VARCHAR(20) DEFAULT NULL CHECK (customer_response IN ('accepted', 'rejected', NULL)),
     created_by INTEGER REFERENCES users(id),
@@ -116,7 +135,7 @@ CREATE TABLE IF NOT EXISTS offers (
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_offers_offer_no ON offers(offer_no);
-CREATE INDEX IF NOT EXISTS idx_offers_company ON offers(company);
+CREATE INDEX IF NOT EXISTS idx_offers_customer_id ON offers(customer_id);
 CREATE INDEX IF NOT EXISTS idx_offers_created_by ON offers(created_by);
 CREATE INDEX IF NOT EXISTS idx_offers_parent_offer_id ON offers(parent_offer_id);
 CREATE INDEX IF NOT EXISTS idx_offers_status ON offers(status);
@@ -139,32 +158,6 @@ DROP TRIGGER IF EXISTS update_offers_revised_at ON offers;
 CREATE TRIGGER update_offers_revised_at 
     BEFORE UPDATE ON offers 
     FOR EACH ROW EXECUTE FUNCTION update_revised_column();
-
--- 6. FİRMALAR TABLOSU (add_companies_table.sql)
--- =============================================
-
--- Companies table
-CREATE TABLE IF NOT EXISTS companies (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create index
-CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name);
-
--- Create trigger
-CREATE OR REPLACE TRIGGER update_companies_modtime 
-    BEFORE UPDATE ON companies 
-    FOR EACH ROW EXECUTE FUNCTION update_modified_column();
-
--- Migrate existing company data from offers
-INSERT INTO companies (name) 
-SELECT DISTINCT company 
-FROM offers 
-WHERE company IS NOT NULL 
-ON CONFLICT (name) DO NOTHING;
 
 -- 7. TEKLİF ÜRÜNLERİ TABLOSU (add_offer_items_table.sql)
 -- ======================================================
@@ -193,18 +186,7 @@ CREATE INDEX IF NOT EXISTS idx_offer_items_offer_id ON offer_items(offer_id);
 CREATE INDEX IF NOT EXISTS idx_offer_items_pricelist_item_id ON offer_items(pricelist_item_id);
 CREATE INDEX IF NOT EXISTS idx_offer_items_pricelist_id ON offer_items(pricelist_id);
 
--- 8. FİRMA NULLABLE (fix_company_nullable.sql)
--- ============================================
-
--- Make company column nullable in offers table
-ALTER TABLE offers ALTER COLUMN company DROP NOT NULL;
-
--- Add customer_response column to offers table
-ALTER TABLE offers 
-ADD COLUMN IF NOT EXISTS customer_response VARCHAR(20) DEFAULT NULL 
-CHECK (customer_response IN ('accepted', 'rejected', NULL));
-
--- 9. DUAL LANGUAGE SUPPORT (add_dual_language_names.sql)
+-- 8. DUAL LANGUAGE SUPPORT (add_dual_language_names.sql)
 -- ======================================================
 
 -- Add dual language name columns to pricelist_items if they don't exist
@@ -227,7 +209,7 @@ UPDATE offer_items
 SET product_name_tr = product_name 
 WHERE product_name_tr IS NULL AND product_name IS NOT NULL;
 
--- 10. TEKLİF TEMPLATES TABLOSU (add_offer_templates.sql)
+-- 9. TEKLİF TEMPLATES TABLOSU (add_offer_templates.sql)
 -- ======================================================
 
 -- Offer templates table

@@ -9,7 +9,6 @@ import {
   ProfileOutlined,
   AppstoreOutlined,
   FileTextOutlined,
-  BankOutlined,
   FormOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -53,10 +52,10 @@ const Sidebar = ({ user }) => {
       onClick: () => navigate('/offer-templates')
     },
     {
-      key: '/companies',
-      icon: <BankOutlined />,
-      label: 'Firmalar',
-      onClick: () => navigate('/companies')
+      key: '/customers',
+      icon: <UserOutlined />,
+      label: 'Müşteriler',
+      onClick: () => navigate('/customers')
     },
     {
       key: '/import-excel',
