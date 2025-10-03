@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Avatar, Button, Dropdown } from 'antd';
 import { UserOutlined, CameraOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import styles from '../Profile.module.css';
@@ -7,13 +7,11 @@ const API_BASE_URL = 'http://localhost:3001';
 
 const AvatarUpload = ({
   user,
-  avatarFilename,
-  pendingAvatarPreview,
-  onFileSelect,
-  onAvatarAction
+  profileData,
+  onFileChange,
+  onAvatarRemove,
+  fileInputRef
 }) => {
-  const fileInputRef = useRef(null);
-
   // Avatar renk belirleme fonksiyonu
   const getAvatarStyle = () => {
     if (user?.role === 'super_admin') {
@@ -26,12 +24,12 @@ const AvatarUpload = ({
     if (action === 'upload' || action === 'change') {
       fileInputRef.current?.click();
     } else if (action === 'remove') {
-      onAvatarAction('remove');
+      onAvatarRemove();
     }
   };
 
   const getAvatarMenuItems = () => {
-    if (avatarFilename || pendingAvatarPreview) {
+    if (user?.avatar_filename || profileData?.avatar) {
       return [
         {
           key: 'change',
@@ -63,9 +61,9 @@ const AvatarUpload = ({
       <div className={styles.avatarContainer}>
         <Avatar
           size={120}
-          src={pendingAvatarPreview || (avatarFilename ? `${API_BASE_URL}/uploads/avatars/${avatarFilename}` : null)}
-          icon={(!pendingAvatarPreview && !avatarFilename) && <UserOutlined />}
-          className={`${styles.avatar} ${(!pendingAvatarPreview && !avatarFilename) ? getAvatarStyle() : ''}`}
+          src={profileData?.avatar || (user?.avatar_filename ? `${API_BASE_URL}/uploads/avatars/${user.avatar_filename}` : null)}
+          icon={(!profileData?.avatar && !user?.avatar_filename) && <UserOutlined />}
+          className={`${styles.avatar} ${(!profileData?.avatar && !user?.avatar_filename) ? getAvatarStyle() : ''}`}
         />
         
         <Dropdown
@@ -88,7 +86,7 @@ const AvatarUpload = ({
         type="file"
         accept="image/*"
         className={styles.hiddenFileInput}
-        onChange={onFileSelect}
+        onChange={onFileChange}
       />
     </div>
   );
