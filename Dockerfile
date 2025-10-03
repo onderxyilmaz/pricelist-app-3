@@ -26,15 +26,25 @@ COPY backend/ ./
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/frontend/dist ./public
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create uploads directory structure
+RUN mkdir -p uploads/avatars
 
-# Expose port
-EXPOSE 3000
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+# Change ownership of uploads directory
+RUN chown -R nextjs:nodejs uploads
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port (configurable via environment)
+EXPOSE ${PORT:-3000}
+
+# Health check without curl (using wget which is available in Alpine)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3000}/health || exit 1
 
 # Start the application
 CMD ["npm", "start"]
