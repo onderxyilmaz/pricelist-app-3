@@ -1,6 +1,6 @@
 # Pricelist & Offer Management Application
 
-A comprehensive full-stack application for managing pricelists, offers, companies, and products with advanced Excel import/export capabilities and multi-language support.
+A comprehensive full-stack application for managing pricelists, offers, customers, and products with advanced Excel import/export capabilities and multi-language support.
 
 ## 🌟 Key Features
 
@@ -9,7 +9,7 @@ A comprehensive full-stack application for managing pricelists, offers, companie
 - **Net Price & List Price Columns**: Clear pricing structure with color-coded differentiation
 - **Product Sales Discount**: Strategic discount positioning and calculation
 - **Offer Templates**: Pre-configured templates for quick offer generation
-- **Multi-Company Support**: Manage offers across different companies
+- **Multi-Customer Support**: Manage offers across different customers
 - **Real-time Calculations**: Automatic price calculations with discount applications
 
 ### 📈 Comprehensive Pricelist Management
@@ -19,8 +19,8 @@ A comprehensive full-stack application for managing pricelists, offers, companie
 - **Batch Operations**: Efficient bulk product management
 - **Price History Tracking**: Monitor price changes over time
 
-### 🏢 Company & User Management
-- **Company Profiles**: Complete company information management
+### 🏢 Customer & User Management
+- **Customer Profiles**: Complete customer information management
 - **User Role System**: Admin and user role differentiation
 - **Avatar Management**: User profile picture upload and management
 - **Authentication System**: Secure login/logout with session management
@@ -63,7 +63,7 @@ A comprehensive full-stack application for managing pricelists, offers, companie
 ### Database Schema
 - **8 Main Tables**: Comprehensive data structure
   - `users`: User management and authentication
-  - `companies`: Company information and relationships
+  - `customers`: Customer information and relationships
   - `pricelists`: Pricelist configurations and metadata
   - `pricelist_items`: Individual product entries with dual language support
   - `offers`: Offer management and tracking
@@ -139,7 +139,7 @@ pricelist-app-3/
 │   │   │   ├── Offers.jsx         # Offer wizard system
 │   │   │   ├── OfferTemplates.jsx # Template management
 │   │   │   ├── Pricelist.jsx      # Pricelist management
-│   │   │   ├── Companies.jsx      # Company management
+│   │   │   ├── Customers.jsx      # Customer management
 │   │   │   ├── ImportExcel.jsx    # Excel import interface
 │   │   │   └── UserManagement.jsx # User administration
 │   │   └── utils/          # Utility functions
@@ -169,11 +169,11 @@ pricelist-app-3/
 - `POST /api/pricelists/import` - Import pricelist from Excel
 - `GET /api/pricelists/:id/export` - Export pricelist to Excel
 
-### Companies
-- `GET /api/companies` - Retrieve companies
-- `POST /api/companies` - Create new company
-- `PUT /api/companies/:id` - Update company
-- `DELETE /api/companies/:id` - Delete company
+### Customers
+- `GET /api/customers` - Retrieve customers
+- `POST /api/customers` - Create new customer
+- `PUT /api/customers/:id` - Update customer
+- `DELETE /api/customers/:id` - Delete customer
 
 ### Admin
 - `GET /admin/users` - Get all users (admin only)
@@ -183,7 +183,7 @@ pricelist-app-3/
 ## 💡 Usage Guide
 
 ### Creating an Offer (6-Step Wizard)
-1. **Select Company**: Choose target company from dropdown
+1. **Select Customer**: Choose target customer from dropdown
 2. **Choose Template**: Select pre-configured template (optional)
 3. **Configure Products**: Add products with pricing
 4. **Set Pricing**: Configure Net Price and List Price columns

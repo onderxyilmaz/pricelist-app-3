@@ -2,24 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
 import axios from 'axios';
 
-import CompanyHeader from './components/CompanyHeader';
-import CompanySearch from './components/CompanySearch';
-import CompanyTable from './components/CompanyTable';
-import CompanyModal from './components/CompanyModal';
+import CustomerHeader from './components/CustomerHeader';
+import CustomerSearch from './components/CustomerSearch';
+import CustomerTable from './components/CustomerTable';
+import CustomerModal from './components/CustomerModal';
 import NotificationService from '../../utils/notification';
-import styles from './Companies.module.css';
+import styles from './Customers.module.css';
 
-const Companies = () => {
-  const [companies, setCompanies] = useState([]);
-  const [filteredCompanies, setFilteredCompanies] = useState([]);
+const Customers = () => {
+  const [customers, setCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingCompany, setEditingCompany] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
-    document.title = 'Price List App v3 - Firmalar';
-    fetchCompanies();
+    document.title = 'Price List App v3 - Müşteriler';
+    fetchCustomers();
   }, []);
 
   useEffect(() => {
@@ -28,76 +28,76 @@ const Companies = () => {
     };
   }, []);
 
-  const fetchCompanies = async () => {
+  const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/companies');
+      const response = await axios.get('http://localhost:3001/api/customers');
       if (response.data.success) {
-        setCompanies(response.data.companies);
-        setFilteredCompanies(response.data.companies);
+        setCustomers(response.data.customers);
+        setFilteredCustomers(response.data.customers);
       }
     } catch (error) {
-      NotificationService.error('Hata', 'Firmalar yüklenirken hata oluştu');
+      NotificationService.error('Hata', 'Müşteriler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = (value) => {
-    const filtered = companies.filter(company => 
-      company.name.toLowerCase().includes(value.toLowerCase())
+    const filtered = customers.filter(customer => 
+      customer.name.toLowerCase().includes(value.toLowerCase())
     );
-    setFilteredCompanies(filtered);
+    setFilteredCustomers(filtered);
   };
 
   const handleCreate = () => {
-    setEditingCompany(null);
+    setEditingCustomer(null);
     form.resetFields();
     setModalVisible(true);
   };
 
-  const handleEdit = (company) => {
-    setEditingCompany(company);
+  const handleEdit = (customer) => {
+    setEditingCustomer(customer);
     form.setFieldsValue({
-      name: company.name
+      name: customer.name
     });
     setModalVisible(true);
   };
 
   const handleSubmit = async (values) => {
     try {
-      if (editingCompany) {
+      if (editingCustomer) {
         // Güncelleme
-        const response = await axios.put(`http://localhost:3001/api/companies/${editingCompany.id}`, values);
+        const response = await axios.put(`http://localhost:3001/api/customers/${editingCustomer.id}`, values);
         if (response.data.success) {
-          NotificationService.success('Başarılı', 'Firma güncellendi');
-          fetchCompanies();
+          NotificationService.success('Başarılı', 'Müşteri güncellendi');
+          fetchCustomers();
         } else {
           NotificationService.error('Hata', response.data.message || 'Güncelleme başarısız');
         }
       } else {
         // Yeni oluşturma
-        const response = await axios.post('http://localhost:3001/api/companies', values);
+        const response = await axios.post('http://localhost:3001/api/customers', values);
         if (response.data.success) {
-          NotificationService.success('Başarılı', 'Firma oluşturuldu');
-          fetchCompanies();
+          NotificationService.success('Başarılı', 'Müşteri oluşturuldu');
+          fetchCustomers();
         } else {
           NotificationService.error('Hata', response.data.message || 'Oluşturma başarısız');
         }
       }
       setModalVisible(false);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || (editingCompany ? 'Güncelleme başarısız' : 'Oluşturma başarısız');
+      const errorMessage = error.response?.data?.message || (editingCustomer ? 'Güncelleme başarısız' : 'Oluşturma başarısız');
       NotificationService.error('Hata', errorMessage);
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/api/companies/${id}`);
+      const response = await axios.delete(`http://localhost:3001/api/customers/${id}`);
       if (response.data.success) {
-        NotificationService.success('Başarılı', 'Firma silindi');
-        fetchCompanies();
+        NotificationService.success('Başarılı', 'Müşteri silindi');
+        fetchCustomers();
       } else {
         NotificationService.error('Hata', response.data.message || 'Silme işlemi başarısız');
       }
@@ -109,33 +109,33 @@ const Companies = () => {
 
   const handleModalCancel = () => {
     setModalVisible(false);
-    setEditingCompany(null);
+    setEditingCustomer(null);
   };
 
   return (
     <div className={styles.container}>
-      <CompanyHeader onCreateClick={handleCreate} />
+      <CustomerHeader onCreateClick={handleCreate} />
 
       <Card className={styles.mainCard}>
-        <CompanySearch onSearch={handleSearch} />
+        <CustomerSearch onSearch={handleSearch} />
         
-        <CompanyTable
-          companies={filteredCompanies}
+        <CustomerTable
+          customers={filteredCustomers}
           loading={loading}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
       </Card>
 
-      <CompanyModal
+      <CustomerModal
         visible={modalVisible}
         onCancel={handleModalCancel}
         onSubmit={handleSubmit}
-        editingCompany={editingCompany}
+        editingCustomer={editingCustomer}
         form={form}
       />
     </div>
   );
 };
 
-export default Companies;
+export default Customers;

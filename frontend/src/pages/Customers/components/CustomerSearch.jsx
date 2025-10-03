@@ -1,16 +1,16 @@
 import React from 'react';
 import { Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import styles from '../Companies.module.css';
+import styles from '../Customers.module.css';
 
 const { Search } = Input;
 
-const CompanySearch = ({ onSearch }) => {
+const CustomerSearch = ({ onSearch }) => {
   return (
     <div className={styles.searchContainer}>
       <Search
         className={styles.searchInput}
-        placeholder="Firma ara..."
+        placeholder="Müşteri ara..."
         allowClear
         onSearch={onSearch}
         onChange={(e) => onSearch(e.target.value)}
@@ -21,4 +21,4 @@ const CompanySearch = ({ onSearch }) => {
   );
 };
 
-export default CompanySearch;
+export default CustomerSearch;

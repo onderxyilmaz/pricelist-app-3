@@ -133,15 +133,15 @@ Uygulama ilk çalıştırıldığında:
 - ✅ Akıllı teklif numaralandırma (YYYY-NNNN formatı)
 - ✅ Yıllık sıfırlama ve boş numara tekrar kullanımı
 - ✅ Çok adımlı teklif oluşturma wizard'ı
-- ✅ Firma otomatik tamamlama ve yönetimi
+- ✅ Müşteri otomatik tamamlama ve yönetimi
 - ✅ Ürün seçimi ile stok kontrolü
 - ✅ Fiyat listelerine göre gruplu teklif önizleme
 - ✅ Para birimi simgeleri ile modern görünüm
 
-### 🏢 Firma Yönetimi
-- ✅ Firma ekleme, düzenleme, silme
-- ✅ Tekliflerde otomatik firma senkronizasyonu
-- ✅ Firma kullanım sayısı takibi
+### 🏢 Müşteri Yönetimi
+- ✅ Müşteri ekleme, düzenleme, silme
+- ✅ Tekliflerde otomatik müşteri senkronizasyonu
+- ✅ Müşteri kullanım sayısı takibi
 - ✅ Güvenli silme (tekliflerdeki referansları temizleme)
 
 ### 🎨 Arayüz
@@ -176,12 +176,12 @@ Uygulama ilk çalıştırıldığında:
 - `POST /api/offers/:id/items` - Teklif ürünlerini kaydet
 - `GET /api/offers/:id/items` - Teklif ürünlerini getir
 
-### Firmalar
-- `GET /api/companies` - Tüm firmaları getir (teklif sayısı ile)
-- `POST /api/companies` - Yeni firma oluştur
-- `PUT /api/companies/:id` - Firma güncelle
-- `DELETE /api/companies/:id` - Firma sil
-- `GET /api/companies/search` - Firma arama (autocomplete)
+### Müşteriler
+- `GET /api/customers` - Tüm müşterileri getir (teklif sayısı ile)
+- `POST /api/customers` - Yeni müşteri oluştur
+- `PUT /api/customers/:id` - Müşteri güncelle
+- `DELETE /api/customers/:id` - Müşteri sil
+- `GET /api/customers/search` - Müşteri arama (autocomplete)
 
 ## Yeni Özellikler (v3.0)
 
@@ -192,20 +192,20 @@ Uygulama ilk çalıştırıldığında:
 - Silinen tekliflerin numaralarını tekrar kullanabilme
 
 **Çok Adımlı Teklif Oluşturma:**
-1. **Adım 1:** Teklif No ve Firma bilgileri
+1. **Adım 1:** Teklif No ve Müşteri bilgileri
 2. **Adım 2:** Fiyat listelerinden ürün seçimi (stok kontrolü ile)
 3. **Adım 3:** Detaylı teklif önizleme ve onaylama
 
 **Gelişmiş Özellikler:**
-- Firma otomatik tamamlama (typeahead)
+- Müşteri otomatik tamamlama (typeahead)
 - Stok miktarını aşan girişlerde uyarı
 - Para birimi simgeleri (€, $, £, ₺)
 - Fiyat listelerine göre gruplu gösterim
 
-### 🏢 Firma Yönetimi
-- Firma CRUD işlemleri
+### 🏢 Müşteri Yönetimi
+- Müşteri CRUD işlemleri
 - Tekliflerde kullanım sayısı gösterimi
-- Firma güncellemelerinin tekliflere otomatik yansıması
+- Müşteri güncellemelerinin tekliflere otomatik yansıması
 - Güvenli silme (tekliflerdeki referansları temizleme)
 
 ## Geliştirme

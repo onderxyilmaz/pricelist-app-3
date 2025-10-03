@@ -79,13 +79,13 @@ const Offers = () => {
   // Filtreleme state'leri
   const [filters, setFilters] = useState({
     status: 'all', // all, draft, sent
-    company: 'all',
+    customer: 'all',
     createdBy: 'all',
     offerNo: '',
     dateRange: null,
     customerResponse: 'all' // all, accepted, rejected, pending
   });
-  const [availableCompanies, setAvailableCompanies] = useState([]);
+  const [availableCustomers, setAvailableCustomers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   
   // Wizard states
@@ -109,7 +109,7 @@ const Offers = () => {
   const [expandedRowKeys, setExpandedRowKeys] = useState([]);
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState(null);
-  const [companyOptions, setCompanyOptions] = useState([]);
+  const [customerOptions, setCustomerOptions] = useState([]);
   const [pricelists, setPricelists] = useState([]);
   const [productFilter, setProductFilter] = useState('');
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
@@ -183,10 +183,10 @@ const Offers = () => {
         setOffers(response.data.offers);
         
         // Filtreleme seçenekleri için unique değerleri topla
-        const companies = [...new Set(response.data.offers.map(o => o.company).filter(Boolean))].sort();
+        const customers = [...new Set(response.data.offers.map(o => o.customer).filter(Boolean))].sort();
         const users = [...new Set(response.data.offers.map(o => o.created_by_name).filter(Boolean))].sort();
         
-        setAvailableCompanies(companies);
+        setAvailableCustomers(customers);
         setAvailableUsers(users);
         
         // Filtreleri uygula
@@ -208,9 +208,9 @@ const Offers = () => {
       filtered = filtered.filter(offer => (offer.status || 'draft') === filters.status);
     }
 
-    // Firma filtresi
-    if (filters.company !== 'all') {
-      filtered = filtered.filter(offer => offer.company === filters.company);
+    // Müşteri filtresi
+    if (filters.customer !== 'all') {
+      filtered = filtered.filter(offer => offer.customer === filters.customer);
     }
 
     // Hazırlayan filtresi
@@ -286,7 +286,7 @@ const Offers = () => {
   const clearFilters = () => {
     setFilters({
       status: 'all',
-      company: 'all',
+      customer: 'all',
       createdBy: 'all',
       offerNo: '',
       dateRange: null,
@@ -328,27 +328,28 @@ const Offers = () => {
     return [];
   };
 
-  const searchCompanies = async (searchText) => {
+  // Müşteri arama fonksiyonu
+  const searchCustomers = async (searchText) => {
     try {
       // Boş veya çok kısa arama metni varsa seçenekleri temizle
       if (!searchText || searchText.trim().length < 1) {
-        setCompanyOptions([]);
+        setCustomerOptions([]);
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/companies/search', {
+      const response = await axios.get('http://localhost:3001/api/customers/search', {
         params: { query: searchText.trim() }
       });
       if (response.data.success) {
-        const options = response.data.companies.map(company => ({
-          value: company,
-          label: company
+        const options = response.data.customers.map(customer => ({
+          value: customer,
+          label: customer
         }));
-        setCompanyOptions(options);
+        setCustomerOptions(options);
       }
     } catch (error) {
-      console.error('Company search error:', error);
-      setCompanyOptions([]);
+      console.error('Customer search error:', error);
+      setCustomerOptions([]);
     }
   };
 
@@ -369,9 +370,10 @@ const Offers = () => {
   form.resetFields();
   setCurrentStep(0);
   setOfferData({});
+  setCustomerOptions([]);
   setSelectedItems([]);
   setProductFilter('');
-  setCompanyOptions([]);
+  setCustomerOptions([]);
   setItemNotes({});
   setItemDiscounts({});
   setDiscountData({});
@@ -398,7 +400,7 @@ const Offers = () => {
         // Düzenleme modu - teklifi güncelle
         const offerPayload = {
           offer_no: offerData.offer_no,
-          company: offerData.company || null
+          customer: offerData.customer || null
         };
 
         const offerResponse = await axios.put(`http://localhost:3001/api/offers/${editingOffer.id}`, offerPayload);
@@ -414,7 +416,7 @@ const Offers = () => {
         // Yeni teklif oluşturma modu (revizyon dahil)
         const offerPayload = {
           offer_no: offerData.offer_no,
-          company: offerData.company || null,
+          customer: offerData.customer || null,
           created_by: currentUser?.id,
           parent_offer_id: offerData.parent_offer_id || null,
           revision_no: offerData.revision_no || 0
@@ -765,7 +767,7 @@ const Offers = () => {
                     Object.keys(itemDiscounts).length > 0 ||
                     Object.keys(manualPrices).length > 0 ||
                     offerData.offer_no || 
-                    offerData.company;
+                    offerData.customer;
 
     if (hasData) {
       setCancelConfirmVisible(true);
@@ -873,13 +875,13 @@ const Offers = () => {
       // Form verilerini doldur
       form.setFieldsValue({
         offer_no: offerData.offer_no,
-        company: offerData.company || ''
+        customer: offerData.customer || ''
       });
 
       // Wizard state'lerini doldur
       setOfferData({
         offer_no: offerData.offer_no,
-        company: offerData.company || ''
+        customer: offerData.customer || ''
       });
 
       // Ürün kalemleri varsa doldur
@@ -974,7 +976,7 @@ const Offers = () => {
       
       form.setFieldsValue({
         offer_no: newOfferNo,
-        company: sourceOffer.company || ''
+        customer: sourceOffer.customer || ''
       });
 
       console.log('Revizyon bilgileri:', {
@@ -984,7 +986,7 @@ const Offers = () => {
         newOfferNo,
         offerData: {
           offer_no: newOfferNo,
-          company: sourceOffer.company || '',
+          customer: sourceOffer.customer || '',
           parent_offer_id: parentOfferId,
           revision_no: newRevisionNo
         }
@@ -993,7 +995,7 @@ const Offers = () => {
       // Wizard state'lerini doldur
       setOfferData({
         offer_no: newOfferNo,
-        company: sourceOffer.company || '',
+        customer: sourceOffer.customer || '',
         parent_offer_id: parentOfferId,
         revision_no: newRevisionNo
       });
@@ -1062,7 +1064,7 @@ const Offers = () => {
       
       const response = await axios.put(`http://localhost:3001/api/offers/${offer.id}`, {
         offer_no: offer.offer_no,
-        company: offer.company,
+        customer: offer.customer,
         status: newStatus
       });
 
@@ -1085,7 +1087,7 @@ const Offers = () => {
     try {
       const updateResponse = await axios.put(`http://localhost:3001/api/offers/${offer.id}`, {
         offer_no: offer.offer_no,
-        company: offer.company,
+        customer: offer.customer,
         customer_response: response
       });
 
@@ -1318,7 +1320,7 @@ const Offers = () => {
       
       // A4-E7 bilgi satırları
       worksheet.addRow(['Proje Adı:', offerData.offer_no || '', 'Rev No:', offerData.revision_no || 0, '']);
-      worksheet.addRow(['Firma Adı:', offerData.company || '', 'Proje No:', '', '']);
+      worksheet.addRow(['Müşteri Adı:', offerData.customer || '', 'Proje No:', '', '']);
       worksheet.addRow(['İlgili Kişi:', '', 'Tarih:', new Date(offerData.created_at).toLocaleDateString('tr-TR'), new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
       worksheet.addRow(['Konu:', '', 'Hazırlayan:', offerData.created_by_name || '', '']);
       
@@ -1637,11 +1639,11 @@ const Offers = () => {
       render: (name) => name || '-',
     },
     {
-      title: 'Firma',
-      dataIndex: 'company',
-      key: 'company',
-      sorter: (a, b) => (a.company || '').localeCompare(b.company || '', 'tr'),
-      render: (company) => company || '-',
+      title: 'Müşteri',
+      dataIndex: 'customer',
+      key: 'customer',
+      sorter: (a, b) => (a.customer || '').localeCompare(b.customer || '', 'tr'),
+      render: (customer) => customer || '-',
     },
     {
       title: 'İşlemler',
@@ -1959,20 +1961,20 @@ const Offers = () => {
           </Row>
           
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-            {/* İkinci satır: Firma, Oluşturma Tarihi, Temizle butonu */}
+            {/* İkinci satır: Müşteri, Oluşturma Tarihi, Temizle butonu */}
             <Col xs={24} sm={12} md={8}>
-              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Firma</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Müşteri</div>
               <Select
-                value={filters.company}
-                onChange={(value) => handleFilterChange('company', value)}
+                value={filters.customer}
+                onChange={(value) => handleFilterChange('customer', value)}
                 style={{ width: '100%' }}
-                placeholder="Tüm Firmalar"
+                placeholder="Tüm Müşteriler"
                 showSearch
                 optionFilterProp="children"
               >
-                <Option value="all">Tüm Firmalar</Option>
-                {availableCompanies.map(company => (
-                  <Option key={company} value={company}>{company}</Option>
+                <Option value="all">Tüm Müşteriler</Option>
+                {availableCustomers.map(customer => (
+                  <Option key={customer} value={customer}>{customer}</Option>
                 ))}
               </Select>
             </Col>
@@ -2004,7 +2006,7 @@ const Offers = () => {
           {(() => {
             const activeFilters = [
               filters.status !== 'all' ? 'Durum' : null,
-              filters.company !== 'all' ? 'Firma' : null,
+              filters.customer !== 'all' ? 'Müşteri' : null,
               filters.createdBy !== 'all' ? 'Hazırlayan' : null,
               filters.offerNo.trim() ? 'Teklif No' : null,
               filters.dateRange ? 'Tarih' : null
@@ -2167,10 +2169,10 @@ const Offers = () => {
                         render: (name) => name || '-',
                       },
                       {
-                        title: 'Firma',
-                        dataIndex: 'company',
-                        key: 'company',
-                        render: (company) => company || '-',
+                        title: 'Müşteri',
+                        dataIndex: 'customer',
+                        key: 'customer',
+                        render: (customer) => customer || '-',
                       },
                       {
                         title: 'İşlemler',
@@ -2455,7 +2457,7 @@ const Offers = () => {
                 : 'none'
             }}>
               <div style={{ fontSize: '14px', fontWeight: '600' }}>Step 1</div>
-              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teklif No ve Firma</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teklif No ve Müşteri</div>
             </div>
 
             {/* Step 2 - Template Seçimi (sadece template mode'da) */}
@@ -2611,13 +2613,13 @@ const Offers = () => {
                 </Form.Item>
 
                 <Form.Item
-                  name="company"
-                  label="Firma"
+                  name="customer"
+                  label="Müşteri"
                 >
                   <AutoComplete
-                    options={companyOptions}
-                    onSearch={searchCompanies}
-                    placeholder="Firma adını girin veya seçin"
+                    options={customerOptions}
+                    onSearch={searchCustomers}
+                    placeholder="Müşteri adını girin veya seçin"
                     allowClear
                     filterOption={false}
                     autoComplete="off"
@@ -2644,7 +2646,7 @@ const Offers = () => {
             {isTemplateMode && currentStep === 1 && (
               <div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Müşteri:</strong> {offerData.customer || '-'}
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
@@ -2780,7 +2782,7 @@ const Offers = () => {
             })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Müşteri:</strong> {offerData.customer || '-'}
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
@@ -2948,7 +2950,7 @@ const Offers = () => {
             })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Müşteri:</strong> {offerData.customer || '-'}
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
@@ -3052,7 +3054,7 @@ const Offers = () => {
             })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Müşteri:</strong> {offerData.customer || '-'}
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
@@ -3162,7 +3164,7 @@ const Offers = () => {
             })() && (
               <div>
                 <div style={{ marginBottom: 16 }}>
-                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Firma:</strong> {offerData.company || '-'}
+                  <strong>Teklif:</strong> {offerData.offer_no} | <strong>Müşteri:</strong> {offerData.customer || '-'}
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
@@ -3337,10 +3339,10 @@ const Offers = () => {
                   </div>
                 </div>
 
-                {/* Firma Bilgisi */}
-                {offerData.company && (
+                {/* Müşteri Bilgisi */}
+                {offerData.customer && (
                   <div style={{ marginBottom: 24 }}>
-                    <strong>Firma:</strong> {offerData.company}
+                    <strong>Müşteri:</strong> {offerData.customer}
                   </div>
                 )}
 
@@ -3717,9 +3719,9 @@ const Offers = () => {
               <Title level={4} style={{ margin: 0, marginBottom: 8 }}>
                 {previewOffer.offer_no}
               </Title>
-              {previewOffer.company && (
+              {previewOffer.customer && (
                 <p style={{ color: '#666', margin: 0, marginBottom: 8 }}>
-                  <strong>Firma:</strong> {previewOffer.company}
+                  <strong>Müşteri:</strong> {previewOffer.customer}
                 </p>
               )}
               <p style={{ color: '#666', margin: 0, marginBottom: 16 }}>
