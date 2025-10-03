@@ -12,7 +12,6 @@ const ProfileCard = ({
   onInputChange,
   onSave,
   onFileChange,
-  onAvatarSave,
   onAvatarRemove,
   fileInputRef
 }) => {
@@ -26,7 +25,6 @@ const ProfileCard = ({
             user={user}
             profileData={profileData}
             onFileChange={onFileChange}
-            onAvatarSave={onAvatarSave}
             onAvatarRemove={onAvatarRemove}
             fileInputRef={fileInputRef}
           />

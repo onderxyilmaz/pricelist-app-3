@@ -46,7 +46,7 @@ const Profile = ({ user }) => {
     });
   };
 
-  const onFileChange = (event) => {
+  const onFileChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -61,34 +61,24 @@ const Profile = ({ user }) => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setProfileData(prev => ({
-        ...prev,
-        avatar: e.target.result
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const onAvatarSave = async () => {
-    if (!profileData.avatar || !profileData.avatar.startsWith('data:')) {
-      message.warning('Kaydetmek için yeni bir avatar seçiniz.');
-      return;
-    }
-
     try {
       setLoading(true);
       const formData = new FormData();
-      
-      // Base64 string'i Blob'a çevir
-      const response = await fetch(profileData.avatar);
-      const blob = await response.blob();
-      formData.append('avatar', blob, 'avatar.png');
+      formData.append('avatar', file);
       
       await authApi.uploadAvatar(user.id, formData);
       message.success('Avatar başarıyla güncellendi!');
-      window.location.reload(); // Avatarı güncellemek için
+      
+      // Preview için dosyayı oku
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileData(prev => ({
+          ...prev,
+          avatar: e.target.result
+        }));
+      };
+      reader.readAsDataURL(file);
+      
     } catch (error) {
       message.error('Avatar güncellenirken bir hata oluştu: ' + error.message);
     } finally {
@@ -102,7 +92,7 @@ const Profile = ({ user }) => {
       await authApi.deleteAvatar(user.id);
       setProfileData(prev => ({ ...prev, avatar: null }));
       message.success('Avatar başarıyla kaldırıldı!');
-      window.location.reload(); // Avatarı güncellemek için
+      // Sayfayı yenileme yerine sadece state güncelle
     } catch (error) {
       message.error('Avatar kaldırılırken bir hata oluştu: ' + error.message);
     } finally {
@@ -161,7 +151,6 @@ const Profile = ({ user }) => {
       onInputChange={onInputChange}
       onSave={onSave}
       onFileChange={onFileChange}
-      onAvatarSave={onAvatarSave}
       onAvatarRemove={onAvatarRemove}
       fileInputRef={fileInputRef}
     />
