@@ -121,7 +121,7 @@ async function authRoutes(fastify, options) {
   fastify.put('/user/:id', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { firstName, lastName, avatarFilename, password } = request.body;
+      const { first_name, last_name, password } = request.body;
       
       // Convert ID to integer
       const userId = parseInt(id);
@@ -141,12 +141,12 @@ async function authRoutes(fastify, options) {
         // Şifre güncellemesi varsa - hash'le
         const saltRounds = 12;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        query = 'UPDATE users SET first_name = $1, last_name = $2, avatar_filename = $3, password = $4, updated_at = NOW() WHERE id = $5 RETURNING id, first_name, last_name, email, avatar_filename, role';
-        params = [firstName, lastName, avatarFilename, hashedPassword, userId];
+        query = 'UPDATE users SET first_name = $1, last_name = $2, password = $3, updated_at = NOW() WHERE id = $4 RETURNING id, first_name, last_name, email, avatar_filename, role';
+        params = [first_name, last_name, hashedPassword, userId];
       } else {
         // Şifre güncellemesi yoksa
-        query = 'UPDATE users SET first_name = $1, last_name = $2, avatar_filename = $3, updated_at = NOW() WHERE id = $4 RETURNING id, first_name, last_name, email, avatar_filename, role';
-        params = [firstName, lastName, avatarFilename, userId];
+        query = 'UPDATE users SET first_name = $1, last_name = $2, updated_at = NOW() WHERE id = $3 RETURNING id, first_name, last_name, email, avatar_filename, role';
+        params = [first_name, last_name, userId];
       }
       
       const result = await client.query(query, params);
@@ -202,8 +202,20 @@ async function authRoutes(fastify, options) {
       // Save new file
       await data.file.pipe(fs.createWriteStream(uploadPath));
       
+      // ✅ UPDATE DATABASE with new avatar filename
+      await client.query(
+        'UPDATE users SET avatar_filename = $1, updated_at = NOW() WHERE id = $2',
+        [uniqueFilename, userId]
+      );
+      
+      // Get updated user info
+      const updatedUser = await client.query(
+        'SELECT id, first_name, last_name, email, avatar_filename, role FROM users WHERE id = $1',
+        [userId]
+      );
+      
       client.release();
-      return { success: true, filename: uniqueFilename };
+      return { success: true, filename: uniqueFilename, user: updatedUser.rows[0] };
     } catch (err) {
       return { success: false, message: err.message };
     }
@@ -229,8 +241,20 @@ async function authRoutes(fastify, options) {
         }
       }
       
+      // ✅ UPDATE DATABASE - set avatar_filename to NULL
+      await client.query(
+        'UPDATE users SET avatar_filename = NULL, updated_at = NOW() WHERE id = $1',
+        [userId]
+      );
+      
+      // Get updated user info
+      const updatedUser = await client.query(
+        'SELECT id, first_name, last_name, email, avatar_filename, role FROM users WHERE id = $1',
+        [userId]
+      );
+      
       client.release();
-      return { success: true, message: 'Avatar silindi' };
+      return { success: true, message: 'Avatar silindi', user: updatedUser.rows[0] };
     } catch (err) {
       return { success: false, message: err.message };
     }

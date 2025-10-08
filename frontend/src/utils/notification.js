@@ -104,6 +104,70 @@ const NotificationService = {
       'Bağlantı Hatası',
       'Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.'
     );
+  },
+
+  // Profil işlemleri bildirimleri
+  profileUpdateSuccess: (userName) => {
+    NotificationService.success(
+      'Profil Güncellendi!',
+      `${userName}, profiliniz başarıyla güncellendi.`
+    );
+  },
+
+  profileUpdateError: (errorMessage = 'Profil güncellenirken bir hata oluştu') => {
+    NotificationService.error(
+      'Profil Güncelleme Hatası',
+      errorMessage
+    );
+  },
+
+  avatarUploadSuccess: () => {
+    NotificationService.success(
+      'Avatar Güncellendi!',
+      'Profil fotoğrafınız başarıyla güncellendi.'
+    );
+  },
+
+  avatarUploadError: (errorMessage = 'Avatar yüklenirken bir hata oluştu') => {
+    NotificationService.error(
+      'Avatar Yükleme Hatası',
+      errorMessage
+    );
+  },
+
+  avatarRemoveSuccess: () => {
+    NotificationService.info(
+      'Avatar Kaldırıldı',
+      'Profil fotoğrafınız başarıyla kaldırıldı.'
+    );
+  },
+
+  avatarRemoveError: (errorMessage = 'Avatar kaldırılırken bir hata oluştu') => {
+    NotificationService.error(
+      'Avatar Kaldırma Hatası',
+      errorMessage
+    );
+  },
+
+  passwordMismatch: () => {
+    NotificationService.warning(
+      'Şifre Uyuşmazlığı',
+      'Girdiğiniz şifreler eşleşmiyor. Lütfen kontrol edin.'
+    );
+  },
+
+  fileSizeError: () => {
+    NotificationService.warning(
+      'Dosya Boyutu Hatası',
+      'Dosya boyutu 5MB\'tan küçük olmalıdır.'
+    );
+  },
+
+  fileTypeError: () => {
+    NotificationService.warning(
+      'Dosya Tipi Hatası',
+      'Lütfen sadece resim dosyaları (JPEG, PNG, GIF) seçiniz.'
+    );
   }
 };
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { message } from 'antd';
 import { authApi } from '../../utils/api';
+import NotificationService from '../../utils/notification';
 import ProfileCard from './components/ProfileCard';
 
-const Profile = ({ user }) => {
+const Profile = ({ user, setUser }) => {
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -52,12 +52,12 @@ const Profile = ({ user }) => {
 
     // Dosya doğrulama
     if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
-      message.error('Lütfen sadece resim dosyaları (JPEG, PNG, GIF) seçiniz.');
+      NotificationService.fileTypeError();
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) { // 5MB
-      message.error('Dosya boyutu 5MB\'tan küçük olmalıdır.');
+      NotificationService.fileSizeError();
       return;
     }
 
@@ -66,21 +66,33 @@ const Profile = ({ user }) => {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      await authApi.uploadAvatar(user.id, formData);
-      message.success('Avatar başarıyla güncellendi!');
+      const response = await authApi.uploadAvatar(user.id, formData);
       
-      // Preview için dosyayı oku
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileData(prev => ({
-          ...prev,
-          avatar: e.target.result
-        }));
-      };
-      reader.readAsDataURL(file);
+      // ✅ Backend'den gelen güncel kullanıcı bilgisini localStorage'a kaydet
+      if (response.data.success && response.data.user) {
+        const updatedUser = response.data.user;
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // ✅ Parent component'teki user state'ini güncelle (sayfa yenilenmeden)
+        if (setUser) {
+          setUser(updatedUser);
+        }
+        
+        // Preview için dosyayı oku
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setProfileData(prev => ({
+            ...prev,
+            avatar: e.target.result
+          }));
+        };
+        reader.readAsDataURL(file);
+        
+        NotificationService.avatarUploadSuccess();
+      }
       
     } catch (error) {
-      message.error('Avatar güncellenirken bir hata oluştu: ' + error.message);
+      NotificationService.avatarUploadError(error.message);
     } finally {
       setLoading(false);
     }
@@ -89,12 +101,24 @@ const Profile = ({ user }) => {
   const onAvatarRemove = async () => {
     try {
       setLoading(true);
-      await authApi.deleteAvatar(user.id);
-      setProfileData(prev => ({ ...prev, avatar: null }));
-      message.success('Avatar başarıyla kaldırıldı!');
-      // Sayfayı yenileme yerine sadece state güncelle
+      const response = await authApi.deleteAvatar(user.id);
+      
+      // ✅ Backend'den gelen güncel kullanıcı bilgisini localStorage'a kaydet
+      if (response.data.success && response.data.user) {
+        const updatedUser = response.data.user;
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // ✅ Parent component'teki user state'ini güncelle (sayfa yenilenmeden)
+        if (setUser) {
+          setUser(updatedUser);
+        }
+        
+        setProfileData(prev => ({ ...prev, avatar: null }));
+        NotificationService.avatarRemoveSuccess();
+      }
+      
     } catch (error) {
-      message.error('Avatar kaldırılırken bir hata oluştu: ' + error.message);
+      NotificationService.avatarRemoveError(error.message);
     } finally {
       setLoading(false);
     }
@@ -103,7 +127,7 @@ const Profile = ({ user }) => {
   const onSave = async () => {
     // Şifre doğrulama
     if (profileData.password && profileData.password !== profileData.confirmPassword) {
-      message.error('Şifreler eşleşmiyor!');
+      NotificationService.passwordMismatch();
       return;
     }
 
@@ -118,25 +142,33 @@ const Profile = ({ user }) => {
 
     try {
       setLoading(true);
-      await authApi.updateUser(user.id, updateData);
-      message.success('Profil başarıyla güncellendi!');
+      const response = await authApi.updateUser(user.id, updateData);
       
-      // Formu sıfırla
-      setProfileData(prev => ({
-        ...prev,
-        password: '',
-        confirmPassword: ''
-      }));
-      
-      setHasChanges(false);
-      
-      // Sayfa yenilenmesi gerekiyorsa
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      // ✅ Backend'den gelen güncel kullanıcı bilgisini localStorage'a kaydet
+      if (response.data.success && response.data.user) {
+        const updatedUser = response.data.user;
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // ✅ Parent component'teki user state'ini güncelle (sayfa yenilenmeden)
+        if (setUser) {
+          setUser(updatedUser);
+        }
+        
+        // Formu sıfırla
+        setProfileData(prev => ({
+          ...prev,
+          firstName: updatedUser.first_name,
+          lastName: updatedUser.last_name,
+          password: '',
+          confirmPassword: ''
+        }));
+        
+        setHasChanges(false);
+        NotificationService.profileUpdateSuccess(`${updatedUser.first_name} ${updatedUser.last_name}`);
+      }
       
     } catch (error) {
-      message.error('Profil güncellenirken bir hata oluştu: ' + error.message);
+      NotificationService.profileUpdateError(error.message);
     } finally {
       setLoading(false);
     }

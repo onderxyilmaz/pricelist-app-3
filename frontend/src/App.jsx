@@ -59,7 +59,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
             <Content className="main-content">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile user={user} onUserUpdate={onUserUpdate} />} />
+                <Route path="/profile" element={<Profile user={user} setUser={onUserUpdate} />} />
                 <Route path="/pricelists" element={<Pricelist />} />
                 <Route path="/pricelists/create" element={<CreatePricelist />} />
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
