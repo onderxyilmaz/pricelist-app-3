@@ -54,8 +54,8 @@ cd pricelist-app-3
 
 # 2. Database kurulumu (TEK KOMUT!)
 # PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın
-createdb -U postgres pricelist-app-3
-psql -U postgres -d pricelist-app-3 -f setup_database.sql
+createdb -U postgres pricelist_app_3
+psql -U postgres -d pricelist_app_3 -f setup_database.sql
 
 # 3. Backend kurulumu ve çalıştırma
 cd backend
@@ -76,15 +76,23 @@ Backend için `.env` dosyası oluşturun (`backend/.env`):
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=pricelist-app-3
+DB_NAME=pricelist_app_3
 DB_USER=postgres
 DB_PASSWORD=your_postgres_password
 
 # Server Configuration
 PORT=3001
+NODE_ENV=development
 
-# Optional: JWT Secret (gelecek sürümler için)
-# JWT_SECRET=your_jwt_secret_here
+# CORS Configuration
+FRONTEND_URL=http://localhost:5173
+```
+
+**Not:** `.env.example` dosyasını kopyalayarak başlayabilirsiniz:
+```bash
+cd backend
+cp .env.example .env
+# Sonra .env dosyasını düzenleyin
 ```
 
 ### İlk Kullanıcı
@@ -232,15 +240,15 @@ npm run preview # Preview production build
 ### Veritabanı Yönetimi
 ```bash
 # Database'i sıfırla (PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın)
-dropdb -U postgres pricelist-app-3
-createdb -U postgres pricelist-app-3
-psql -U postgres -d pricelist-app-3 -f setup_database.sql
+dropdb -U postgres pricelist_app_3
+createdb -U postgres pricelist_app_3
+psql -U postgres -d pricelist_app_3 -f setup_database.sql
 
 # Backup al
-pg_dump -U postgres pricelist-app-3 > backup.sql
+pg_dump -U postgres pricelist_app_3 > backup.sql
 
 # Backup'tan geri yükle
-psql -U postgres -d pricelist-app-3 -f backup.sql
+psql -U postgres -d pricelist_app_3 -f backup.sql
 ```
 
 ## Katkıda Bulunma

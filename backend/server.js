@@ -68,6 +68,26 @@ const ensureDirectories = async () => {
   }
 };
 
+// Test database connection
+const testDatabaseConnection = async () => {
+  try {
+    const client = await fastify.pg.connect();
+    const result = await client.query('SELECT version(), current_database(), current_user');
+    client.release();
+    
+    fastify.log.info('✅ Database connection successful!');
+    fastify.log.info(`📊 Database: ${result.rows[0].current_database}`);
+    fastify.log.info(`👤 User: ${result.rows[0].current_user}`);
+    fastify.log.info(`🔧 PostgreSQL Version: ${result.rows[0].version.split(',')[0]}`);
+    return true;
+  } catch (err) {
+    fastify.log.error('❌ Database connection failed!');
+    fastify.log.error(`Error: ${err.message}`);
+    fastify.log.error(`Connection string: postgres://${process.env.DB_USER}:****@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
+    return false;
+  }
+};
+
 // Start server
 const start = async () => {
   try {
@@ -76,7 +96,13 @@ const start = async () => {
     
     const port = process.env.PORT || 3001;
     await fastify.listen({ port, host: '0.0.0.0' });
-    fastify.log.info(`Server listening on port ${port}`);
+    fastify.log.info(`🚀 Server listening on port ${port}`);
+    
+    // Test database connection after server starts
+    const dbConnected = await testDatabaseConnection();
+    if (!dbConnected) {
+      fastify.log.warn('⚠️  Server started but database connection failed. Please check your database configuration.');
+    }
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
