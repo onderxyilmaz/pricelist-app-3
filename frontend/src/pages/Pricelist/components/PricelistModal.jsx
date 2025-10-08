@@ -7,8 +7,7 @@ const PricelistModal = ({
   onCancel,
   onSubmit,
   editingPricelist,
-  form,
-  getRandomColor
+  form
 }) => {
   const handleCancel = () => {
     form.resetFields();
@@ -62,12 +61,11 @@ const PricelistModal = ({
     >
       <div className={styles.modalContent}>
         <Form
-          className={styles.form}
-          form={form}
-          layout="vertical"
-          onFinish={onSubmit}
-          initialValues={{ currency: 'EUR', color: getRandomColor() }}
-          autoComplete="off"
+        className={styles.form}
+        form={form}
+        layout="vertical"
+        onFinish={onSubmit}
+        autoComplete="off"
         >
           <Form.Item
             name="name"

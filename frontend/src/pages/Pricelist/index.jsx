@@ -17,13 +17,27 @@ const Pricelist = () => {
   const [editingPricelist, setEditingPricelist] = useState(null);
   const [form] = Form.useForm();
 
-  // Random renkler için
+  // Random renkler için - mevcut renkleri hariç tut
   const getRandomColor = () => {
-    const colors = [
+    const allColors = [
       '#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1',
-      '#13c2c2', '#eb2f96', '#fa8c16', '#a0d911', '#096dd9'
+      '#13c2c2', '#eb2f96', '#fa8c16', '#a0d911', '#096dd9',
+      '#ff4d4f', '#ffc53d', '#73d13d', '#40a9ff', '#9254de',
+      '#36cfc9', '#ff85c0', '#ffa940', '#bae637', '#597ef7'
     ];
-    return colors[Math.floor(Math.random() * colors.length)];
+    
+    // Mevcut fiyat listelerinin renklerini al
+    const usedColors = pricelists.map(p => p.color?.toLowerCase());
+    
+    // Kullanılmamış renkleri filtrele
+    const availableColors = allColors.filter(
+      color => !usedColors.includes(color.toLowerCase())
+    );
+    
+    // Eğer tüm renkler kullanılmışsa, tüm renklerden seç
+    const colorPool = availableColors.length > 0 ? availableColors : allColors;
+    
+    return colorPool[Math.floor(Math.random() * colorPool.length)];
   };
 
   useEffect(() => {
@@ -62,7 +76,12 @@ const Pricelist = () => {
   const handleCreate = () => {
     setEditingPricelist(null);
     form.resetFields();
-    form.setFieldsValue({ color: getRandomColor() });
+    // Modal açıldıktan sonra random renk seç (mevcut listeler yüklendikten sonra)
+    const randomColor = getRandomColor();
+    form.setFieldsValue({ 
+      currency: 'EUR',
+      color: randomColor 
+    });
     setModalVisible(true);
   };
 
@@ -161,7 +180,6 @@ const Pricelist = () => {
         onSubmit={handleSubmit}
         editingPricelist={editingPricelist}
         form={form}
-        getRandomColor={getRandomColor}
       />
     </div>
   );
