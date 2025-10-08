@@ -13,7 +13,6 @@ import Sidebar from './components/Sidebar.jsx';
 import Pricelist from './pages/Pricelist/index.jsx';
 import PricelistDetail from './pages/PricelistDetail.jsx';
 import Profile from './pages/Profile/index.jsx';
-import CreatePricelist from './pages/CreatePricelist.jsx';
 import ImportExcel from './pages/ImportExcel.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import AllProducts from './pages/AllProducts/index.jsx';
@@ -61,7 +60,6 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile user={user} setUser={onUserUpdate} />} />
                 <Route path="/pricelists" element={<Pricelist />} />
-                <Route path="/pricelists/create" element={<CreatePricelist />} />
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
                 <Route path="/all-products" element={<AllProducts />} />
                 <Route path="/offers" element={<Offers />} />
