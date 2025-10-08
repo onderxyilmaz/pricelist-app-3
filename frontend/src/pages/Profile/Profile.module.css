@@ -14,8 +14,16 @@
 /* Profile Card */
 .profileCard {
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  background: transparent;
+  border: none;
+}
+
+/* Profile Content */
+.profileContent {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
 }
 
 /* Avatar Section */
