@@ -308,7 +308,6 @@ async function offerRoutes(fastify, options) {
         const result = await client.query(updateQuery, [
           offer_no, 
           customerId, 
-          customerId,
           revision_no || existingOffer.rows[0].revision_no,
           status || existingOffer.rows[0].status || 'draft',
           parent_offer_id || existingOffer.rows[0].parent_offer_id,
