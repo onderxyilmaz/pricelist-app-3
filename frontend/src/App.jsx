@@ -18,6 +18,7 @@ import UserManagement from './pages/UserManagement/index.jsx';
 import AllProducts from './pages/AllProducts/index.jsx';
 import Offers from './pages/Offers.jsx';
 import OfferTemplates from './pages/OfferTemplates.jsx';
+import OfferTemplates2 from './pages/OfferTemplates/index.jsx';
 import Customers from './pages/Customers/index.jsx';
 import Companies from './pages/Companies/index.jsx';
 import './App.css';
@@ -65,6 +66,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
                 <Route path="/all-products" element={<AllProducts />} />
                 <Route path="/offers" element={<Offers />} />
                 <Route path="/offer-templates" element={<OfferTemplates />} />
+                <Route path="/offer-templates-2" element={<OfferTemplates2 />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/companies" element={<Companies />} />
                 <Route path="/import-excel" element={<ImportExcel />} />

@@ -481,14 +481,19 @@ const Offers = () => {
 
         console.log('Offer payload:', offerPayload); // Debug için
 
-        const offerResponse = await axios.post('http://localhost:3000/api/offers', offerPayload);
+        const offerResponse = await axios.post('http://localhost:3000/api/offers', offerPayload, {
+          timeout: 30000 // 30 saniye timeout
+        });
         
-        if (!offerResponse.data.success) {
+        console.log('Offer response:', offerResponse.data); // Debug için
+        console.log('Offer response:', offerResponse.data); // Debug için
+        
+        if (!offerResponse.data.success && !offerResponse.data.offer) {
           NotificationService.error('Hata', offerResponse.data.message || 'Teklif kaydedilemedi');
           return;
         }
 
-        offerId = offerResponse.data.offer.id;
+        offerId = offerResponse.data.offer?.id || offerResponse.data.id;
       }
 
       // Seçili ürünleri kaydet (hem yeni teklif hem de düzenleme modu için)
@@ -525,17 +530,36 @@ const Offers = () => {
         }
       }
 
-      NotificationService.success('Başarılı', editingOffer ? 'Teklif başarıyla güncellendi' : 'Teklif başarıyla oluşturuldu');
-      setModalVisible(false);
-      // Template state'lerini sıfırla
-      setSelectedTemplate(null);
-      setIsTemplateMode(false);
-      setTemplateFilter('');
-      fetchOffers(); // Listeyi yenile
+      if (offerId) {
+        NotificationService.success('Başarılı', editingOffer ? 'Teklif başarıyla güncellendi' : 'Teklif başarıyla oluşturuldu');
+        setModalVisible(false);
+        // Template state'lerini sıfırla
+        setSelectedTemplate(null);
+        setIsTemplateMode(false);
+        setTemplateFilter('');
+        fetchOffers(); // Listeyi yenile
+      } else {
+        NotificationService.error('Hata', 'Teklif ID alınamadı');
+      }
       
     } catch (error) {
       console.error('Save offer error:', error);
-      NotificationService.error('Hata', 'Teklif kaydedilirken hata oluştu');
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data
+      });
+      
+      // Network hatası kontrolü
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+        NotificationService.error('Hata', 'Ağ bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.');
+      } else if (error.response) {
+        // Backend'den gelen hata
+        NotificationService.error('Hata', error.response.data?.message || 'Teklif kaydedilirken backend hatası oluştu');
+      } else {
+        // Diğer hatalar
+        NotificationService.error('Hata', 'Teklif kaydedilirken beklenmeyen hata oluştu');
+      }
     }
   };
 

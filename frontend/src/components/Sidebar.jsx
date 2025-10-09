@@ -53,6 +53,12 @@ const Sidebar = ({ user }) => {
       onClick: () => navigate('/offer-templates')
     },
     {
+      key: '/offer-templates-2',
+      icon: <FormOutlined />,
+      label: 'Teklif Templates 2',
+      onClick: () => navigate('/offer-templates-2')
+    },
+    {
       key: '/customers',
       icon: <UserOutlined />,
       label: 'Müşteriler',
