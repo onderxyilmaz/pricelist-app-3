@@ -244,10 +244,10 @@ const ImportExcel = () => {
     });
     
     if (validSheetCount === 0) {
-      const errorTitle = language === 'tr' ? 'Geçersiz Excel Formatı' : 'Invalid Excel Format';
+      const errorTitle = 'Geçersiz Excel Formatı'; // Her zaman Türkçe
       const errorMessage = language === 'tr' 
         ? `Hiçbir sheet uygun sütunlara sahip değil. Seçtiğiniz dil: ${language.toUpperCase()}. Gerekli sütunlar: "Ürün Adı" ve "Fiyat" (veya "Stok"). Console'u kontrol edin.`
-        : `No sheet has appropriate columns. Selected language: ${language.toUpperCase()}. Required columns: "Product Name" and "Price" (or "Stock"). Check console.`;
+        : `Hiçbir sheet uygun sütunlara sahip değil. Seçtiğiniz dil: ${language.toUpperCase()}. Gerekli sütunlar: "Product Name" and "Price" (or "Stock"). Console'u kontrol edin.`;
         
       NotificationService.error(errorTitle, errorMessage);
       return null;
