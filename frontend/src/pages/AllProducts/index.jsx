@@ -25,8 +25,7 @@ const AllProducts = () => {
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [nameLanguage, setNameLanguage] = useState('en');
-  const [descriptionLanguage, setDescriptionLanguage] = useState('en');
+  const [formLanguage, setFormLanguage] = useState('en'); // Tek dil state'i
   const [tableLanguage, setTableLanguage] = useState('en');
   const [editForm] = Form.useForm();
 
@@ -221,9 +220,8 @@ const AllProducts = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    // Mevcut verilere göre dil seçimini ayarla
-    setNameLanguage(product.name_tr ? 'tr' : 'en');
-    setDescriptionLanguage(product.description_tr ? 'tr' : 'en');
+    // Default olarak EN seç
+    setFormLanguage('en');
     editForm.setFieldsValue({
       product_id: product.product_id,
       name_tr: product.name_tr,
@@ -276,8 +274,7 @@ const AllProducts = () => {
   const handleEditModalCancel = () => {
     setEditModalVisible(false);
     setEditingProduct(null);
-    setNameLanguage('en');
-    setDescriptionLanguage('en');
+    setFormLanguage('en'); // Tek dil state'i
     editForm.resetFields();
   };
 
@@ -327,10 +324,8 @@ const AllProducts = () => {
         onSubmit={handleEditSubmit}
         editingProduct={editingProduct}
         form={editForm}
-        nameLanguage={nameLanguage}
-        onNameLanguageChange={setNameLanguage}
-        descriptionLanguage={descriptionLanguage}
-        onDescriptionLanguageChange={setDescriptionLanguage}
+        formLanguage={formLanguage}
+        onLanguageChange={setFormLanguage}
       />
     </div>
   );

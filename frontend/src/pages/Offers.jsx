@@ -901,7 +901,7 @@ const Offers = () => {
             product_id: item.product_id,
             name_tr: item.product_name_tr,
             name_en: item.product_name_en,
-            description: originalItem ? (originalItem.description_tr || originalItem.description_en || '') : '', // Orijinal ürün açıklaması
+            description: item.description || (originalItem ? (originalItem.description_tr || originalItem.description_en || '') : ''), // Önce teklif kalemindeki açıklamayı kullan
             price: parseFloat(item.price),
             unit: item.unit,
             currency: item.currency,
@@ -912,16 +912,10 @@ const Offers = () => {
         });
         setSelectedItems(mappedItems);
 
-        // Ürün notlarını doldur - sadece kullanıcının girdiği özel açıklamaları
+        // Ürün notlarını doldur - teklif kalemindeki açıklamaları kullan
         const notes = {};
         offerData.items.forEach(item => {
-          // Orijinal ürün açıklamasını al
-          const originalItem = pricelists
-            .flatMap(p => p.items)
-            .find(pi => pi.id === item.pricelist_item_id);
-          
-          // Eğer teklif kalemindeki açıklama orijinal açıklamadan farklıysa, kullanıcının özel açıklaması
-          if (item.description && originalItem && item.description !== (originalItem.description_tr || originalItem.description_en || '')) {
+          if (item.description) {
             notes[item.pricelist_item_id] = item.description;
           }
         });
@@ -1780,6 +1774,9 @@ const Offers = () => {
                                   record.customer_response === 'rejected' ? <CloseOutlined /> :
                                   <QuestionCircleOutlined />
                                 }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
                                 title="Müşteri Yanıtı"
                                 disabled={record.status !== 'sent'}
                                 style={{ 
@@ -1834,12 +1831,18 @@ const Offers = () => {
             onConfirm={() => handleDelete(record.id)}
             okText="Evet"
             cancelText="Hayır"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           >
             <Button
               type="primary"
               danger
               size="small"
               icon={<DeleteOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
               title="Sil"
             />
           </Popconfirm>
@@ -2043,7 +2046,9 @@ const Offers = () => {
                                        target.closest('.ant-dropdown') ||
                                        target.closest('svg') ||
                                        target.closest('[role="img"]') ||
-                                       target.closest('.anticon');
+                                       target.closest('.anticon') ||
+                                       target.closest('.ant-space') || // Action butonları genelde Space içinde
+                                       target.classList.contains('anticon');
               
               // Eğer buton vs. tıklanmışsa expand işlemini engelle
               if (isClickableElement) {
@@ -2309,6 +2314,9 @@ const Offers = () => {
                                   revRecord.customer_response === 'rejected' ? <CloseOutlined /> :
                                   <QuestionCircleOutlined />
                                 }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
                                 title="Müşteri Yanıtı"
                                 disabled={revRecord.status !== 'sent'}
                                 style={{ 
@@ -2404,7 +2412,7 @@ const Offers = () => {
               const revisions = getRevisions(record.id);
               return revisions.length > 0;
             },
-            expandRowByClick: true,
+            expandRowByClick: false,
           }}
         />
       </Card>
@@ -3794,13 +3802,13 @@ const Offers = () => {
                       <Table
                         columns={[
                           {
-                            title: 'Ürün Kodu',
+                            title: previewLanguage === 'tr' ? 'Ürün Kodu' : 'Product Code',
                             dataIndex: 'product_id',
                             key: 'product_id',
                             width: 120,
                           },
                           {
-                            title: 'Ürün Adı',
+                            title: previewLanguage === 'tr' ? 'Ürün Adı' : 'Product Name',
                             key: 'product_name',
                             render: (_, record) => {
                               return previewLanguage === 'tr' ? 
@@ -3809,28 +3817,35 @@ const Offers = () => {
                             },
                           },
                           {
-                            title: 'Açıklama',
-                            dataIndex: 'description',
+                            title: previewLanguage === 'tr' ? 'Açıklama' : 'Description',
                             key: 'description',
                             ellipsis: true,
-                            render: (description) => description || '-',
+                            render: (_, record) => {
+                              // Önce dil seçimine göre orijinal ürün açıklamasını kontrol et
+                              const originalDescription = previewLanguage === 'tr' ? 
+                                record.original_description_tr : 
+                                record.original_description_en;
+                              
+                              // Eğer orijinal açıklama varsa onu kullan, yoksa offer'daki description'ı kullan
+                              return originalDescription || record.description || '-';
+                            },
                           },
                           {
-                            title: 'Miktar',
+                            title: previewLanguage === 'tr' ? 'Miktar' : 'Quantity',
                             dataIndex: 'quantity',
                             key: 'quantity',
                             width: 80,
                             align: 'center',
                           },
                           {
-                            title: 'Birim Fiyat',
+                            title: previewLanguage === 'tr' ? 'Birim Fiyat' : 'Unit Price',
                             key: 'price',
                             width: 120,
                             align: 'right',
                             render: (_, record) => `${record.price} ${record.currency}`,
                           },
                           {
-                            title: 'Toplam',
+                            title: previewLanguage === 'tr' ? 'Toplam' : 'Total',
                             key: 'total_price',
                             width: 120,
                             align: 'right',

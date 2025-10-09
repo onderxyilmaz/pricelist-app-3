@@ -1,7 +1,9 @@
 import React from 'react';
-import { Card, Table, Tag, Button, Space, Popconfirm } from 'antd';
+import { Card, Table, Tag, Button, Space, Popconfirm, Typography } from 'antd';
 import { EditOutlined, DeleteOutlined, ExportOutlined } from '@ant-design/icons';
 import styles from '../AllProducts.module.css';
+
+const { Text } = Typography;
 
 const ProductTable = ({
   products,
@@ -18,14 +20,14 @@ const ProductTable = ({
 }) => {
   const columns = [
     {
-      title: 'Product ID',
+      title: tableLanguage === 'tr' ? 'Ürün ID' : 'Product ID',
       dataIndex: 'product_id',
       key: 'product_id',
       width: 120,
       sorter: (a, b) => a.product_id.localeCompare(b.product_id),
     },
     {
-      title: 'Ürün Adı',
+      title: tableLanguage === 'tr' ? 'Ürün Adı' : 'Product Name',
       key: 'name',
       sorter: (a, b) => {
         const nameA = (tableLanguage === 'tr' ? a.name_tr : a.name_en) || a.name_tr || a.name_en || '';
@@ -39,7 +41,7 @@ const ProductTable = ({
       },
     },
     {
-      title: 'Açıklama',
+      title: tableLanguage === 'tr' ? 'Açıklama' : 'Description',
       key: 'description',
       ellipsis: true,
       render: (_, record) => {
@@ -48,44 +50,36 @@ const ProductTable = ({
       },
     },
     {
-      title: 'Para Birimi',
-      dataIndex: 'currency',
-      key: 'currency',
-      width: 110,
-      align: 'center',
-      render: (currency) => getCurrencySymbol(currency),
-      sorter: (a, b) => {
-        const symbolA = getCurrencySymbol(a.currency);
-        const symbolB = getCurrencySymbol(b.currency);
-        return symbolA.localeCompare(symbolB);
-      }
-    },
-    {
-      title: 'Fiyat',
+      title: tableLanguage === 'tr' ? 'Fiyat' : 'Price',
       dataIndex: 'price',
       key: 'price',
       width: 120,
+      align: 'right',
       sorter: (a, b) => parseFloat(a.price) - parseFloat(b.price),
-      render: (price) => parseFloat(price).toLocaleString('tr-TR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
+      render: (price, record) => (
+        <Text strong>
+          {getCurrencySymbol(record.currency)} {parseFloat(price).toLocaleString('tr-TR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
+        </Text>
+      )
     },
     {
-      title: 'Stok',
+      title: tableLanguage === 'tr' ? 'Stok' : 'Stock',
       dataIndex: 'stock',
       key: 'stock',
       width: 80,
       sorter: (a, b) => a.stock - b.stock,
     },
     {
-      title: 'Birim',
+      title: tableLanguage === 'tr' ? 'Birim' : 'Unit',
       dataIndex: 'unit',
       key: 'unit',
       width: 80,
     },
     {
-      title: 'Fiyat Listesi',
+      title: tableLanguage === 'tr' ? 'Fiyat Listesi' : 'Price List',
       dataIndex: 'pricelist_name',
       key: 'pricelist_name',
       width: 200,
@@ -97,7 +91,7 @@ const ProductTable = ({
       sorter: (a, b) => a.pricelist_name.localeCompare(b.pricelist_name),
     },
     {
-      title: 'Oluşturulma',
+      title: tableLanguage === 'tr' ? 'Oluşturulma' : 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 120,
@@ -105,7 +99,7 @@ const ProductTable = ({
       sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
     },
     {
-      title: 'İşlemler',
+      title: tableLanguage === 'tr' ? 'İşlemler' : 'Actions',
       key: 'actions',
       width: 120,
       fixed: 'right',

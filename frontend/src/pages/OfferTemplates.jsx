@@ -843,13 +843,13 @@ const OfferTemplates = () => {
                       <Table
                         columns={[
                           {
-                            title: 'Ürün Kodu',
+                            title: previewLanguage === 'tr' ? 'Ürün Kodu' : 'Product Code',
                             dataIndex: 'product_id',
                             key: 'product_id',
                             width: 120,
                           },
                           {
-                            title: 'Ürün Adı',
+                            title: previewLanguage === 'tr' ? 'Ürün Adı' : 'Product Name',
                             key: 'product_name',
                             render: (_, record) => {
                               return previewLanguage === 'tr' ? 
@@ -858,7 +858,7 @@ const OfferTemplates = () => {
                             },
                           },
                           {
-                            title: 'Açıklama',
+                            title: previewLanguage === 'tr' ? 'Açıklama' : 'Description',
                             key: 'description',
                             ellipsis: true,
                             render: (_, record) => {
@@ -868,28 +868,28 @@ const OfferTemplates = () => {
                             },
                           },
                           {
-                            title: 'Miktar',
+                            title: previewLanguage === 'tr' ? 'Miktar' : 'Quantity',
                             dataIndex: 'quantity',
                             key: 'quantity',
                             width: 80,
                             align: 'center',
                           },
                           {
-                            title: 'Birim Fiyat',
+                            title: previewLanguage === 'tr' ? 'Birim Fiyat' : 'Unit Price',
                             key: 'price',
                             width: 120,
                             align: 'right',
                             render: (_, record) => `${record.price} ${record.currency}`,
                           },
                           {
-                            title: 'Toplam',
+                            title: previewLanguage === 'tr' ? 'Toplam' : 'Total',
                             key: 'total_price',
                             width: 120,
                             align: 'right',
                             render: (_, record) => `${record.total_price} ${record.currency}`,
                           },
                           {
-                            title: 'Not',
+                            title: previewLanguage === 'tr' ? 'Not' : 'Note',
                             dataIndex: 'note',
                             key: 'note',
                             ellipsis: true,

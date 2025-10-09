@@ -151,12 +151,15 @@ async function offerRoutes(fastify, options) {
           oi.product_name_en,
           oi.product_id as product_code,
           oi.description,
+          pi.description_tr as original_description_tr,
+          pi.description_en as original_description_en,
           oi.price as unit_price,
           oi.price as net_price,
           oi.price as list_price,
           oi.total_price as net_total
         FROM offer_items oi
         LEFT JOIN pricelists p ON oi.pricelist_id = p.id
+        LEFT JOIN pricelist_items pi ON oi.pricelist_item_id = pi.id
         WHERE oi.offer_id = $1
         ORDER BY p.name, oi.product_name_tr, oi.product_name_en
       `, [id]);
@@ -308,7 +311,6 @@ async function offerRoutes(fastify, options) {
         const result = await client.query(updateQuery, [
           offer_no, 
           customerId, 
-          customerId,
           revision_no || existingOffer.rows[0].revision_no,
           status || existingOffer.rows[0].status || 'draft',
           parent_offer_id || existingOffer.rows[0].parent_offer_id,
