@@ -34,10 +34,16 @@ fastify.register(require('@fastify/postgres'), {
   password: process.env.DB_PASSWORD
 });
 
-// Static files
+// Static files for uploads
 fastify.register(require('@fastify/static'), {
   root: path.join(__dirname, 'uploads'),
   prefix: '/uploads/'
+});
+
+// Static files for frontend (built React app)
+fastify.register(require('@fastify/static'), {
+  root: path.join(__dirname, 'public'),
+  prefix: '/'
 });
 
 // Routes
@@ -50,6 +56,18 @@ fastify.register(require('./src/routes/customerRoutes'), { prefix: '/api' });
 // Health check
 fastify.get('/health', async (request, reply) => {
   return { status: 'OK', message: 'Server is running' };
+});
+
+// SPA fallback - serve index.html for all non-API routes
+fastify.get('/*', async (request, reply) => {
+  // Skip API routes
+  if (request.url.startsWith('/api/') || request.url.startsWith('/uploads/')) {
+    reply.code(404).send({ error: 'Not found' });
+    return;
+  }
+  
+  // Serve index.html for SPA routes
+  return reply.sendFile('index.html', path.join(__dirname, 'public'));
 });
 
 
