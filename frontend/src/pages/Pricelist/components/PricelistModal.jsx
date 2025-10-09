@@ -8,7 +8,8 @@ const PricelistModal = ({
   onSubmit,
   editingPricelist,
   form,
-  getRandomColor
+  getSmartColor,
+  predefinedColors = []
 }) => {
   const handleCancel = () => {
     form.resetFields();
@@ -66,7 +67,7 @@ const PricelistModal = ({
           form={form}
           layout="vertical"
           onFinish={onSubmit}
-          initialValues={{ currency: 'EUR', color: getRandomColor() }}
+          initialValues={{ currency: 'EUR', color: getSmartColor() }}
           autoComplete="off"
         >
           <Form.Item
@@ -123,7 +124,13 @@ const PricelistModal = ({
               className={styles.colorPicker}
               showText 
               format="hex" 
-              disabledAlpha 
+              disabledAlpha
+              presets={[
+                {
+                  label: 'Önerilen Renkler',
+                  colors: predefinedColors,
+                }
+              ]}
             />
           </Form.Item>
 

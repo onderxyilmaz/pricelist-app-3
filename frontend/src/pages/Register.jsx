@@ -19,7 +19,10 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const response = await authApi.register(values);
+      // confirmPassword alanını çıkar, sadece backend'in beklediği alanları gönder
+      const { confirmPassword, ...registerData } = values;
+      
+      const response = await authApi.register(registerData);
       if (response.data.success) {
         NotificationService.registerSuccess(response.data.user.first_name);
         onRegister(response.data.user);
@@ -27,10 +30,11 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
         NotificationService.registerError(response.data.message);
       }
     } catch (error) {
+      console.error('Register error:', error);
       if (error.code === 'ERR_NETWORK') {
         NotificationService.connectionError();
       } else {
-        NotificationService.registerError('Beklenmeyen bir hata oluştu.');
+        NotificationService.registerError(error.response?.data?.message || 'Beklenmeyen bir hata oluştu.');
       }
     } finally {
       setLoading(false);

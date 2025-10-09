@@ -3,6 +3,7 @@ async function authRoutes(fastify, options) {
   const fs = require('fs-extra');
   const crypto = require('crypto');
   const bcrypt = require('bcryptjs');
+  
   // Check if any users exist
   fastify.get('/check-users', async (request, reply) => {
     try {
@@ -54,6 +55,7 @@ async function authRoutes(fastify, options) {
       client.release();
       return { success: true, user: result.rows[0] };
     } catch (err) {
+      console.error('Register error:', err);
       return { success: false, message: err.message };
     }
   });
@@ -202,6 +204,12 @@ async function authRoutes(fastify, options) {
       // Save new file
       await data.file.pipe(fs.createWriteStream(uploadPath));
       
+      // Update database with new avatar filename
+      await client.query(
+        'UPDATE users SET avatar_filename = $1 WHERE id = $2',
+        [uniqueFilename, userId]
+      );
+      
       client.release();
       return { success: true, filename: uniqueFilename };
     } catch (err) {
@@ -227,6 +235,12 @@ async function authRoutes(fastify, options) {
         if (await fs.pathExists(avatarPath)) {
           await fs.remove(avatarPath);
         }
+        
+        // Update database to remove avatar filename
+        await client.query(
+          'UPDATE users SET avatar_filename = NULL WHERE id = $1',
+          [userId]
+        );
       }
       
       client.release();

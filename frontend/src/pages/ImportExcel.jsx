@@ -69,7 +69,7 @@ const ImportExcel = () => {
 
   const fetchPricelists = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/pricelists');
+      const response = await axios.get('http://localhost:3000/api/pricelists');
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -392,11 +392,11 @@ const ImportExcel = () => {
       
       // Tüm fiyat listelerini al (duplikasyon kontrolü için)
       try {
-        const allPricelistsResponse = await axios.get('http://localhost:3001/api/pricelists');
+        const allPricelistsResponse = await axios.get('http://localhost:3000/api/pricelists');
         if (allPricelistsResponse.data.success) {
           for (const pricelist of allPricelistsResponse.data.pricelists) {
             try {
-              const response = await axios.get(`http://localhost:3001/api/pricelists/${pricelist.id}`);
+              const response = await axios.get(`http://localhost:3000/api/pricelists/${pricelist.id}`);
               if (response.data.success) {
                 allPricelistItems[pricelist.id] = {
                   name: pricelist.name,
@@ -514,7 +514,7 @@ const ImportExcel = () => {
         await Promise.all(
           batch.map(async ({ pricelistId, item }) => {
             try {
-              await axios.post(`http://localhost:3001/api/pricelists/${pricelistId}/items`, item);
+              await axios.post(`http://localhost:3000/api/pricelists/${pricelistId}/items`, item);
               newItemsAdded++;
               setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
             } catch (error) {
@@ -543,7 +543,7 @@ const ImportExcel = () => {
                 unit: existingItem.unit
               };
               
-              await axios.put(`http://localhost:3001/api/items/${existingItem.id}`, updatedItem);
+              await axios.put(`http://localhost:3000/api/items/${existingItem.id}`, updatedItem);
               existingItemsUpdated++;
               setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
             } catch (error) {

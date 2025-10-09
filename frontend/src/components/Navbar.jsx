@@ -7,7 +7,7 @@ const { Header } = Layout;
 
 const Navbar = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const API_BASE_URL = 'http://localhost:3001';
+  const API_BASE_URL = 'http://localhost:3000';
 
   // Avatar renk belirleme fonksiyonu
   const getAvatarStyle = () => {

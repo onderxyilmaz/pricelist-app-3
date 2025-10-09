@@ -1,6 +1,6 @@
-require('dotenv').config();
-const fastify = require('fastify')({ logger: true });
 const path = require('path');
+require('dotenv').config(); // Backend dizinindeki .env dosyasını kullan
+const fastify = require('fastify')({ logger: true });
 const fs = require('fs-extra');
 
 // CORS plugin
@@ -17,8 +17,21 @@ fastify.register(require('@fastify/multipart'), {
 });
 
 // PostgreSQL plugin
+console.log('Environment variables:', {
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD ? '[SET]' : '[NOT SET]',
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_NAME: process.env.DB_NAME
+});
+
+// Object config yerine connection string kullanmayı dene
 fastify.register(require('@fastify/postgres'), {
-  connectionString: `postgres://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD
 });
 
 // Static files

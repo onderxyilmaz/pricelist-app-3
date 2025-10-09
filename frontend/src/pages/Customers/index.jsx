@@ -31,7 +31,7 @@ const Customers = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/customers');
+      const response = await axios.get('http://localhost:3000/api/customers');
       if (response.data.success) {
         setCustomers(response.data.customers);
         setFilteredCustomers(response.data.customers);
@@ -68,7 +68,7 @@ const Customers = () => {
     try {
       if (editingCustomer) {
         // Güncelleme
-        const response = await axios.put(`http://localhost:3001/api/customers/${editingCustomer.id}`, values);
+        const response = await axios.put(`http://localhost:3000/api/customers/${editingCustomer.id}`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Müşteri güncellendi');
           fetchCustomers();
@@ -77,7 +77,7 @@ const Customers = () => {
         }
       } else {
         // Yeni oluşturma
-        const response = await axios.post('http://localhost:3001/api/customers', values);
+        const response = await axios.post('http://localhost:3000/api/customers', values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Müşteri oluşturuldu');
           fetchCustomers();
@@ -94,7 +94,7 @@ const Customers = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/api/customers/${id}`);
+      const response = await axios.delete(`http://localhost:3000/api/customers/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Müşteri silindi');
         fetchCustomers();

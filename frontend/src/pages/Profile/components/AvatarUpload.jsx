@@ -3,7 +3,7 @@ import { Avatar, Button, Dropdown } from 'antd';
 import { UserOutlined, CameraOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import styles from '../Profile.module.css';
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'http://localhost:3000';
 
 const AvatarUpload = ({
   user,

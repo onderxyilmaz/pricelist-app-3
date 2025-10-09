@@ -10,7 +10,7 @@ import {
   EyeOutlined 
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 import NotificationService from '../utils/notification';
 
 const { Title, Paragraph } = Typography;
@@ -34,7 +34,7 @@ const Dashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/dashboard/stats');
+      const response = await api.get('/dashboard/stats');
       if (response.data.success) {
         setStats(response.data.stats);
         console.log('Dashboard stats:', response.data.stats);

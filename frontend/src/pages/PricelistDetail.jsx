@@ -65,7 +65,7 @@ const PricelistDetail = () => {
   const fetchPricelistDetail = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:3001/api/pricelists/${id}`);
+      const response = await axios.get(`http://localhost:3000/api/pricelists/${id}`);
       if (response.data.success) {
         setPricelist(response.data.data);
         setItems(response.data.data.items || []);
@@ -123,14 +123,14 @@ const PricelistDetail = () => {
     try {
       if (editingItem) {
         // Güncelleme
-        const response = await axios.put(`http://localhost:3001/api/items/${editingItem.id}`, values);
+        const response = await axios.put(`http://localhost:3000/api/items/${editingItem.id}`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Ürün güncellendi');
           fetchPricelistDetail();
         }
       } else {
         // Yeni ekleme
-        const response = await axios.post(`http://localhost:3001/api/pricelists/${id}/items`, values);
+        const response = await axios.post(`http://localhost:3000/api/pricelists/${id}/items`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Ürün eklendi');
           fetchPricelistDetail();
@@ -144,7 +144,7 @@ const PricelistDetail = () => {
 
   const handleDelete = async (itemId) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/api/items/${itemId}`);
+      const response = await axios.delete(`http://localhost:3000/api/items/${itemId}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Ürün silindi');
         fetchPricelistDetail();
@@ -163,7 +163,7 @@ const PricelistDetail = () => {
     try {
       await Promise.all(
         selectedRowKeys.map(itemId => 
-          axios.delete(`http://localhost:3001/api/items/${itemId}`)
+          axios.delete(`http://localhost:3000/api/items/${itemId}`)
         )
       );
       NotificationService.success('Başarılı', `${selectedRowKeys.length} ürün silindi`);
