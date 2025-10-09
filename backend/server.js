@@ -34,16 +34,17 @@ fastify.register(require('@fastify/postgres'), {
   password: process.env.DB_PASSWORD
 });
 
-// Static files for uploads
-fastify.register(require('@fastify/static'), {
-  root: path.join(__dirname, 'uploads'),
-  prefix: '/uploads/'
-});
-
 // Static files for frontend (built React app)
 fastify.register(require('@fastify/static'), {
   root: path.join(__dirname, 'public'),
   prefix: '/'
+});
+
+// Static files for uploads (separate registration with decorateReply: false)
+fastify.register(require('@fastify/static'), {
+  root: path.join(__dirname, 'uploads'),
+  prefix: '/uploads/',
+  decorateReply: false
 });
 
 // Routes
