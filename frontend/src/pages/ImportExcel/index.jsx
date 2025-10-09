@@ -1,45 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { Typography } from 'antd';
 import * as XLSX from 'xlsx';
-import {
-  Card,
-  Typography,
-  Upload,
-  Button,
-  Steps,
-  Table,
-  Tabs,
-  Select,
-  Space,
-  Checkbox,
-  Row,
-  Col,
-  Alert,
-  Divider,
-  Tag,
-  Progress,
-  Modal
-} from 'antd';
-import {
-  InboxOutlined,
-  FileExcelOutlined,
-  CheckOutlined,
-  ImportOutlined,
-  EyeOutlined,
-  SelectOutlined,
-  ClearOutlined
-} from '@ant-design/icons';
-import ExcelJS from 'exceljs';
 import axios from 'axios';
-import NotificationService from '../utils/notification';
 import { useLocation } from 'react-router-dom';
 
-const { Title, Text } = Typography;
-const { Dragger } = Upload;
-const { Step } = Steps;
-const { TabPane } = Tabs;
-const { Option } = Select;
+import NotificationService from '../../utils/notification';
+import StepsNavigation from './components/StepsNavigation';
+import FileUpload from './components/FileUpload';
+import SheetPreview from './components/SheetPreview';
+import ImportSummary from './components/ImportSummary';
+import styles from './ImportExcel.module.css';
+
+const { Title } = Typography;
 
 const ImportExcel = () => {
+  // State management
   const [currentStep, setCurrentStep] = useState(0);
   const [excelFile, setExcelFile] = useState(null);
   const [workbook, setWorkbook] = useState(null);
@@ -49,12 +24,17 @@ const ImportExcel = () => {
   const [sheetAssignments, setSheetAssignments] = useState({});
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
-  const [selectedLanguage, setSelectedLanguage] = useState(null); // null, 'tr' veya 'en'
+  const [selectedLanguage, setSelectedLanguage] = useState(null);
+  
   const location = useLocation();
 
+  // Lifecycle effects
   useEffect(() => {
     document.title = 'Price List App v3 - Import Excel';
     fetchPricelists();
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   useEffect(() => {
@@ -62,11 +42,17 @@ const ImportExcel = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    return () => {
-      document.title = 'Price List App v3';
-    };
-  }, []);
+    if (workbook && currentStep >= 1) {
+      const result = parseExcelFile(workbook, selectedLanguage);
+      if (result) {
+        setSheetData(result.sheets);
+        setSelectedRows(result.selections);
+        setSheetAssignments(result.assignments);
+      }
+    }
+  }, [selectedLanguage, workbook]);
 
+  // API functions
   const fetchPricelists = async () => {
     try {
       const response = await axios.get('http://localhost:3000/api/pricelists');
@@ -78,7 +64,7 @@ const ImportExcel = () => {
     }
   };
 
-  // Excel parse etme fonksiyonu
+  // Excel parsing function (moved from original component)
   const parseExcelFile = (wb, language) => {
     // Beklenen sütun isimleri (dil seçimine göre)
     const getExpectedColumns = (lang) => {
@@ -256,20 +242,12 @@ const ImportExcel = () => {
     return { sheets, selections, assignments };
   };
 
-  // Excel dosyası yeniden parse etme (dil değiştiğinde)
-  useEffect(() => {
-    if (workbook && currentStep >= 1) {
-      const result = parseExcelFile(workbook, selectedLanguage);
-      if (result) {
-        setSheetData(result.sheets);
-        setSelectedRows(result.selections);
-        setSheetAssignments(result.assignments);
-      }
-    }
-  }, [selectedLanguage, workbook]);
+  // Event handlers
+  const handleLanguageChange = (language) => {
+    setSelectedLanguage(language);
+  };
 
   const handleFileUpload = (file) => {
-    // Dil seçimi kontrolü
     if (!selectedLanguage) {
       NotificationService.error('Hata', 'Önce açıklama dilini seçin');
       return false;
@@ -291,7 +269,6 @@ const ImportExcel = () => {
           setSheetAssignments(result.assignments);
           setCurrentStep(1);
         }
-        
       } catch (error) {
         console.error('Excel parse error:', error);
         NotificationService.error('Hata', 'Excel dosyası okunamadı');
@@ -299,17 +276,7 @@ const ImportExcel = () => {
     };
     
     reader.readAsArrayBuffer(file);
-    return false; // Prevent upload
-  };
-
-  const getTableColumns = (headers) => {
-    return headers.map((header, index) => ({
-      title: header || `Kolon ${index + 1}`,
-      dataIndex: `col_${index}`,
-      key: `col_${index}`,
-      width: 150,
-      ellipsis: true,
-    }));
+    return false;
   };
 
   const handleRowSelection = (sheetName, selectedRowKeys) => {
@@ -319,7 +286,7 @@ const ImportExcel = () => {
     }));
   };
 
-  const selectAllRows = (sheetName) => {
+  const handleSelectAllRows = (sheetName) => {
     const allKeys = sheetData[sheetName].rows.map(row => row.key);
     setSelectedRows(prev => ({
       ...prev,
@@ -327,7 +294,7 @@ const ImportExcel = () => {
     }));
   };
 
-  const clearAllSelections = (sheetName) => {
+  const handleClearAllSelections = (sheetName) => {
     setSelectedRows(prev => ({
       ...prev,
       [sheetName]: []
@@ -341,16 +308,7 @@ const ImportExcel = () => {
     }));
   };
 
-  const canProceedToImport = () => {
-    // En az bir sheet'te seçilmiş satır ve hedef fiyat listesi varsa yeterli
-    return Object.keys(sheetData).some(sheetName => {
-      const hasSelectedRows = selectedRows[sheetName]?.length > 0;
-      const hasAssignment = sheetAssignments[sheetName] !== null;
-      return hasSelectedRows && hasAssignment;
-    });
-  };
-
-  const performImport = async () => {
+  const handleImport = async () => {
     setImporting(true);
     setImportProgress(0);
     
@@ -474,7 +432,7 @@ const ImportExcel = () => {
           if (!duplicatesByLocation[location]) {
             duplicatesByLocation[location] = [];
           }
-          duplicatesByLocation[location].push(task.item.name);
+          duplicatesByLocation[location].push(task.item.name_tr || task.item.name_en || 'Unknown');
         });
         
         duplicateInfo.push(...Object.entries(duplicatesByLocation).map(([location, items]) => ({
@@ -591,246 +549,79 @@ const ImportExcel = () => {
     }
   };
 
-  const renderFileUpload = () => (
-    <Card>
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <FileExcelOutlined style={{ fontSize: '48px', color: '#1890ff', marginBottom: '16px' }} />
-        <Title level={3}>Excel Dosyası Seçin</Title>
-        <Text type="secondary">XLS ve XLSX formatlarını destekliyoruz</Text>
-        
-        <Alert
-          message="Beklenen Sütun Formatı"
-          description="Excel dosyanızda en az şu sütunlar olmalı: Ürün Adı (Name/Title) ve Fiyat (Price/Cost). Opsiyonel: ID, Açıklama, Stok. Sütun isimleri esnek - farklı isimler de kabul edilir."
-          type="info"
-          style={{ margin: '16px 0', textAlign: 'left' }}
-        />
-        
-        <div style={{ margin: '24px 0', textAlign: 'center' }}>
-          <Text strong style={{ marginRight: '12px' }}>Açıklama Dili:</Text>
-          <Select
-            value={selectedLanguage}
-            onChange={setSelectedLanguage}
-            placeholder="Dil seçin"
-            style={{ width: 200 }}
-          >
-            <Option value="en">🇺🇸 İngilizce</Option>
-            <Option value="tr">🇹🇷 Türkçe</Option>
-          </Select>
-          <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-            Excel'deki açıklamalar seçilen dile kaydedilecek
-          </div>
-        </div>
-        
-        {!selectedLanguage && (
-          <Alert
-            message="Önce açıklama dilini seçin"
-            description="Excel dosyası yüklemek için önce açıklama dilini seçmeniz gerekiyor."
-            type="warning"
-            style={{ margin: '16px 0' }}
+  // Navigation handlers
+  const handleStepChange = (step) => {
+    if (step <= currentStep) {
+      setCurrentStep(step);
+    }
+  };
+
+  const handleNext = () => {
+    setCurrentStep(currentStep + 1);
+  };
+
+  const handleBack = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  // Render methods
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <FileUpload
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={handleLanguageChange}
+            onFileUpload={handleFileUpload}
           />
-        )}
-        
-        <div style={{ marginTop: '24px' }}>
-          <Dragger
-            accept=".xls,.xlsx"
-            beforeUpload={selectedLanguage ? handleFileUpload : () => false}
-            showUploadList={false}
-            disabled={!selectedLanguage}
-            style={{ 
-              padding: '20px',
-              opacity: selectedLanguage ? 1 : 0.5,
-              pointerEvents: selectedLanguage ? 'auto' : 'none'
-            }}
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">
-              {selectedLanguage 
-                ? "Dosyayı buraya sürükleyin veya tıklayın" 
-                : "Önce açıklama dilini seçin"
-              }
-            </p>
-            <p className="ant-upload-hint">Sadece .xls ve .xlsx dosyaları</p>
-          </Dragger>
-        </div>
-      </div>
-    </Card>
-  );
-
-  const renderSheetPreview = () => (
-    <Card>
-      <div style={{ marginBottom: '16px' }}>
-        <Title level={4}>Sheet Önizleme ve Seçim</Title>
-        <Text type="secondary">
-          Her sheet'deki verileri kontrol edin ve import etmek istediğiniz satırları seçin
-        </Text>
-      </div>
-      
-      <Tabs>
-        {Object.keys(sheetData).map(sheetName => {
-          const sheet = sheetData[sheetName];
-          const selectedCount = selectedRows[sheetName]?.length || 0;
-          const totalCount = sheet.rows.length;
-          
-          return (
-            <TabPane 
-              tab={
-                <span>
-                  {sheetName} 
-                  <Tag color={selectedCount > 0 ? 'blue' : 'default'} style={{ marginLeft: '8px' }}>
-                    {selectedCount}/{totalCount}
-                  </Tag>
-                </span>
-              } 
-              key={sheetName}
-            >
-              <Row gutter={16} style={{ marginBottom: '16px' }}>
-                <Col span={12}>
-                  <Space>
-                    <Button 
-                      icon={<SelectOutlined />}
-                      onClick={() => selectAllRows(sheetName)}
-                    >
-                      Tümünü Seç
-                    </Button>
-                    <Button 
-                      icon={<ClearOutlined />}
-                      onClick={() => clearAllSelections(sheetName)}
-                    >
-                      Seçimi Temizle
-                    </Button>
-                  </Space>
-                </Col>
-                <Col span={12}>
-                  <div style={{ textAlign: 'right' }}>
-                    <Text strong>Hedef Fiyat Listesi: </Text>
-                    <Select
-                      placeholder="Fiyat listesi seçin"
-                      style={{ width: 200 }}
-                      value={sheetAssignments[sheetName]}
-                      onChange={(value) => handleSheetAssignment(sheetName, value)}
-                    >
-                      {pricelists.map(pricelist => (
-                        <Option key={pricelist.id} value={pricelist.id}>
-                          {pricelist.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </div>
-                </Col>
-              </Row>
-              
-              <Table
-                dataSource={sheet.rows}
-                columns={getTableColumns(sheet.headers)}
-                rowSelection={{
-                  selectedRowKeys: selectedRows[sheetName] || [],
-                  onChange: (selectedRowKeys) => handleRowSelection(sheetName, selectedRowKeys),
-                }}
-                pagination={{ defaultPageSize: 10 }}
-                scroll={{ x: 800 }}
-                size="small"
-              />
-            </TabPane>
-          );
-        })}
-      </Tabs>
-      
-      <Divider />
-      
-      <div style={{ textAlign: 'center' }}>
-        <Space>
-          <Button onClick={() => setCurrentStep(0)}>Geri</Button>
-          <Button 
-            type="primary" 
-            icon={<CheckOutlined />}
-            disabled={!canProceedToImport()}
-            onClick={() => setCurrentStep(2)}
-          >
-            Import Özeti
-          </Button>
-        </Space>
-      </div>
-    </Card>
-  );
-
-  const renderImportSummary = () => {
-    const totalSelectedItems = Object.values(selectedRows).reduce((sum, rows) => sum + rows.length, 0);
-    
-    return (
-      <Card>
-        <Title level={4}>Import Özeti</Title>
-        
-        <Alert
-          message={`Toplam ${totalSelectedItems} ürün import edilecek`}
-          type="info"
-          style={{ marginBottom: '16px' }}
-        />
-        
-        {Object.keys(sheetData).map(sheetName => {
-          const selectedCount = selectedRows[sheetName]?.length || 0;
-          const pricelistId = sheetAssignments[sheetName];
-          const pricelist = pricelists.find(p => p.id === pricelistId);
-          
-          if (selectedCount === 0) return null;
-          
-          return (
-            <Card key={sheetName} size="small" style={{ marginBottom: '8px' }}>
-              <Row>
-                <Col span={8}>
-                  <Text strong>{sheetName}</Text>
-                </Col>
-                <Col span={8}>
-                  <Tag color="blue">{selectedCount} ürün</Tag>
-                </Col>
-                <Col span={8}>
-                  <Text>→ {pricelist?.name}</Text>
-                </Col>
-              </Row>
-            </Card>
-          );
-        })}
-        
-        {importing && (
-          <div style={{ margin: '24px 0' }}>
-            <Text>Import ediliyor...</Text>
-            <Progress percent={Math.round(importProgress)} />
-          </div>
-        )}
-        
-        <Divider />
-        
-        <div style={{ textAlign: 'center' }}>
-          <Space>
-            <Button onClick={() => setCurrentStep(1)} disabled={importing}>Geri</Button>
-            <Button 
-              type="primary" 
-              icon={<ImportOutlined />}
-              loading={importing}
-              onClick={performImport}
-            >
-              Import Et
-            </Button>
-          </Space>
-        </div>
-      </Card>
-    );
+        );
+      case 1:
+        return (
+          <SheetPreview
+            sheetData={sheetData}
+            selectedRows={selectedRows}
+            sheetAssignments={sheetAssignments}
+            pricelists={pricelists}
+            onRowSelection={handleRowSelection}
+            onSelectAllRows={handleSelectAllRows}
+            onClearAllSelections={handleClearAllSelections}
+            onSheetAssignment={handleSheetAssignment}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        );
+      case 2:
+        return (
+          <ImportSummary
+            sheetData={sheetData}
+            selectedRows={selectedRows}
+            sheetAssignments={sheetAssignments}
+            pricelists={pricelists}
+            importing={importing}
+            importProgress={importProgress}
+            onImport={handleImport}
+            onBack={handleBack}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Title level={2}>Excel Import</Title>
+    <div className={styles.importContainer}>
+      <Title level={2} className={styles.pageTitle}>
+        Excel Import
+      </Title>
       
-      <Steps current={currentStep} style={{ marginBottom: '24px' }}>
-        <Step title="Dosya Seç" icon={<InboxOutlined />} />
-        <Step title="Veri Seçimi" icon={<EyeOutlined />} />
-        <Step title="Import" icon={<ImportOutlined />} />
-      </Steps>
+      <div className={styles.stepsContainer}>
+        <StepsNavigation 
+          currentStep={currentStep} 
+          onStepChange={handleStepChange}
+        />
+      </div>
       
-      {currentStep === 0 && renderFileUpload()}
-      {currentStep === 1 && renderSheetPreview()}
-      {currentStep === 2 && renderImportSummary()}
+      {renderCurrentStep()}
     </div>
   );
 };
