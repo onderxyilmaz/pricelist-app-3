@@ -1,0 +1,161 @@
+/* Login page styles */
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.authCard :global(.ant-card-body) {
+  padding: 40px;
+}
+
+.title {
+  text-align: center !important;
+  margin-bottom: 30px !important;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.form {
+  margin-bottom: 20px;
+}
+
+.formItem {
+  margin-bottom: 20px;
+}
+
+.formItem:last-child {
+  margin-bottom: 0;
+}
+
+.input {
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.input:hover {
+  border-color: #1890ff;
+}
+
+.input:focus,
+.input.ant-input-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.loginButton {
+  border-radius: 8px;
+  height: 45px;
+  font-size: 16px;
+  font-weight: 500;
+  background-color: #1890ff;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.loginButton:hover:not(:disabled):not([disabled]) {
+  background-color: #40a9ff;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.loginButton:disabled,
+.loginButton[disabled] {
+  background-color: #f5f5f5 !important;
+  border-color: #d9d9d9 !important;
+  color: rgba(0, 0, 0, 0.25) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.loginButton:disabled:hover,
+.loginButton[disabled]:hover {
+  background-color: #f5f5f5 !important;
+  border-color: #d9d9d9 !important;
+  color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: none !important;
+}
+
+.authLink {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 20px;
+}
+
+.authLink span {
+  color: #666;
+}
+
+.authLink :global(.ant-typography) {
+  color: #1890ff;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.authLink :global(.ant-typography):hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Form validation styles */
+.form :global(.ant-form-item-has-error .ant-input) {
+  border-color: #ff4d4f;
+}
+
+.form :global(.ant-form-item-has-error .ant-input:focus) {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.form :global(.ant-form-item-explain-error) {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Loading state */
+.loginButton.ant-btn-loading {
+  background-color: #1890ff;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .authCard {
+    max-width: 100%;
+  }
+  
+  .authCard :global(.ant-card-body) {
+    padding: 30px 25px;
+  }
+  
+  .title {
+    font-size: 22px !important;
+    margin-bottom: 25px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .authCard :global(.ant-card-body) {
+    padding: 25px 20px;
+  }
+}
