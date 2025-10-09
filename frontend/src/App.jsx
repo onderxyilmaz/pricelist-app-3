@@ -14,7 +14,7 @@ import Pricelist from './pages/Pricelist/index.jsx';
 import PricelistDetail from './pages/PricelistDetail.jsx';
 import Profile from './pages/Profile/index.jsx';
 import ImportExcel from './pages/ImportExcel.jsx';
-import UserManagement from './pages/UserManagement.jsx';
+import UserManagement from './pages/UserManagement/index.jsx';
 import AllProducts from './pages/AllProducts/index.jsx';
 import Offers from './pages/Offers.jsx';
 import OfferTemplates from './pages/OfferTemplates.jsx';
