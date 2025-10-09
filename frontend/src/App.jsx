@@ -11,7 +11,7 @@ import LogoutHandler from './components/LogoutHandler.jsx';
 import Dashboard from './pages/Dashboard/index.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Pricelist from './pages/Pricelist/index.jsx';
-import PricelistDetail from './pages/PricelistDetail.jsx';
+import PricelistDetail from './pages/PricelistDetail/index.jsx';
 import Profile from './pages/Profile/index.jsx';
 import ImportExcel from './pages/ImportExcel.jsx';
 import UserManagement from './pages/UserManagement/index.jsx';
