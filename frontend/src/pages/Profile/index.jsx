@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { authApi } from '../../utils/api';
 import ProfileCard from './components/ProfileCard';
 
-const Profile = ({ user }) => {
+const Profile = ({ user, onUserUpdate }) => {
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -16,6 +16,19 @@ const Profile = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        email: user.email || '',
+        password: '',
+        confirmPassword: '',
+        avatar: null
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -66,18 +79,34 @@ const Profile = ({ user }) => {
       const formData = new FormData();
       formData.append('avatar', file);
       
-      await authApi.uploadAvatar(user.id, formData);
-      message.success('Avatar başarıyla güncellendi!');
+      const response = await authApi.uploadAvatar(user.id, formData);
       
-      // Preview için dosyayı oku
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileData(prev => ({
-          ...prev,
-          avatar: e.target.result
-        }));
-      };
-      reader.readAsDataURL(file);
+      if (response.data.success) {
+        message.success('Avatar başarıyla güncellendi!');
+        
+        // User state'ini güncelle
+        const updatedUser = {
+          ...user,
+          avatar_filename: response.data.filename
+        };
+        
+        // Parent component'i (App.jsx) bilgilendir
+        if (onUserUpdate) {
+          onUserUpdate(updatedUser);
+        }
+        
+        // Preview için dosyayı oku
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setProfileData(prev => ({
+            ...prev,
+            avatar: e.target.result
+          }));
+        };
+        reader.readAsDataURL(file);
+      } else {
+        message.error('Avatar güncellenirken bir hata oluştu: ' + response.data.message);
+      }
       
     } catch (error) {
       message.error('Avatar güncellenirken bir hata oluştu: ' + error.message);
@@ -89,10 +118,25 @@ const Profile = ({ user }) => {
   const onAvatarRemove = async () => {
     try {
       setLoading(true);
-      await authApi.deleteAvatar(user.id);
-      setProfileData(prev => ({ ...prev, avatar: null }));
-      message.success('Avatar başarıyla kaldırıldı!');
-      // Sayfayı yenileme yerine sadece state güncelle
+      const response = await authApi.deleteAvatar(user.id);
+      
+      if (response.data.success) {
+        // User state'ini güncelle
+        const updatedUser = {
+          ...user,
+          avatar_filename: null
+        };
+        
+        // Parent component'i (App.jsx) bilgilendir
+        if (onUserUpdate) {
+          onUserUpdate(updatedUser);
+        }
+        
+        setProfileData(prev => ({ ...prev, avatar: null }));
+        message.success('Avatar başarıyla kaldırıldı!');
+      } else {
+        message.error('Avatar kaldırılırken bir hata oluştu: ' + response.data.message);
+      }
     } catch (error) {
       message.error('Avatar kaldırılırken bir hata oluştu: ' + error.message);
     } finally {
@@ -108,8 +152,8 @@ const Profile = ({ user }) => {
     }
 
     const updateData = {
-      first_name: profileData.firstName,
-      last_name: profileData.lastName
+      firstName: profileData.firstName,
+      lastName: profileData.lastName
     };
 
     if (profileData.password && profileData.password.trim()) {
@@ -118,22 +162,35 @@ const Profile = ({ user }) => {
 
     try {
       setLoading(true);
-      await authApi.updateUser(user.id, updateData);
-      message.success('Profil başarıyla güncellendi!');
+      const response = await authApi.updateUser(user.id, updateData);
       
-      // Formu sıfırla
-      setProfileData(prev => ({
-        ...prev,
-        password: '',
-        confirmPassword: ''
-      }));
-      
-      setHasChanges(false);
-      
-      // Sayfa yenilenmesi gerekiyorsa
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      if (response.data.success) {
+        message.success('Profil başarıyla güncellendi!');
+        
+        // User state'ini güncelle
+        const updatedUser = {
+          ...user,
+          first_name: response.data.user.first_name,
+          last_name: response.data.user.last_name,
+          email: response.data.user.email
+        };
+        
+        // Parent component'i (App.jsx) bilgilendir
+        if (onUserUpdate) {
+          onUserUpdate(updatedUser);
+        }
+        
+        // Formu sıfırla
+        setProfileData(prev => ({
+          ...prev,
+          password: '',
+          confirmPassword: ''
+        }));
+        
+        setHasChanges(false);
+      } else {
+        message.error('Profil güncellenirken bir hata oluştu: ' + response.data.message);
+      }
       
     } catch (error) {
       message.error('Profil güncellenirken bir hata oluştu: ' + error.message);

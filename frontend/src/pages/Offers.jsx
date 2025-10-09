@@ -178,7 +178,7 @@ const Offers = () => {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/offers');
+      const response = await axios.get('http://localhost:3000/api/offers');
       if (response.data.success) {
         setOffers(response.data.offers);
         
@@ -304,7 +304,7 @@ const Offers = () => {
 
   const fetchNextNumber = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/offers/next-number');
+      const response = await axios.get('http://localhost:3000/api/offers/next-number');
       if (response.data.success) {
         setNextNumber(response.data.nextNumber);
         return response.data.nextNumber;
@@ -317,7 +317,7 @@ const Offers = () => {
 
   const fetchAvailableNumbers = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/offers/available-numbers');
+      const response = await axios.get('http://localhost:3000/api/offers/available-numbers');
       if (response.data.success) {
         setAvailableNumbers(response.data.availableNumbers);
         return response.data.availableNumbers;
@@ -337,7 +337,7 @@ const Offers = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/customers/search', {
+      const response = await axios.get('http://localhost:3000/api/customers/search', {
         params: { query: searchText.trim() }
       });
       if (response.data.success) {
@@ -355,7 +355,7 @@ const Offers = () => {
 
   const fetchPricelistsWithItems = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/pricelists-with-items');
+      const response = await axios.get('http://localhost:3000/api/pricelists-with-items');
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -403,7 +403,7 @@ const Offers = () => {
           customer: offerData.customer || null
         };
 
-        const offerResponse = await axios.put(`http://localhost:3001/api/offers/${editingOffer.id}`, offerPayload);
+        const offerResponse = await axios.put(`http://localhost:3000/api/offers/${editingOffer.id}`, offerPayload);
         
         if (!offerResponse.data.success) {
           NotificationService.error('Hata', offerResponse.data.message || 'Teklif güncellenemedi');
@@ -424,7 +424,7 @@ const Offers = () => {
 
         console.log('Offer payload:', offerPayload); // Debug için
 
-        const offerResponse = await axios.post('http://localhost:3001/api/offers', offerPayload);
+        const offerResponse = await axios.post('http://localhost:3000/api/offers', offerPayload);
         
         if (!offerResponse.data.success) {
           NotificationService.error('Hata', offerResponse.data.message || 'Teklif kaydedilemedi');
@@ -450,7 +450,7 @@ const Offers = () => {
           pricelist_id: item.pricelist_id
         }));
 
-        const itemsResponse = await axios.post(`http://localhost:3001/api/offers/${offerId}/items`, { items });
+        const itemsResponse = await axios.post(`http://localhost:3000/api/offers/${offerId}/items`, { items });
         
         if (!itemsResponse.data.success) {
           NotificationService.error('Hata', 'Teklif kalemleri kaydedilemedi');
@@ -479,7 +479,7 @@ const Offers = () => {
     if (!offerNo || offerNo.trim() === '') return true;
     
     try {
-      const response = await axios.get(`http://localhost:3001/api/offers`);
+      const response = await axios.get(`http://localhost:3000/api/offers`);
       if (response.data.success) {
         const existingOffer = response.data.offers.find(offer => 
           offer.offer_no === offerNo.trim()
@@ -864,7 +864,7 @@ const Offers = () => {
       setEditingOffer(offer);
       
       // Teklif detaylarını yükle
-      const response = await axios.get(`http://localhost:3001/api/offers/${offer.id}`);
+      const response = await axios.get(`http://localhost:3000/api/offers/${offer.id}`);
       if (!response.data.success) {
         NotificationService.error('Hata', 'Teklif detayları yüklenemedi');
         return;
@@ -941,7 +941,7 @@ const Offers = () => {
   const handleCreateRevision = async (offer) => {
     try {
       // Mevcut teklif verilerini yükle
-      const response = await axios.get(`http://localhost:3001/api/offers/${offer.id}`);
+      const response = await axios.get(`http://localhost:3000/api/offers/${offer.id}`);
       if (!response.data.success) {
         NotificationService.error('Hata', 'Teklif detayları yüklenemedi');
         return;
@@ -953,7 +953,7 @@ const Offers = () => {
       const parentOfferId = sourceOffer.parent_offer_id || offer.id;
       
       // Ana teklifin tüm revizyonlarını getir ve en yüksek revizyon numarasını bul
-      const allOffersResponse = await axios.get('http://localhost:3001/api/offers');
+      const allOffersResponse = await axios.get('http://localhost:3000/api/offers');
       if (!allOffersResponse.data.success) {
         NotificationService.error('Hata', 'Teklifler yüklenemedi');
         return;
@@ -1062,7 +1062,7 @@ const Offers = () => {
     try {
       const newStatus = offer.status === 'sent' ? 'draft' : 'sent';
       
-      const response = await axios.put(`http://localhost:3001/api/offers/${offer.id}`, {
+      const response = await axios.put(`http://localhost:3000/api/offers/${offer.id}`, {
         offer_no: offer.offer_no,
         customer: offer.customer,
         status: newStatus
@@ -1085,7 +1085,7 @@ const Offers = () => {
   // Müşteri yanıtını güncelle
   const handleCustomerResponse = async (offer, response) => {
     try {
-      const updateResponse = await axios.put(`http://localhost:3001/api/offers/${offer.id}`, {
+      const updateResponse = await axios.put(`http://localhost:3000/api/offers/${offer.id}`, {
         offer_no: offer.offer_no,
         customer: offer.customer,
         customer_response: response
@@ -1115,7 +1115,7 @@ const Offers = () => {
     try {
       if (editingOffer) {
         // Güncelleme
-        const response = await axios.put(`http://localhost:3001/api/offers/${editingOffer.id}`, values);
+        const response = await axios.put(`http://localhost:3000/api/offers/${editingOffer.id}`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Teklif güncellendi');
           fetchOffers();
@@ -1129,7 +1129,7 @@ const Offers = () => {
           revision_no: 0,
           created_by: currentUser?.id
         };
-        const response = await axios.post('http://localhost:3001/api/offers', createData);
+        const response = await axios.post('http://localhost:3000/api/offers', createData);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Teklif oluşturuldu');
           fetchOffers();
@@ -1146,7 +1146,7 @@ const Offers = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/api/offers/${id}`);
+      const response = await axios.delete(`http://localhost:3000/api/offers/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Teklif silindi');
         fetchOffers();
@@ -1161,7 +1161,7 @@ const Offers = () => {
 
   const fetchTemplates = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/offer-templates');
+      const response = await axios.get('http://localhost:3000/api/offer-templates');
       if (response.data.success) {
         setAvailableTemplates(response.data.templates);
       }
@@ -1185,7 +1185,7 @@ const Offers = () => {
   const handleTemplateSelect = async (template) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3001/api/offer-templates/${template.id}/items`);
+      const response = await axios.get(`http://localhost:3000/api/offer-templates/${template.id}/items`);
       if (response.data.success) {
         setSelectedTemplate(template);
         setTemplateItems(response.data.items);
@@ -1244,8 +1244,8 @@ const Offers = () => {
       
       // Teklif detayları ve fiyat listesi bilgilerini al
       const [offerResponse, pricelistsResponse] = await Promise.all([
-        axios.get(`http://localhost:3001/api/offers/${offer.id}/details`),
-        axios.get('http://localhost:3001/api/pricelists-with-items')
+        axios.get(`http://localhost:3000/api/offers/${offer.id}/details`),
+        axios.get('http://localhost:3000/api/pricelists-with-items')
       ]);
       
       if (offerResponse.data.success && pricelistsResponse.data.success) {
@@ -1297,7 +1297,7 @@ const Offers = () => {
   const handleExportToExcel = async (offer) => {
     try {
       // Teklif detaylarını fetch et
-      const response = await axios.get(`http://localhost:3001/api/offers/${offer.id}/details`);
+      const response = await axios.get(`http://localhost:3000/api/offers/${offer.id}/details`);
       
       console.log('Excel export response:', response.data); // Debug için
       
@@ -2737,7 +2737,7 @@ const Offers = () => {
                           // Template seçilmişse template items'ları yükle
                           try {
                             setLoading(true);
-                            const response = await axios.get(`http://localhost:3001/api/offer-templates/${selectedTemplate.id}/items`);
+                            const response = await axios.get(`http://localhost:3000/api/offer-templates/${selectedTemplate.id}/items`);
                             if (response.data.success) {
                               // Template'den gelen ürünleri selectedItems'a ekle
                               const templateItems = response.data.items.map(item => ({

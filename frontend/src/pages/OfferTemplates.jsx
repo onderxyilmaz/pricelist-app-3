@@ -78,7 +78,7 @@ const OfferTemplates = () => {
   const fetchTemplates = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/offer-templates');
+      const response = await axios.get('http://localhost:3000/api/offer-templates');
       if (response.data.success) {
         setTemplates(response.data.templates);
       }
@@ -111,7 +111,7 @@ const OfferTemplates = () => {
   const fetchPricelists = async () => {
     try {
       console.log('Fetching pricelists...'); // Debug log
-      const response = await axios.get('http://localhost:3001/api/pricelists-with-items');
+      const response = await axios.get('http://localhost:3000/api/pricelists-with-items');
       console.log('Pricelists response:', response.data); // Debug log
       if (response.data.success) {
         setPricelists(response.data.pricelists);
@@ -151,14 +151,14 @@ const OfferTemplates = () => {
     // First fetch pricelists, then load template items
     try {
       console.log('Fetching pricelists for edit...'); // Debug log
-      const pricelistResponse = await axios.get('http://localhost:3001/api/pricelists-with-items');
+      const pricelistResponse = await axios.get('http://localhost:3000/api/pricelists-with-items');
       console.log('Pricelists response:', pricelistResponse.data); // Debug log
       
       if (pricelistResponse.data.success) {
         setPricelists(pricelistResponse.data.pricelists);
         
         // Now load template items
-        const templateResponse = await axios.get(`http://localhost:3001/api/offer-templates/${template.id}/items`);
+        const templateResponse = await axios.get(`http://localhost:3000/api/offer-templates/${template.id}/items`);
         console.log('Template items response:', templateResponse.data); // Debug log
         
         if (templateResponse.data.success) {
@@ -245,13 +245,13 @@ const OfferTemplates = () => {
 
     try {
       if (editingTemplate) {
-        const response = await axios.put(`http://localhost:3001/api/offer-templates/${editingTemplate.id}`, templateData);
+        const response = await axios.put(`http://localhost:3000/api/offer-templates/${editingTemplate.id}`, templateData);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Template güncellendi');
           fetchTemplates();
         }
       } else {
-        const response = await axios.post('http://localhost:3001/api/offer-templates', templateData);
+        const response = await axios.post('http://localhost:3000/api/offer-templates', templateData);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Template oluşturuldu');
           fetchTemplates();
@@ -266,7 +266,7 @@ const OfferTemplates = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/api/offer-templates/${id}`);
+      const response = await axios.delete(`http://localhost:3000/api/offer-templates/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Template silindi');
         fetchTemplates();
@@ -282,8 +282,8 @@ const OfferTemplates = () => {
       
       // Template items ve fiyat listesi bilgilerini al
       const [itemsResponse, pricelistsResponse] = await Promise.all([
-        axios.get(`http://localhost:3001/api/offer-templates/${template.id}/items`),
-        axios.get('http://localhost:3001/api/pricelists-with-items')
+        axios.get(`http://localhost:3000/api/offer-templates/${template.id}/items`),
+        axios.get('http://localhost:3000/api/pricelists-with-items')
       ]);
       
       if (itemsResponse.data.success && pricelistsResponse.data.success) {

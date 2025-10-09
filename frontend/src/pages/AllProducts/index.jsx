@@ -45,7 +45,7 @@ const AllProducts = () => {
   const fetchAllProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/all-items');
+      const response = await axios.get('http://localhost:3000/api/all-items');
       if (response.data.success) {
         setProducts(response.data.items);
         setFilteredProducts(response.data.items);
@@ -59,7 +59,7 @@ const AllProducts = () => {
 
   const fetchPricelists = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/pricelists');
+      const response = await axios.get('http://localhost:3000/api/pricelists');
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -239,7 +239,7 @@ const AllProducts = () => {
 
   const handleDelete = async (productId) => {
     try {
-      await axios.delete(`http://localhost:3001/api/items/${productId}`);
+      await axios.delete(`http://localhost:3000/api/items/${productId}`);
       NotificationService.success('Başarılı', 'Ürün silindi');
       fetchAllProducts(); // Listeyi yenile
     } catch (error) {
@@ -249,7 +249,7 @@ const AllProducts = () => {
 
   const handleEditSubmit = async (values) => {
     try {
-      await axios.put(`http://localhost:3001/api/items/${editingProduct.id}`, values);
+      await axios.put(`http://localhost:3000/api/items/${editingProduct.id}`, values);
       NotificationService.success('Başarılı', 'Ürün güncellendi');
       setEditModalVisible(false);
       setEditingProduct(null);

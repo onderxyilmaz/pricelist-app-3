@@ -13,7 +13,6 @@ import Sidebar from './components/Sidebar.jsx';
 import Pricelist from './pages/Pricelist/index.jsx';
 import PricelistDetail from './pages/PricelistDetail.jsx';
 import Profile from './pages/Profile/index.jsx';
-import CreatePricelist from './pages/CreatePricelist.jsx';
 import ImportExcel from './pages/ImportExcel.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import AllProducts from './pages/AllProducts/index.jsx';
@@ -61,7 +60,6 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile user={user} onUserUpdate={onUserUpdate} />} />
                 <Route path="/pricelists" element={<Pricelist />} />
-                <Route path="/pricelists/create" element={<CreatePricelist />} />
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
                 <Route path="/all-products" element={<AllProducts />} />
                 <Route path="/offers" element={<Offers />} />
@@ -102,7 +100,10 @@ function App() {
           const userResponse = await authApi.getUser(userData.id);
           if (userResponse.data.success) {
             console.log('User validated successfully');
-            setUser(userData);
+            // Update user data with fresh info from database (including avatar)
+            const freshUserData = userResponse.data.user;
+            setUser(freshUserData);
+            localStorage.setItem('user', JSON.stringify(freshUserData));
           } else {
             console.warn('User validation failed:', userResponse.data.message);
             localStorage.removeItem('user');
