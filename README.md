@@ -145,6 +145,81 @@ Uygulama ilk çalıştırıldığında:
 - **Frontend:** http://localhost:5173 (Vite dev server)
 - **Backend API:** http://localhost:3000
 
+## 🐳 Docker ile Production Deployment
+
+### Hızlı Docker Compose Kurulumu
+
+```bash
+# 1. Environment dosyasını kopyala ve düzenle
+cp .env.example .env
+
+# 2. Güvenlik değişkenlerini güncelleyin
+# .env dosyasında DB_PASSWORD ve JWT_SECRET değerlerini değiştirin
+
+# 3. Docker Compose ile çalıştır
+docker-compose up -d
+
+# 4. Database schema'yı yükle (ilk kurulumda)
+docker-compose exec postgres psql -U postgres -d pricelist-app-3 -f /docker-entrypoint-initdb.d/setup_database.sql
+
+# 5. Uygulama http://localhost:3000 adresinde hazır!
+```
+
+### Manuel Docker Build
+
+```bash
+# 1. Docker image build et
+docker build -t pricelist-app-v3 .
+
+# 2. PostgreSQL container çalıştır
+docker run -d \
+  --name pricelist-postgres \
+  -e POSTGRES_DB=pricelist-app-3 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=admin123 \
+  -v postgres_data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:15-alpine
+
+# 3. Database schema yükle
+docker exec -i pricelist-postgres psql -U postgres -d pricelist-app-3 < setup_database.sql
+
+# 4. Uygulama container çalıştır
+docker run -d \
+  --name pricelist-app \
+  --link pricelist-postgres:postgres \
+  -e DB_HOST=postgres \
+  -e DB_PASSWORD=admin123 \
+  -p 3000:3000 \
+  pricelist-app-v3
+```
+
+### Environment Variables
+`.env` dosyasında düzenlenmesi gerekenler:
+```env
+# Güvenlik için değiştirin!
+DB_PASSWORD=your-secure-password
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+
+# İsteğe bağlı
+PORT=3000
+NODE_ENV=production
+```
+
+### Health Check
+Uygulama durumunu kontrol etmek için:
+```bash
+# Docker container durumu
+docker ps
+
+# Health check
+curl http://localhost:3000/health
+
+# Logs
+docker logs pricelist-app
+docker logs pricelist-postgres
+```
+
 ## 📁 Proje Yapısı
 
 ```

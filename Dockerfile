@@ -18,7 +18,7 @@ WORKDIR /app
 
 # Copy backend package files
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy backend source code
 COPY backend/ ./
@@ -42,9 +42,18 @@ USER nextjs
 # Expose port (configurable via environment)
 EXPOSE ${PORT:-3000}
 
-# Health check without curl (using wget which is available in Alpine)
+# Note: Environment variables should be passed at runtime:
+# docker run -e DB_HOST=localhost -e DB_PORT=5432 -e DB_NAME=pricelist-app-3 ...
+# or use docker-compose.yml with env_file
+
+# Health check using Node.js instead of wget (more reliable)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3000}/health || exit 1
+  CMD node -e "const http = require('http'); \
+    const options = { host: 'localhost', port: process.env.PORT || 3000, path: '/health', timeout: 2000 }; \
+    const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); \
+    req.on('error', () => process.exit(1)); \
+    req.on('timeout', () => process.exit(1)); \
+    req.end();"
 
 # Start the application
 CMD ["npm", "start"]
