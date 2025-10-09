@@ -166,7 +166,7 @@ CREATE TRIGGER update_offers_revised_at
 CREATE TABLE IF NOT EXISTS offer_items (
     id SERIAL PRIMARY KEY,
     offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
-    pricelist_item_id INTEGER REFERENCES pricelist_items(id),
+    pricelist_item_id INTEGER REFERENCES pricelist_items(id) ON DELETE SET NULL,
     product_id VARCHAR(50) NOT NULL,
     product_name VARCHAR(200), -- Legacy field, kept for backward compatibility
     product_name_tr VARCHAR(200),

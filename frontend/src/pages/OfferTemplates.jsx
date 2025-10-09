@@ -852,9 +852,23 @@ const OfferTemplates = () => {
                             title: previewLanguage === 'tr' ? 'Ürün Adı' : 'Product Name',
                             key: 'product_name',
                             render: (_, record) => {
-                              return previewLanguage === 'tr' ? 
+                              const productName = previewLanguage === 'tr' ? 
                                 (record.name_tr || record.name_en || '-') : 
                                 (record.name_en || record.name_tr || '-');
+                              
+                              // Eğer original_item_id NULL ise ürün silinmiş demektir
+                              const isDeleted = !record.original_item_id;
+                              
+                              return (
+                                <span>
+                                  {productName}
+                                  {isDeleted && (
+                                    <Tag color="orange" size="small" style={{ marginLeft: 8 }}>
+                                      {previewLanguage === 'tr' ? 'Silinmiş Ürün' : 'Deleted Product'}
+                                    </Tag>
+                                  )}
+                                </span>
+                              );
                             },
                           },
                           {
@@ -862,9 +876,25 @@ const OfferTemplates = () => {
                             key: 'description',
                             ellipsis: true,
                             render: (_, record) => {
-                              return previewLanguage === 'tr' ? 
-                                (record.description_tr || record.description_en || '-') : 
-                                (record.description_en || record.description_tr || '-');
+                              const isDeleted = !record.original_item_id;
+                              
+                              // Eğer ürün silinmişse sadece snapshot description'ı kullan
+                              if (isDeleted) {
+                                return previewLanguage === 'tr' ? 
+                                  (record.description_tr || record.description_en || '-') : 
+                                  (record.description_en || record.description_tr || '-');
+                              }
+                              
+                              // Ürün silinmemişse önce orijinal açıklamayı tercih et
+                              const originalDescription = previewLanguage === 'tr' ? 
+                                record.original_description_tr : 
+                                record.original_description_en;
+                              
+                              const snapshotDescription = previewLanguage === 'tr' ? 
+                                (record.description_tr || record.description_en) : 
+                                (record.description_en || record.description_tr);
+                              
+                              return originalDescription || snapshotDescription || '-';
                             },
                           },
                           {

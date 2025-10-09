@@ -169,6 +169,41 @@ const Offers = () => {
     fetchOffers();
   }, []);
 
+  // Helper functions for filtering deleted items
+  const getActiveItems = (items) => {
+    return items.filter(item => {
+      // Fiyat listelerinde bu ürünün hala var olup olmadığını kontrol et
+      return pricelists.some(pricelist => {
+        return pricelist.items?.some(pricelistItem => {
+          // pricelist_id undefined olduğu için sadece product_id ile eşleştir ve pricelist id'sini kontrol et
+          return pricelistItem.product_id === item.product_id && 
+                 pricelist.id === item.pricelist_id;
+        });
+      });
+    });
+  };
+
+  const getActiveSelectedItems = () => {
+    return getActiveItems(selectedItems);
+  };
+
+  const groupActiveItemsByPricelist = () => {
+    const activeItems = getActiveSelectedItems();
+    const groups = activeItems.reduce((groups, item) => {
+      const pricelistId = item.pricelist_id;
+      if (!groups[pricelistId]) {
+        const pricelist = pricelists.find(p => p.id === pricelistId);
+        groups[pricelistId] = {
+          pricelist: pricelist || { id: pricelistId, name: `Fiyat Listesi ${pricelistId}`, currency: 'EUR' },
+          items: []
+        };
+      }
+      groups[pricelistId].items.push(item);
+      return groups;
+    }, {});
+    return Object.values(groups); // Array döndür
+  };
+
   useEffect(() => {
     return () => {
       document.title = 'Price List App v3';
@@ -358,10 +393,13 @@ const Offers = () => {
       const response = await axios.get('http://localhost:3000/api/pricelists-with-items');
       if (response.data.success) {
         setPricelists(response.data.pricelists);
+        return response.data.pricelists; // Veriyi döndür
       }
+      return [];
     } catch (error) {
       console.error('Pricelists fetch error:', error);
       NotificationService.error('Hata', 'Fiyat listeleri yüklenirken hata oluştu');
+      return [];
     }
   };
 
@@ -434,9 +472,11 @@ const Offers = () => {
         offerId = offerResponse.data.offer.id;
       }
 
-      // Seçili ürünleri kaydet
-      if (selectedItems.length > 0) {
-        const items = selectedItems.map(item => ({
+      // Seçili ürünleri kaydet (hem yeni teklif hem de düzenleme modu için)
+      // Sadece aktif ürünleri kaydet
+      const activeItems = getActiveSelectedItems();
+      if (activeItems.length > 0) {
+        const items = activeItems.map(item => ({
           pricelist_item_id: item.id,
           quantity: item.quantity,
           price: item.price,
@@ -454,6 +494,14 @@ const Offers = () => {
         
         if (!itemsResponse.data.success) {
           NotificationService.error('Hata', 'Teklif kalemleri kaydedilemedi');
+          return;
+        }
+      } else {
+        // Aktif ürün yoksa teklif kalemlerini boşalt
+        const itemsResponse = await axios.post(`http://localhost:3000/api/offers/${offerId}/items`, { items: [] });
+        
+        if (!itemsResponse.data.success) {
+          NotificationService.error('Hata', 'Teklif kalemleri temizlenemedi');
           return;
         }
       }
@@ -664,7 +712,8 @@ const Offers = () => {
 
   // Sadece indirimli tutarı hesapla (kar oranları olmadan)
   const calculateDiscountedTotal = (pricelistId) => {
-    const items = selectedItems.filter(item => item.pricelist_id === pricelistId);
+    const activeItems = getActiveSelectedItems();
+    const items = activeItems.filter(item => item.pricelist_id === pricelistId);
     let total = 0;
     
     items.forEach(item => {
@@ -692,12 +741,13 @@ const Offers = () => {
 
   // Fiyat listesi toplamlarını hesapla (manuel fiyatlar dahil)
   const calculatePricelistTotal = (pricelistId) => {
-    const items = selectedItems.filter(item => item.pricelist_id === pricelistId);
+    const activeItems = getActiveSelectedItems();
+    const items = activeItems.filter(item => item.pricelist_id === pricelistId);
     let total = 0;
     
     items.forEach(item => {
       const finalPrice = calculateItemFinalPrice(item, pricelistId);
-      total += finalPrice * item.quantity;
+      total += finalPrice;
     });
     
     return total;
@@ -799,10 +849,11 @@ const Offers = () => {
     setTemplateFilter('');
   };
 
-  // Seçilen ürünleri fiyat listelerine göre grupla
+  // Seçilen ürünleri fiyat listelerine göre grupla (sadece aktif ürünler)
   const groupItemsByPricelist = () => {
+    const activeItems = getActiveSelectedItems();
     const groups = {};
-    selectedItems.forEach(item => {
+    activeItems.forEach(item => {
       const pricelistId = item.pricelist_id;
       if (!groups[pricelistId]) {
         const pricelist = pricelists.find(p => p.id === pricelistId);
@@ -887,12 +938,12 @@ const Offers = () => {
       // Ürün kalemleri varsa doldur
       if (offerData.items && offerData.items.length > 0) {
         // Önce fiyat listelerini yükle
-        await fetchPricelistsWithItems();
+        const pricelistsData = await fetchPricelistsWithItems();
         
         // Seçili ürünleri doldur - orijinal ürün açıklamasını al
         const mappedItems = offerData.items.map(item => {
           // Orijinal ürün bilgilerini fiyat listelerinden bul
-          const originalItem = pricelists
+          const originalItem = pricelistsData
             .flatMap(p => p.items)
             .find(pi => pi.id === item.pricelist_item_id);
           
@@ -1000,12 +1051,12 @@ const Offers = () => {
       
       // Ürün kalemleri varsa doldur
       if (sourceOffer.items && sourceOffer.items.length > 0) {
-        await fetchPricelistsWithItems();
+        const pricelistsData = await fetchPricelistsWithItems();
         
         // Seçili ürünleri doldur - orijinal ürün açıklamasını al
         const mappedItems = sourceOffer.items.map(item => {
           // Orijinal ürün bilgilerini fiyat listelerinden bul
-          const originalItem = pricelists
+          const originalItem = pricelistsData
             .flatMap(p => p.items)
             .find(pi => pi.id === item.pricelist_item_id);
           
@@ -1029,7 +1080,7 @@ const Offers = () => {
         const notes = {};
         sourceOffer.items.forEach(item => {
           // Orijinal ürün açıklamasını al
-          const originalItem = pricelists
+          const originalItem = pricelistsData
             .flatMap(p => p.items)
             .find(pi => pi.id === item.pricelist_item_id);
           
@@ -1375,9 +1426,18 @@ const Offers = () => {
         
         // Grup öğeleri
         items.forEach(item => {
+          // Silinmiş ürün kontrolü
+          const isDeleted = !item.pricelist_item_id;
+          let description = item.description || '';
+          
+          // Eğer ürün silinmişse açıklamaya not ekle
+          if (isDeleted) {
+            description = description ? `${description} [SİLİNMİŞ ÜRÜN]` : '[SİLİNMİŞ ÜRÜN]';
+          }
+          
           const productRow = worksheet.addRow([
             item.product_code || '',
-            item.description || '',
+            description,
             item.quantity || 1,
             parseFloat(item.unit_price || 0).toFixed(2),
             parseFloat(item.total_price || 0).toFixed(2),
@@ -2921,16 +2981,33 @@ const Offers = () => {
                 </Collapse>
 
                 <div style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 6 }}>
-                  <strong>Seçilen Ürünler: {selectedItems.length}</strong>
-                  {selectedItems.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      {selectedItems.map(item => (
-                        <div key={item.id} style={{ fontSize: '12px' }}>
-                          {selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)} x {item.quantity} = {item.total_price} {item.currency}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    // Aktif ürünleri filtrele (fiyat listelerinde hala var olanlar)
+                    const activeItems = selectedItems.filter(item => {
+                      // Fiyat listelerinde bu ürünün hala var olup olmadığını kontrol et
+                      return pricelists.some(pricelist => 
+                        pricelist.items.some(pricelistItem => 
+                          pricelistItem.product_id === item.product_id && 
+                          pricelistItem.pricelist_id === item.pricelist_id
+                        )
+                      );
+                    });
+                    
+                    return (
+                      <>
+                        <strong>Seçilen Ürünler: {activeItems.length}</strong>
+                        {activeItems.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            {activeItems.map(item => (
+                              <div key={item.id} style={{ fontSize: '12px' }}>
+                                {selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)} x {item.quantity} = {item.total_price} {item.currency}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
@@ -2939,7 +3016,7 @@ const Offers = () => {
                     <Button onClick={handleModalClose}>İptal</Button>
                     <Button 
                       type="primary" 
-                      disabled={selectedItems.length === 0}
+                      disabled={getActiveSelectedItems().length === 0}
                       onClick={() => {
                         const nextStep = isTemplateMode ? 3 : 2;
                         setCurrentStep(nextStep);
@@ -2966,7 +3043,7 @@ const Offers = () => {
                   <p>Her fiyat listesi için indirim oranları ekleyebilirsiniz. İndirimler sırasıyla uygulanır.</p>
                 </div>
 
-                {groupItemsByPricelist().map((group) => {
+                {groupActiveItemsByPricelist().map((group) => {
                   const pricelistId = group.pricelist.id;
                   const originalTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
                   const discounts = discountData[pricelistId] || [];
@@ -3070,7 +3147,7 @@ const Offers = () => {
                   <p>Her fiyat listesi için kar oranları ekleyebilirsiniz. Kar oranları indirimli fiyat üzerinden sırasıyla uygulanır.</p>
                 </div>
 
-                {groupItemsByPricelist().map((group) => {
+                {groupActiveItemsByPricelist().map((group) => {
                   const pricelistId = group.pricelist.id;
                   const originalTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
                   
@@ -3180,7 +3257,7 @@ const Offers = () => {
                   <p>İsterseniz bazı ürünlerin fiyatlarını manuel olarak değiştirebilirsiniz. Manuel fiyat girildiğinde hesaplanan fiyat iptal olur.</p>
                 </div>
 
-                {groupItemsByPricelist().map((group) => {
+                {groupActiveItemsByPricelist().map((group) => {
                   const pricelistId = group.pricelist.id;
 
                   return (
@@ -3276,7 +3353,7 @@ const Offers = () => {
                   borderRadius: 8,
                   border: '2px solid #d9d9d9'
                 }}>
-                  {groupItemsByPricelist().map((group) => {
+                  {groupActiveItemsByPricelist().map((group) => {
                     const groupTotal = group.items.reduce((total, item) => {
                       // Açıklama ürünlerini toplama dahil etme
                       if (isDescriptionItem(item)) {
@@ -3355,7 +3432,7 @@ const Offers = () => {
                 )}
 
                 {/* Fiyat Listelerine Göre Gruplu Ürünler */}
-                {groupItemsByPricelist().map((group, index) => {
+                {groupActiveItemsByPricelist().map((group, index) => {
                   // Filtre: adet > 0 veya açıklama dolu ise göster
                   const filteredItems = group.items.filter(item => {
                     const note = itemNotes[item.id];
@@ -3546,7 +3623,7 @@ const Offers = () => {
                     fontSize: '16px', 
                     marginBottom: 16 
                   }}>
-                    {groupItemsByPricelist().map((group, index) => {
+                    {groupActiveItemsByPricelist().map((group, index) => {
                       const pricelistId = group.pricelist.id;
                       const originalTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price), 0);
                       
@@ -3811,9 +3888,11 @@ const Offers = () => {
                             title: previewLanguage === 'tr' ? 'Ürün Adı' : 'Product Name',
                             key: 'product_name',
                             render: (_, record) => {
-                              return previewLanguage === 'tr' ? 
+                              const productName = previewLanguage === 'tr' ? 
                                 (record.product_name_tr || record.product_name_en || record.product_name || '-') : 
                                 (record.product_name_en || record.product_name_tr || record.product_name || '-');
+                              
+                              return productName;
                             },
                           },
                           {
@@ -3821,12 +3900,18 @@ const Offers = () => {
                             key: 'description',
                             ellipsis: true,
                             render: (_, record) => {
-                              // Önce dil seçimine göre orijinal ürün açıklamasını kontrol et
+                              const isDeleted = !record.pricelist_item_id;
+                              
+                              // Eğer ürün silinmişse sadece snapshot description'ı kullan
+                              if (isDeleted) {
+                                return record.description || '-';
+                              }
+                              
+                              // Ürün silinmemişse önce orijinal açıklamayı tercih et
                               const originalDescription = previewLanguage === 'tr' ? 
                                 record.original_description_tr : 
                                 record.original_description_en;
                               
-                              // Eğer orijinal açıklama varsa onu kullan, yoksa offer'daki description'ı kullan
                               return originalDescription || record.description || '-';
                             },
                           },

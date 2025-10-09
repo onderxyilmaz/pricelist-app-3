@@ -463,9 +463,10 @@ async function offerRoutes(fastify, options) {
           creator.last_name as creator_last_name,
           updater.first_name as updater_first_name,
           updater.last_name as updater_last_name,
-          COUNT(oti.id) as item_count
+          COUNT(pi.id) as item_count
         FROM offer_templates ot
         LEFT JOIN offer_template_items oti ON ot.id = oti.template_id
+        LEFT JOIN pricelist_items pi ON oti.product_id = pi.product_id AND oti.pricelist_id = pi.pricelist_id
         LEFT JOIN users creator ON ot.created_by = creator.id
         LEFT JOIN users updater ON ot.updated_by = updater.id
         GROUP BY ot.id, ot.name, ot.description, ot.created_at, ot.updated_at, ot.created_by, ot.updated_by,
@@ -500,8 +501,14 @@ async function offerRoutes(fastify, options) {
           oti.total_price,
           oti.currency,
           oti.unit,
-          oti.note
+          oti.note,
+          pi.id as original_item_id,
+          pi.name_tr as original_name_tr,
+          pi.name_en as original_name_en,
+          pi.description_tr as original_description_tr,
+          pi.description_en as original_description_en
         FROM offer_template_items oti
+        LEFT JOIN pricelist_items pi ON oti.product_id = pi.product_id AND oti.pricelist_id = pi.pricelist_id
         WHERE oti.template_id = $1
         ORDER BY oti.created_at ASC
       `, [id]);
