@@ -44,12 +44,14 @@ async function offerRoutes(fastify, options) {
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
           c.name as customer, 
-          o.status, o.customer_response, o.parent_offer_id, o.customer_id,
+          o.status, o.customer_response, o.parent_offer_id, o.customer_id, o.company_id,
           u.first_name, u.last_name,
-          CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+          CONCAT(u.first_name, ' ', u.last_name) as created_by_name,
+          co.company_name
         FROM offers o
         LEFT JOIN users u ON o.created_by = u.id
         LEFT JOIN customers c ON o.customer_id = c.id
+        LEFT JOIN companies co ON o.company_id = co.id
         ORDER BY o.created_at DESC
       `);
       client.release();
@@ -191,7 +193,7 @@ async function offerRoutes(fastify, options) {
   // Yeni teklif oluştur
   fastify.post('/offers', async (request, reply) => {
     try {
-      const { offer_no, customer, created_by, parent_offer_id, revision_no } = request.body;
+      const { offer_no, customer, company_id, created_by, parent_offer_id, revision_no } = request.body;
       
       if (!offer_no || !created_by) {
         return { success: false, message: 'Teklif No ve Oluşturan gereklidir' };
@@ -228,8 +230,8 @@ async function offerRoutes(fastify, options) {
 
         // Teklif oluştur
         const result = await client.query(
-          'INSERT INTO offers (offer_no, customer_id, created_by, parent_offer_id, revision_no) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [offer_no, customerId, created_by, parent_offer_id || null, revision_no || 0]
+          'INSERT INTO offers (offer_no, customer_id, company_id, created_by, parent_offer_id, revision_no) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+          [offer_no, customerId, company_id || null, created_by, parent_offer_id || null, revision_no || 0]
         );
         
         await client.query('COMMIT');
@@ -249,7 +251,7 @@ async function offerRoutes(fastify, options) {
   fastify.put('/offers/:id', async (request, reply) => {
     try {
       const { id } = request.params;
-      const { offer_no, customer, revision_no, status, parent_offer_id, customer_response } = request.body;
+      const { offer_no, customer, company_id, revision_no, status, parent_offer_id, customer_response } = request.body;
       
       if (!offer_no) {
         return { success: false, message: 'Teklif No gereklidir' };
@@ -303,14 +305,15 @@ async function offerRoutes(fastify, options) {
 
         const updateQuery = `
           UPDATE offers 
-          SET offer_no = $1, customer_id = $2, revision_no = $3, status = $4, parent_offer_id = $5, customer_response = $6, revised_at = CURRENT_TIMESTAMP
-          WHERE id = $7 
+          SET offer_no = $1, customer_id = $2, company_id = $3, revision_no = $4, status = $5, parent_offer_id = $6, customer_response = $7, revised_at = CURRENT_TIMESTAMP
+          WHERE id = $8 
           RETURNING *
         `;
         
         const result = await client.query(updateQuery, [
           offer_no, 
           customerId, 
+          company_id || null,
           revision_no || existingOffer.rows[0].revision_no,
           status || existingOffer.rows[0].status || 'draft',
           parent_offer_id || existingOffer.rows[0].parent_offer_id,

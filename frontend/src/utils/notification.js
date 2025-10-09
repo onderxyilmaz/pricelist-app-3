@@ -108,3 +108,20 @@ const NotificationService = {
 };
 
 export default NotificationService;
+
+// Helper functions for easier usage
+export const showSuccessNotification = (title, message = '') => {
+  NotificationService.success(title, message);
+};
+
+export const showErrorNotification = (title, message = '') => {
+  NotificationService.error(title, message);
+};
+
+export const showWarningNotification = (title, message = '') => {
+  NotificationService.warning(title, message);
+};
+
+export const showInfoNotification = (title, message = '') => {
+  NotificationService.info(title, message);
+};

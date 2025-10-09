@@ -87,6 +87,7 @@ const Offers = () => {
   });
   const [availableCustomers, setAvailableCustomers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [availableCompanies, setAvailableCompanies] = useState([]);
   
   // Wizard states
   const [currentStep, setCurrentStep] = useState(0);
@@ -403,6 +404,21 @@ const Offers = () => {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/companies');
+      if (response.data && Array.isArray(response.data)) {
+        setAvailableCompanies(response.data);
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Companies fetch error:', error);
+      NotificationService.error('Hata', 'Firmalar yüklenirken hata oluştu');
+      return [];
+    }
+  };
+
   const handleCreate = async (templateMode = false) => {
   setEditingOffer(null);
   form.resetFields();
@@ -426,6 +442,7 @@ const Offers = () => {
   }
   
   await fetchPricelistsWithItems();
+  await fetchCompanies(); // Firmaları da yükle
   setModalVisible(true);
   };
 
@@ -438,7 +455,8 @@ const Offers = () => {
         // Düzenleme modu - teklifi güncelle
         const offerPayload = {
           offer_no: offerData.offer_no,
-          customer: offerData.customer || null
+          customer: offerData.customer || null,
+          company_id: offerData.company_id || null
         };
 
         const offerResponse = await axios.put(`http://localhost:3000/api/offers/${editingOffer.id}`, offerPayload);
@@ -455,6 +473,7 @@ const Offers = () => {
         const offerPayload = {
           offer_no: offerData.offer_no,
           customer: offerData.customer || null,
+          company_id: offerData.company_id || null,
           created_by: currentUser?.id,
           parent_offer_id: offerData.parent_offer_id || null,
           revision_no: offerData.revision_no || 0
@@ -1700,6 +1719,13 @@ const Offers = () => {
       render: (customer) => customer || '-',
     },
     {
+      title: 'Firma',
+      dataIndex: 'company_name',
+      key: 'company_name',
+      sorter: (a, b) => (a.company_name || '').localeCompare(b.company_name || '', 'tr'),
+      render: (company_name) => company_name || '-',
+    },
+    {
       title: 'İşlemler',
       key: 'actions',
       width: 360,
@@ -2240,6 +2266,12 @@ const Offers = () => {
                         render: (customer) => customer || '-',
                       },
                       {
+                        title: 'Firma',
+                        dataIndex: 'company_name',
+                        key: 'company_name',
+                        render: (company_name) => company_name || '-',
+                      },
+                      {
                         title: 'İşlemler',
                         key: 'actions',
                         width: 320,
@@ -2675,7 +2707,6 @@ const Offers = () => {
                   <Input 
                     placeholder="Teklif numarasını girin" 
                     autoComplete="off"
-                    autoFocus
                     disabled={editingOffer ? true : false}
                   />
                 </Form.Item>
@@ -2693,6 +2724,27 @@ const Offers = () => {
                     autoComplete="off"
                     autoFocus={true}
                   />
+                </Form.Item>
+
+                <Form.Item
+                  name="company_id"
+                  label="Firma"
+                  rules={[{ required: true, message: 'Firma seçimi gereklidir!' }]}
+                >
+                  <Select 
+                    placeholder="Teklifin hangi firmadan hazırlandığını seçin"
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    }
+                  >
+                    {availableCompanies.map(company => (
+                      <Option key={company.id} value={company.id}>
+                        {company.company_name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
 
                 <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
