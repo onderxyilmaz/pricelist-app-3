@@ -314,7 +314,7 @@ async function pricelistRoutes(fastify, options) {
 
       // Son 5 eklenen ürün
       const recentItemsResult = await client.query(`
-        SELECT pi.name_tr, pi.name_en, pi.price, p.currency, p.name as pricelist_name, pi.created_at
+        SELECT pi.name_tr, pi.name_en, pi.description_tr, pi.description_en, pi.price, p.currency, p.name as pricelist_name, pi.created_at
         FROM pricelist_items pi
         JOIN pricelists p ON pi.pricelist_id = p.id
         ORDER BY pi.created_at DESC
