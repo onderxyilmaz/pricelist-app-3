@@ -508,7 +508,7 @@ const Offers = () => {
           product_id: item.product_id,
           product_name_tr: item.name_tr,
           product_name_en: item.name_en,
-          description: itemNotes[item.id] || item.description_tr || item.description_en || '',
+          description: itemNotes[item.id] || '', // Sadece kullanıcının yazdığı özel açıklamayı kullan
           unit: item.unit,
           currency: item.currency || 'EUR',
           pricelist_id: item.pricelist_id
@@ -516,7 +516,7 @@ const Offers = () => {
 
         const itemsResponse = await axios.post(`http://localhost:3000/api/offers/${offerId}/items`, { items });
         
-        if (!itemsResponse.data.success) {
+        if (!itemsResponse.data.success && itemsResponse.status !== 200) {
           NotificationService.error('Hata', 'Teklif kalemleri kaydedilemedi');
           return;
         }
@@ -524,7 +524,7 @@ const Offers = () => {
         // Aktif ürün yoksa teklif kalemlerini boşalt
         const itemsResponse = await axios.post(`http://localhost:3000/api/offers/${offerId}/items`, { items: [] });
         
-        if (!itemsResponse.data.success) {
+        if (!itemsResponse.data.success && itemsResponse.status !== 200) {
           NotificationService.error('Hata', 'Teklif kalemleri temizlenemedi');
           return;
         }
@@ -995,7 +995,7 @@ const Offers = () => {
             product_id: item.product_id,
             name_tr: item.product_name_tr,
             name_en: item.product_name_en,
-            description: item.description || (originalItem ? (originalItem.description_tr || originalItem.description_en || '') : ''), // Önce teklif kalemindeki açıklamayı kullan
+            description: item.description || '', // Sadece teklif kalemindeki özel açıklamayı kullan, ürün açıklamasını otomatik doldurma
             price: parseFloat(item.price),
             unit: item.unit,
             currency: item.currency,
@@ -2883,20 +2883,37 @@ const Offers = () => {
                             setLoading(true);
                             const response = await axios.get(`http://localhost:3000/api/offer-templates/${selectedTemplate.id}/items`);
                             if (response.data.success) {
-                              // Template'den gelen ürünleri selectedItems'a ekle
-                              const templateItems = response.data.items.map(item => ({
-                                ...item,
-                                quantity: item.quantity,
-                                total_price: item.quantity * item.price,
-                                // Template'deki ID'yi kullan ama product_id ve pricelist_id bilgilerini de koru
-                                name_tr: item.name_tr,
-                                name_en: item.name_en,
-                                description_tr: item.description_tr,
-                                description_en: item.description_en,
-                                // Eşleşme için gerekli alanlar
-                                product_id: item.product_id,
-                                pricelist_id: item.pricelist_id
-                              }));
+                              // Template'den gelen ürünleri mevcut pricelist items ile eşleştir
+                              const templateItems = response.data.items.map(templateItem => {
+                                // Mevcut pricelist'lerde bu ürünü bul
+                                const currentPricelist = pricelists.find(p => p.id === templateItem.pricelist_id);
+                                if (currentPricelist && currentPricelist.items) {
+                                  const currentItem = currentPricelist.items.find(item => 
+                                    item.product_id === templateItem.product_id
+                                  );
+                                  
+                                  if (currentItem) {
+                                    // Mevcut item bulundu, güncel bilgilerle birleştir
+                                    return {
+                                      ...currentItem, // Güncel pricelist item bilgileri
+                                      id: currentItem.id, // Güncel pricelist_item_id
+                                      pricelist_id: templateItem.pricelist_id, // Template'deki pricelist_id'yi koru
+                                      quantity: templateItem.quantity, // Template'deki miktar
+                                      price: templateItem.price, // Template'deki fiyat
+                                      total_price: templateItem.quantity * templateItem.price,
+                                      description_tr: templateItem.description_tr || currentItem.description_tr,
+                                      description_en: templateItem.description_en || currentItem.description_en,
+                                      note: templateItem.note || ''
+                                    };
+                                  }
+                                }
+                                
+                                // Eğer mevcut pricelist'te bulunamazsa null döndür (filtrelenecek)
+                                console.warn('Template item not found in current pricelists:', templateItem);
+                                return null;
+                              }).filter(Boolean); // null olanları filtrele
+                              
+                              console.log('Template items loaded:', templateItems); // Debug için
                               setSelectedItems(templateItems);
                               setCurrentStep(2); // Ürün seçimi adımına geç
                             }
