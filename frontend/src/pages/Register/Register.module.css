@@ -27,6 +27,15 @@
   margin-bottom: 30px;
 }
 
+.appName {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 .logo {
   width: 100px;
   height: 100px;
@@ -173,6 +182,11 @@
   
   .header {
     margin-bottom: 25px;
+  }
+  
+  .appName {
+    font-size: 20px;
+    margin-bottom: 12px;
   }
   
   .logo {

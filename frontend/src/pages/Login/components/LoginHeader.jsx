@@ -7,6 +7,7 @@ const { Title } = Typography;
 const LoginHeader = () => {
   return (
     <div className={styles.header}>
+      <div className={styles.appName}>Priceli$t App</div>
       <img 
         src="/pricelist-logo.png" 
         alt="Pricelist App Logo" 
