@@ -73,7 +73,7 @@ async function offerRoutes(fastify, options) {
         SELECT 
           o.id, o.offer_no, o.revision_no, o.created_at, o.revised_at, 
           c.name as customer, 
-          o.status, o.customer_response, o.parent_offer_id, o.created_by, o.customer_id,
+          o.status, o.customer_response, o.parent_offer_id, o.created_by, o.customer_id, o.company_id,
           u.first_name, u.last_name,
           CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM offers o

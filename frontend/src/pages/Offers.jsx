@@ -957,6 +957,9 @@ const Offers = () => {
     try {
       setEditingOffer(offer);
       
+      // Firmalar listesini yükle
+      await fetchCompanies();
+      
       // Teklif detaylarını yükle
       const response = await axios.get(`http://localhost:3000/api/offers/${offer.id}`);
       if (!response.data.success) {
@@ -969,13 +972,15 @@ const Offers = () => {
       // Form verilerini doldur
       form.setFieldsValue({
         offer_no: offerData.offer_no,
-        customer: offerData.customer || ''
+        customer: offerData.customer || '',
+        company_id: offerData.company_id
       });
 
       // Wizard state'lerini doldur
       setOfferData({
         offer_no: offerData.offer_no,
-        customer: offerData.customer || ''
+        customer: offerData.customer || '',
+        company_id: offerData.company_id
       });
 
       // Ürün kalemleri varsa doldur
