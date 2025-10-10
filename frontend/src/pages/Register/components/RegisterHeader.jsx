@@ -6,9 +6,16 @@ const { Title } = Typography;
 
 const RegisterHeader = () => {
   return (
-    <Title level={2} className={styles.title}>
-      Kayıt Ol
-    </Title>
+    <div className={styles.header}>
+      <img 
+        src="/pricelist-logo.png" 
+        alt="Pricelist App Logo" 
+        className={styles.logo}
+      />
+      <Title level={2} className={styles.title}>
+        Kayıt Ol
+      </Title>
+    </div>
   );
 };
 

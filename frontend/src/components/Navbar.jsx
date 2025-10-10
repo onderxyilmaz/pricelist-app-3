@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Space, Avatar, Dropdown } from 'antd';
-import { UserOutlined, LogoutOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 const { Header } = Layout;
@@ -56,11 +56,22 @@ const Navbar = ({ user, onLogout }) => {
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '12px'
         }}
         onClick={() => navigate('/')}
       >
-        <UnorderedListOutlined style={{ fontSize: '24px' }} />
+        <img 
+          src="/pricelist-logo.png" 
+          alt="Pricelist App Logo" 
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '6px',
+            objectFit: 'contain',
+            background: 'white',
+            padding: '4px'
+          }}
+        />
         Price List App v3
       </div>
       
