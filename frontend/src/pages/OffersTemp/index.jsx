@@ -225,6 +225,22 @@ const OffersTemp = () => {
     }
   };
 
+  // Teklif silme fonksiyonu
+  const handleDelete = async (id) => {
+    try {
+      const response = await axios.delete(`http://localhost:3000/api/offers/${id}`);
+      if (response.data.success) {
+        NotificationService.success('Başarılı', 'Teklif silindi');
+        fetchOffers();
+      } else {
+        NotificationService.error('Hata', response.data.message || 'Silme işlemi başarısız');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Silme işlemi başarısız';
+      NotificationService.error('Hata', errorMessage);
+    }
+  };
+
   // Filtreleri uygula - parent offerlar üzerinde (orijinal Offers.jsx mantığı)
   const applyFilters = () => {
     const parentOffers = getUniqueParentOffers();
@@ -568,7 +584,7 @@ const OffersTemp = () => {
                   <Popconfirm
                     title="Revizyonu silmek istediğinizden emin misiniz?"
                     onConfirm={() => {
-                      console.log('Delete revision:', revRecord.id);
+                      handleDelete(revRecord.id);
                     }}
                     okText="Evet"
                     cancelText="Hayır"
@@ -876,8 +892,7 @@ const OffersTemp = () => {
           <Popconfirm
             title="Teklifi silmek istediğinizden emin misiniz?"
             onConfirm={() => {
-              // handleDelete(record.id);
-              console.log('Delete:', record.id);
+              handleDelete(record.id);
             }}
             okText="Evet"
             cancelText="Hayır"
