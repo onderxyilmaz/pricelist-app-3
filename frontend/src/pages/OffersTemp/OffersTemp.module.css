@@ -282,9 +282,21 @@
   border-color: #52c41a;
 }
 
+.buttonSent:hover {
+  color: #52c41a !important;
+  border-color: #52c41a !important;
+  background-color: rgba(82, 196, 26, 0.1) !important;
+}
+
 .buttonDraft {
   color: #1890ff;
   border-color: #1890ff;
+}
+
+.buttonDraft:hover {
+  color: #1890ff !important;
+  border-color: #1890ff !important;
+  background-color: rgba(24, 144, 255, 0.1) !important;
 }
 
 .buttonExcel {
@@ -292,14 +304,32 @@
   border-color: #52c41a;
 }
 
+.buttonExcel:hover {
+  color: #52c41a !important;
+  border-color: #52c41a !important;
+  background-color: rgba(82, 196, 26, 0.1) !important;
+}
+
 .buttonPdf {
   color: #ff4d4f;
   border-color: #ff4d4f;
 }
 
+.buttonPdf:hover {
+  color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  background-color: rgba(255, 77, 79, 0.1) !important;
+}
+
 .buttonWarning {
   color: #faad14;
   border-color: #faad14;
+}
+
+.buttonWarning:hover {
+  color: #faad14 !important;
+  border-color: #faad14 !important;
+  background-color: rgba(250, 173, 20, 0.1) !important;
 }
 
 .customerResponseContainer {
@@ -317,6 +347,12 @@
   background-color: #f6ffed;
 }
 
+.customerResponseButtonAccepted:hover {
+  color: #52c41a !important;
+  border-color: #52c41a !important;
+  background-color: #f6ffed !important;
+}
+
 .customerResponseButtonRejected {
   margin-right: 8px;
   color: #ff4d4f;
@@ -324,11 +360,23 @@
   background-color: #fff2f0;
 }
 
+.customerResponseButtonRejected:hover {
+  color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  background-color: #fff2f0 !important;
+}
+
 .customerResponseButtonDefault {
   margin-right: 8px;
   color: #1890ff;
   border-color: #1890ff;
   background-color: transparent;
+}
+
+.customerResponseButtonDefault:hover {
+  color: #1890ff !important;
+  border-color: #1890ff !important;
+  background-color: rgba(24, 144, 255, 0.1) !important;
 }
 
 .disabledNotice {
