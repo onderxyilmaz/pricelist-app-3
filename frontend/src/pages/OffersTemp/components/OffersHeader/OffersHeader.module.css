@@ -1,0 +1,76 @@
+/* OffersHeader styles */
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 24px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0 !important;
+  color: #262626;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.subtitle {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.refreshButton {
+  border-color: #d9d9d9;
+  color: #595959;
+}
+
+.refreshButton:hover {
+  border-color: #40a9ff;
+  color: #1890ff;
+}
+
+.createButton {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.createButton:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .headerContainer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .headerLeft {
+    align-items: center;
+    text-align: center;
+  }
+  
+  .headerRight {
+    justify-content: center;
+  }
+  
+  .headerRight .ant-space {
+    width: 100%;
+    justify-content: center;
+  }
+}

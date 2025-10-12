@@ -1,0 +1,62 @@
+/* OffersSearch styles */
+.searchContainer {
+  padding: 16px 24px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.searchInput {
+  height: 40px;
+}
+
+.filterSelect {
+  height: 40px;
+}
+
+.filterSelect .ant-select-selector {
+  height: 40px !important;
+  align-items: center;
+}
+
+.dateRangePicker {
+  height: 40px;
+}
+
+.dateRangePicker .ant-picker-input input {
+  height: 38px;
+}
+
+.clearButton {
+  height: 40px;
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+}
+
+.clearButton:hover {
+  background: #fff1f0;
+  border-color: #ff7875;
+  color: #ff7875;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .searchContainer {
+    padding: 16px;
+  }
+  
+  .searchContainer .ant-row {
+    margin: 0;
+  }
+  
+  .searchContainer .ant-col {
+    padding: 0 4px;
+    margin-bottom: 8px;
+  }
+  
+  .searchInput,
+  .filterSelect,
+  .dateRangePicker,
+  .clearButton {
+    height: 36px;
+  }
+}

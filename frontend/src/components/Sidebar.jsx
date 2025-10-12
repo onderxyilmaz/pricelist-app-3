@@ -88,6 +88,13 @@ const Sidebar = ({ user }) => {
             icon: <UserOutlined />,
             label: 'Kullanıcı Yönetimi',
             onClick: () => navigate('/admin/users')
+          },
+          {
+            key: '/offers-temp',
+            icon: <FileTextOutlined />,
+            label: 'Teklifler (Geliştirme)',
+            onClick: () => navigate('/offers-temp'),
+            style: { color: '#52c41a' } // Geliştirme aşamasında olduğunu belirtmek için yeşil renk
           }
         ]
       },

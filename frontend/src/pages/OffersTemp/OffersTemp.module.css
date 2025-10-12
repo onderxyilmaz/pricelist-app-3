@@ -1,0 +1,459 @@
+/* OffersTemp - Teklifler sayfası stilleri */
+
+/* Ana tablo kolon genişlikleri */
+.table :global(.ant-table-thead) > tr > th:nth-child(1) {
+  width: 100px !important; /* Teklif No */
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(2) {
+  width: 120px !important; /* Oluşturma */
+  min-width: 120px !important;
+  max-width: 120px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(3) {
+  width: 100px !important; /* Revizyonlar */
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(4) {
+  width: 100px !important; /* Durum */
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(5) {
+  width: 130px !important; /* Müşteri Yanıtı */
+  min-width: 130px !important;
+  max-width: 130px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(6) {
+  width: 300px !important; /* Hazırlayan */
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(7) {
+  width: 300px !important; /* Müşteri */
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(8) {
+  width: 300px !important; /* Firma */
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.table :global(.ant-table-thead) > tr > th:nth-child(9) {
+  width: 265px !important; /* İşlemler */
+  min-width: 265px !important;
+  max-width: 265px !important;
+}
+
+/* Ana tablo gövde hücreleri için de aynı genişlikler */
+.table :global(.ant-table-tbody) > tr > td:nth-child(1) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(2) {
+  width: 120px !important;
+  max-width: 120px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(3) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(4) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(5) {
+  width: 130px !important;
+  max-width: 130px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(6) {
+  width: 300px !important;
+  max-width: 300px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(7) {
+  width: 300px !important;
+  max-width: 300px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(8) {
+  width: 300px !important;
+  max-width: 300px !important;
+}
+
+.table :global(.ant-table-tbody) > tr > td:nth-child(9) {
+  width: 265px !important;
+  max-width: 265px !important;
+}
+
+/* Revizyon tablosu kolon genişlikleri */
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(1) {
+  width: 100px !important; /* Revize No */
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(2) {
+  width: 100px !important; /* Teklif No */
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(3) {
+  width: 120px !important; /* Oluşturma Tarihi */
+  min-width: 120px !important;
+  max-width: 120px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(4) {
+  width: 100px !important; /* Durum */
+  min-width: 100px !important;
+  max-width: 100px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(5) {
+  width: 130px !important; /* Müşteri Yanıtı */
+  min-width: 130px !important;
+  max-width: 130px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(6) {
+  width: 300px !important; /* Hazırlayan */
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(7) {
+  width: 300px !important; /* Müşteri */
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(8) {
+  width: 300px !important; /* Firma */
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+.revisionTable :global(.ant-table-thead) > tr > th:nth-child(9) {
+  width: 265px !important; /* İşlemler */
+  min-width: 265px !important;
+  max-width: 265px !important;
+}
+
+/* Revizyon tablosu gövde hücreleri */
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(1) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(2) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(3) {
+  width: 120px !important;
+  max-width: 120px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(4) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(5) {
+  width: 130px !important;
+  max-width: 130px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(6) {
+  width: 300px !important;
+  max-width: 300px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(7) {
+  width: 300px !important;
+  max-width: 300px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(8) {
+  width: 300px !important;
+  max-width: 300px !important;
+}
+
+.revisionTable :global(.ant-table-tbody) > tr > td:nth-child(9) {
+  width: 265px !important;
+  max-width: 265px !important;
+}
+
+/* Genel tablo stilleri */
+.table {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.revisionContainer {
+  margin: 0 0 0 40px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-left: 4px solid #1890ff;
+  border-radius: 6px;
+}
+
+.revisionTitle {
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #1890ff;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.revisionTable {
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+/* Filtre alanı stilleri */
+.filterContainer {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.filterHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  font-weight: bold;
+  color: #495057;
+}
+
+.filterLabel {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Sayfa başlığı */
+.pageHeader {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pageTitle {
+  margin: 0;
+}
+
+/* Inline stil sınıfları */
+.noRevisionMessage {
+  padding: 16px;
+  color: #999;
+}
+
+.actionSpace {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.buttonSent {
+  color: #52c41a;
+  border-color: #52c41a;
+}
+
+.buttonDraft {
+  color: #1890ff;
+  border-color: #1890ff;
+}
+
+.buttonExcel {
+  color: #52c41a;
+  border-color: #52c41a;
+}
+
+.buttonPdf {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.buttonWarning {
+  color: #faad14;
+  border-color: #faad14;
+}
+
+.customerResponseContainer {
+  margin-top: 8px;
+}
+
+.customerResponseButton {
+  margin-right: 8px;
+}
+
+.customerResponseButtonAccepted {
+  margin-right: 8px;
+  color: #52c41a;
+  border-color: #52c41a;
+  background-color: #f6ffed;
+}
+
+.customerResponseButtonRejected {
+  margin-right: 8px;
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+  background-color: #fff2f0;
+}
+
+.customerResponseButtonDefault {
+  margin-right: 8px;
+  color: #1890ff;
+  border-color: #1890ff;
+  background-color: transparent;
+}
+
+.disabledNotice {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.customerResponseButtonDisabled {
+  color: #d9d9d9;
+  border-color: #d9d9d9;
+  background-color: #fafafa;
+  cursor: not-allowed;
+}
+
+.customerResponseButtonActive {
+  cursor: pointer;
+}
+
+.revisionTableStyle {
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+/* Ana sayfa container */
+.mainContainer {
+  padding: 24px;
+}
+
+/* Filtre etiketi stilleri - kalan inline olanlar için */
+.filterLabelInline {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Row gutter'lar için */
+.filterRowMargin {
+  margin-top: 16px;
+}
+
+/* Preview Modal Stilleri */
+.previewModalContainer {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.previewOfferInfo {
+  margin-bottom: 16px;
+}
+
+.previewOfferTitle {
+  margin: 0;
+  margin-bottom: 8px;
+}
+
+.previewOfferDetail {
+  color: #666;
+  margin: 0;
+  margin-bottom: 8px;
+}
+
+.previewOfferDetailLast {
+  color: #666;
+  margin: 0;
+  margin-bottom: 16px;
+}
+
+.previewLanguageButtons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.previewPricelistHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.previewPricelistIcon {
+  display: flex;
+  align-items: center;
+}
+
+.previewPricelistColorDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.previewTotalContainer {
+  text-align: right;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Dinamik müşteri yanıtı buton stilleri */
+.customerResponseButtonComplex {
+  cursor: pointer;
+}
+
+.customerResponseButtonComplexDisabled {
+  color: #d9d9d9;
+  border-color: #d9d9d9;
+  background-color: #fafafa;
+  cursor: not-allowed;
+}
+
+.customerResponseButtonComplexAccepted {
+  color: #52c41a;
+  border-color: #52c41a;
+  background-color: #f6ffed;
+}
+
+.customerResponseButtonComplexRejected {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+  background-color: #fff2f0;
+}
+
+.customerResponseButtonComplexDefault {
+  color: #1890ff;
+  border-color: #1890ff;
+  background-color: transparent;
+}
