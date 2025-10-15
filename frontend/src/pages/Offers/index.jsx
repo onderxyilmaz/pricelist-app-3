@@ -39,6 +39,10 @@ import axios from 'axios';
 import styles from './OffersTemp.module.css';
 import NotificationService from '../../utils/notification';
 import OfferWizard from './components/OfferWizard';
+import OffersHeader from './components/OffersHeader';
+import OffersSearch from './components/OffersSearch';
+import PreviewModal from './components/PreviewModal';
+import OffersTable from './components/OffersTable';
 import { useWizard } from './hooks/useWizard';
 import { offersService } from './services/offersService';
 
@@ -60,7 +64,6 @@ const OffersTemp = () => {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewOffer, setPreviewOffer] = useState(null);
   const [previewItems, setPreviewItems] = useState([]);
-  const [previewLanguage, setPreviewLanguage] = useState('en');
   
   // Wizard modal states
   const [wizardVisible, setWizardVisible] = useState(false);
@@ -445,29 +448,29 @@ const OffersTemp = () => {
                     title="Önizleme"
                   />
 
-          {/* 2. Düzenle */}
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
+                  {/* 2. Düzenle */}
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
               handleEdit(revRecord);
-            }}
-            title="Düzenle"
-          />
-          
-          {/* 3. Revizyon Oluştur */}
-          <Button
-            type="default"
-            size="small"
-            icon={<BranchesOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
+                    }}
+                    title="Düzenle"
+                  />
+                  
+                  {/* 3. Revizyon Oluştur */}
+                  <Button
+                    type="default"
+                    size="small"
+                    icon={<BranchesOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
               handleCreateRevision(revRecord);
-            }}
-            title="Revizyon Oluştur"
-          />
+                    }}
+                    title="Revizyon Oluştur"
+                  />
                   
                   {/* 4. Gönderildi İşaretle */}
                   <Button
@@ -1443,411 +1446,41 @@ const OffersTemp = () => {
 
   return (
     <div className={styles.mainContainer}>
-      {/* Başlık ve Yeni Teklif butonu */}
-      <div className={styles.pageHeader}>
-        <Title level={2} className={styles.pageTitle}>Teklifler</Title>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />}
-          onClick={() => handleCreateOffer(true)}
-          loading={loading}
-        >
-          Yeni Teklif
-        </Button>
-      </div>
+      {/* Header Component */}
+      <OffersHeader 
+        onCreateOffer={() => handleCreateOffer(true)}
+        loading={loading}
+      />
 
       <Card>
-        {/* Filtreleme Alanı */}
-        <div className={styles.filterContainer}>
-          <div className={styles.filterHeader}>
-            <FilterOutlined style={{ marginRight: 8 }} />
-            Filtreler
-          </div>
-          
-          <Row gutter={[16, 16]}>
-            {/* İlk satır: Teklif No, Durum, Müşteri Yanıtı, Hazırlayan */}
-            <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabel}>Teklif No</div>
-              <Input
-                value={filters.offerNo}
-                onChange={(e) => handleFilterChange('offerNo', e.target.value)}
-                placeholder="Teklif no ara..."
-                allowClear
-                prefix={<SearchOutlined />}
-                autoFocus
-              />
-            </Col>
-            
-            <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabelInline}>Durum</div>
-              <Select
-                value={filters.status}
-                onChange={(value) => handleFilterChange('status', value)}
-                style={{ width: '100%' }}
-                placeholder="Tüm Durumlar"
-              >
-                <Option value="all">Tüm Durumlar</Option>
-                <Option value="draft">Taslak</Option>
-                <Option value="sent">Gönderildi</Option>
-              </Select>
-            </Col>
-            
-            <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabelInline}>Müşteri Yanıtı</div>
-              <Select
-                value={filters.customerResponse}
-                onChange={(value) => handleFilterChange('customerResponse', value)}
-                style={{ width: '100%' }}
-                placeholder="Tüm Yanıtlar"
-              >
-                <Option value="all">Tüm Yanıtlar</Option>
-                <Option value="pending">Bekliyor</Option>
-                <Option value="accepted">Kabul Edildi</Option>
-                <Option value="rejected">Reddedildi</Option>
-              </Select>
-            </Col>
-            
-            <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabelInline}>Hazırlayan</div>
-              <Select
-                value={filters.createdBy}
-                onChange={(value) => handleFilterChange('createdBy', value)}
-                style={{ width: '100%' }}
-                placeholder="Tüm Kullanıcılar"
-                showSearch
-                optionFilterProp="children"
-              >
-                <Option value="all">Tüm Kullanıcılar</Option>
-                {availableUsers.map(user => (
-                  <Option key={user} value={user}>{user}</Option>
-                ))}
-              </Select>
-            </Col>
-          </Row>
-          
-          <Row gutter={[16, 16]} className={styles.filterRowMargin}>
-            {/* İkinci satır: Müşteri, Oluşturma Tarihi, Temizle butonu */}
-            <Col xs={24} sm={12} md={8}>
-              <div className={styles.filterLabelInline}>Müşteri</div>
-              <Select
-                value={filters.customer}
-                onChange={(value) => handleFilterChange('customer', value)}
-                style={{ width: '100%' }}
-                placeholder="Tüm Müşteriler"
-                showSearch
-                optionFilterProp="children"
-              >
-                <Option value="all">Tüm Müşteriler</Option>
-                {availableCustomers.map(customer => (
-                  <Option key={customer} value={customer}>{customer}</Option>
-                ))}
-              </Select>
-            </Col>
-            
-            <Col xs={24} sm={12} md={8}>
-              <div className={styles.filterLabelInline}>Oluşturma Tarihi</div>
-              <RangePicker
-                value={filters.dateRange}
-                onChange={(dates) => handleFilterChange('dateRange', dates)}
-                style={{ width: '100%' }}
-                placeholder={['Başlangıç', 'Bitiş']}
-                format="DD/MM/YYYY"
-              />
-            </Col>
-            
-            <Col xs={24} sm={12} md={8}>
-              <div className={styles.filterLabelInline}>&nbsp;</div>
-              <Button
-                icon={<ClearOutlined />}
-                onClick={clearFilters}
-                style={{ width: '100%' }}
-              >
-                Temizle
-              </Button>
-            </Col>
-          </Row>
-        </div>
+        {/* Filtreleme Component */}
+        <OffersSearch
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClearFilters={clearFilters}
+          availableCustomers={availableCustomers}
+          availableUsers={availableUsers}
+        />
 
-        {/* Teklifler tablosu - Expandable revizyon sistemi ile */}
-        <Table
-          className={styles.table}
+        {/* Teklifler Tablosu Component */}
+        <OffersTable
           columns={columns}
           dataSource={filteredOffers}
           loading={loading}
-          onRow={(record) => ({
-            onClick: (event) => {
-              // Eğer tıklanan element bir buton, input veya link ise satır tıklamasını engelle
-              const target = event.target;
-              const clickableElements = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'SVG', 'PATH'];
-              const isClickableElement = clickableElements.includes(target.tagName) || 
-                                       target.closest('button') || 
-                                       target.closest('a') || 
-                                       target.closest('.ant-btn') ||
-                                       target.closest('.ant-popconfirm') ||
-                                       target.closest('.ant-dropdown') ||
-                                       target.closest('svg') ||
-                                       target.closest('[role="img"]') ||
-                                       target.closest('.anticon') ||
-                                       target.closest('.ant-space') || // Action butonları genelde Space içinde
-                                       target.classList.contains('anticon');
-              
-              // Eğer buton vs. tıklanmışsa expand işlemini engelle
-              if (isClickableElement) {
-                event.stopPropagation();
-                return;
-              }
-              
-              // Sadece ana teklif satırlarında expand çalışsın (revizyonlarda değil)
-              if (record.parent_offer_id) {
-                return;
-              }
-              
-              // Ana teklif satırında ve revizyon varsa expand/collapse yap
-              const revisions = getRevisions(record.id);
-              if (revisions.length > 0) {
-                const isExpanded = expandedRowKeys.includes(record.id);
-                setExpandedRowKeys(prev => 
-                  isExpanded 
-                    ? prev.filter(key => key !== record.id)
-                    : [...prev, record.id]
-                );
-              }
-            },
-            style: {
-              cursor: getRevisions(record.id).length > 0 ? 'pointer' : 'default'
-            }
-          })}
-          pagination={{
-            total: filteredOffers.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} / ${total} sayfa`,
-            pageSizeOptions: ['10', '20', '50'],
-          }}
-          scroll={{ x: 1000 }}
-          size="small"
-          rowKey="id"
-          bordered
-          expandable={{
-            expandedRowRender,
-            expandedRowKeys: expandedRowKeys,
-            onExpand: (expanded, record) => {
-              setExpandedRowKeys(expanded 
-                ? [...expandedRowKeys, record.id] 
-                : expandedRowKeys.filter(key => key !== record.id)
-              );
-            },
-            rowExpandable: (record) => {
-              const revisions = getRevisions(record.id);
-              return revisions.length > 0;
-            },
-            expandRowByClick: false,
-          }}
+          expandedRowKeys={expandedRowKeys}
+          onExpandedRowKeysChange={setExpandedRowKeys}
+          expandedRowRender={expandedRowRender}
+          getRevisions={getRevisions}
         />
       </Card>
 
-      {/* Preview Modal */}
-      <Modal
-        title={`Teklif Önizlemesi: ${previewOffer?.offer_no}`}
-        open={previewModalVisible}
-        onCancel={() => setPreviewModalVisible(false)}
-        width={1200}
-        footer={[
-          <Space key="preview-actions" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-            <Space>
-              <span style={{ fontWeight: 'bold', marginRight: 8 }}>Dil:</span>
-              <Button.Group>
-                <Button 
-                  type={previewLanguage === 'en' ? 'primary' : 'default'}
-                  onClick={() => setPreviewLanguage('en')}
-                  style={{ 
-                    backgroundColor: previewLanguage === 'en' ? '#1890ff' : '#f0f0f0',
-                    borderColor: previewLanguage === 'en' ? '#1890ff' : '#d9d9d9',
-                    color: previewLanguage === 'en' ? 'white' : '#666'
-                  }}
-                >
-                  EN
-                </Button>
-                <Button 
-                  type={previewLanguage === 'tr' ? 'primary' : 'default'}
-                  onClick={() => setPreviewLanguage('tr')}
-                  style={{ 
-                    backgroundColor: previewLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
-                    borderColor: previewLanguage === 'tr' ? '#52c41a' : '#d9d9d9',
-                    color: previewLanguage === 'tr' ? 'white' : '#666'
-                  }}
-                >
-                  TR
-                </Button>
-              </Button.Group>
-            </Space>
-            <Button onClick={() => setPreviewModalVisible(false)}>Kapat</Button>
-          </Space>
-        ]}
-      >
-        <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          {previewOffer && (
-            <div style={{ marginBottom: 16 }}>
-              <Title level={4} style={{ margin: 0, marginBottom: 8 }}>
-                {previewOffer.offer_no}
-              </Title>
-              {previewOffer.customer && (
-                <p style={{ color: '#666', margin: 0, marginBottom: 8 }}>
-                  <strong>Müşteri:</strong> {previewOffer.customer}
-                </p>
-              )}
-              <p style={{ color: '#666', margin: 0, marginBottom: 16 }}>
-                <strong>Durum:</strong>{' '}
-                <Tag color={previewOffer.status === 'sent' ? 'green' : 'blue'}>
-                  {previewOffer.status === 'sent' ? 'Gönderildi' : 'Taslak'}
-                </Tag>
-                {previewOffer.customer_response && (
-                  <>
-                    {' | '}
-                    <strong>Müşteri Yanıtı:</strong>{' '}
-                    <Tag color={previewOffer.customer_response === 'accepted' ? 'green' : 'red'}>
-                      {previewOffer.customer_response === 'accepted' ? 'Kabul' : 'Red'}
-                    </Tag>
-                  </>
-                )}
-              </p>
-            </div>
-          )}
-          
-          {(() => {
-            // Ürünleri fiyat listesine göre grupla
-            const groupedItems = previewItems.reduce((groups, item) => {
-              const pricelistId = item.pricelist_id;
-              if (!groups[pricelistId]) {
-                groups[pricelistId] = {
-                  items: [],
-                  pricelistName: item.pricelistName || `Fiyat Listesi ${pricelistId}`,
-                  pricelistColor: item.pricelistColor || '#1890ff'
-                };
-              }
-              groups[pricelistId].items.push(item);
-              return groups;
-            }, {});
-
-            const groupedEntries = Object.entries(groupedItems);
-            if (groupedEntries.length === 0) {
-              return <p>Bu teklifte ürün bulunmuyor.</p>;
-            }
-
-            return (
-              <Collapse defaultActiveKey={groupedEntries.map((_, index) => index.toString())}>
-                {groupedEntries.map(([, group], index) => {
-                  const pricelistTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-                  const currency = group.items.length > 0 ? group.items[0].currency : 'EUR';
-                  
-                  return (
-                    <Panel 
-                      key={index.toString()}
-                      header={
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                          <span style={{ display: 'flex', alignItems: 'center' }}>
-                            <div 
-                              style={{ 
-                                width: 12, 
-                                height: 12, 
-                                backgroundColor: group.pricelistColor,
-                                borderRadius: '50%', 
-                                marginRight: 8 
-                              }} 
-                            />
-                            {group.pricelistName}
-                          </span>
-                          <Tag color="blue" style={{ margin: 0 }}>
-                            {group.items.length} ürün - {pricelistTotal.toFixed(2)} {currency}
-                          </Tag>
-                        </div>
-                      }
-                    >
-                      <Table
-                        columns={[
-                          {
-                            title: previewLanguage === 'tr' ? 'Ürün Kodu' : 'Product Code',
-                            dataIndex: 'product_id',
-                            key: 'product_id',
-                            width: 120,
-                          },
-                          {
-                            title: previewLanguage === 'tr' ? 'Ürün Adı' : 'Product Name',
-                            key: 'product_name',
-                            render: (_, record) => {
-                              const productName = previewLanguage === 'tr' ? 
-                                (record.product_name_tr || record.product_name_en || record.product_name || '-') : 
-                                (record.product_name_en || record.product_name_tr || record.product_name || '-');
-                              
-                              return productName;
-                            },
-                          },
-                          {
-                            title: previewLanguage === 'tr' ? 'Açıklama' : 'Description',
-                            key: 'description',
-                            ellipsis: true,
-                            render: (_, record) => {
-                              const isDeleted = !record.pricelist_item_id;
-                              
-                              // Eğer ürün silinmişse sadece snapshot description'ı kullan
-                              if (isDeleted) {
-                                return record.description || '-';
-                              }
-                              
-                              // Ürün silinmemişse önce orijinal açıklamayı tercih et
-                              const originalDescription = previewLanguage === 'tr' ? 
-                                record.original_description_tr : 
-                                record.original_description_en;
-                              
-                              return originalDescription || record.description || '-';
-                            },
-                          },
-                          {
-                            title: previewLanguage === 'tr' ? 'Miktar' : 'Quantity',
-                            dataIndex: 'quantity',
-                            key: 'quantity',
-                            width: 100,
-                            align: 'center',
-                            render: (quantity) => quantity || '-',
-                          },
-                          {
-                            title: previewLanguage === 'tr' ? 'Birim Fiyat' : 'Unit Price',
-                            dataIndex: 'unit_price',
-                            key: 'unit_price',
-                            width: 120,
-                            align: 'right',
-                            render: (price, record) => price ? `${parseFloat(price).toFixed(2)} ${record.currency}` : '-',
-                          },
-                          {
-                            title: previewLanguage === 'tr' ? 'Toplam' : 'Total',
-                            dataIndex: 'total_price',
-                            key: 'total_price',
-                            width: 120,
-                            align: 'right',
-                            render: (total, record) => total ? `${parseFloat(total).toFixed(2)} ${record.currency}` : '-',
-                          },
-                        ]}
-                        dataSource={group.items}
-                        rowKey={(record) => `${record.pricelist_id}-${record.product_id}-${record.id || Math.random()}`}
-                        pagination={false}
-                        size="small"
-                        bordered
-                      />
-                    </Panel>
-                  );
-                })}
-              </Collapse>
-            );
-          })()}
-          
-          <Divider />
-          <div style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '16px' }}>
-            Genel Toplam: {previewItems.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0).toFixed(2)} {previewItems.length > 0 ? previewItems[0].currency : 'EUR'}
-          </div>
-        </div>
-      </Modal>
+      {/* Preview Modal Component */}
+      <PreviewModal
+        visible={previewModalVisible}
+        onClose={() => setPreviewModalVisible(false)}
+        offer={previewOffer}
+        items={previewItems}
+      />
 
       {/* Offer Wizard Modal */}
       <OfferWizard
