@@ -38,6 +38,9 @@ import {
 import axios from 'axios';
 import styles from './OffersTemp.module.css';
 import NotificationService from '../../utils/notification';
+import OfferWizard from './components/OfferWizard';
+import { useWizard } from './hooks/useWizard';
+import { offersService } from './services/offersService';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -59,6 +62,13 @@ const OffersTemp = () => {
   const [previewItems, setPreviewItems] = useState([]);
   const [previewLanguage, setPreviewLanguage] = useState('en');
   
+  // Wizard modal states
+  const [wizardVisible, setWizardVisible] = useState(false);
+  const [editingOffer, setEditingOffer] = useState(null);
+  const [companies, setCompanies] = useState([]);
+  const [pricelists, setPricelists] = useState([]);
+  const wizardState = useWizard();
+  
   const [filters, setFilters] = useState({
     offerNo: '',
     status: 'all',
@@ -77,6 +87,7 @@ const OffersTemp = () => {
   // Filtreleme değişikliklerinde uygula
   useEffect(() => {
     applyFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, offers]);
 
   // API'den teklifleri çek - orijinal fonksiyon
@@ -418,6 +429,7 @@ const OffersTemp = () => {
             {
               title: 'İşlemler',
               key: 'actions',
+              width: 270,
               fixed: 'right',
               render: (_, revRecord) => (
                 <Space className={styles.actionSpace}>
@@ -433,29 +445,29 @@ const OffersTemp = () => {
                     title="Önizleme"
                   />
 
-                  {/* 2. Düzenle */}
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Edit revision:', revRecord);
-                    }}
-                    title="Düzenle"
-                  />
-                  
-                  {/* 3. Revizyon Oluştur */}
-                  <Button
-                    type="default"
-                    size="small"
-                    icon={<BranchesOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Create revision from:', revRecord);
-                    }}
-                    title="Revizyon Oluştur"
-                  />
+          {/* 2. Düzenle */}
+          <Button
+            type="primary"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(revRecord);
+            }}
+            title="Düzenle"
+          />
+          
+          {/* 3. Revizyon Oluştur */}
+          <Button
+            type="default"
+            size="small"
+            icon={<BranchesOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCreateRevision(revRecord);
+            }}
+            title="Revizyon Oluştur"
+          />
                   
                   {/* 4. Gönderildi İşaretle */}
                   <Button
@@ -632,7 +644,7 @@ const OffersTemp = () => {
         if (!date) return '-';
         try {
           return new Date(date).toLocaleDateString('tr-TR');
-        } catch (error) {
+        } catch {
           return '-';
         }
       },
@@ -709,6 +721,7 @@ const OffersTemp = () => {
     {
       title: 'İşlemler',
       key: 'actions',
+      width: 270,
       fixed: 'right',
       render: (_, record) => (
         <Space className={styles.actionSpace}>
@@ -732,8 +745,7 @@ const OffersTemp = () => {
             icon={<EditOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              // handleEdit(record);
-              console.log('Edit:', record);
+              handleEdit(record);
             }}
             title="Düzenle"
           />
@@ -745,8 +757,7 @@ const OffersTemp = () => {
             icon={<BranchesOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              // handleCreateRevision(record);
-              console.log('Create revision:', record);
+              handleCreateRevision(record);
             }}
             title="Revizyon Oluştur"
           />
@@ -936,6 +947,500 @@ const OffersTemp = () => {
     });
   };
 
+  // Yeni Teklif modal aç
+  const handleCreateOffer = async (templateMode = false) => {
+    try {
+      setLoading(true);
+      
+      // Wizard state'ini sıfırla
+      wizardState.resetWizard();
+      wizardState.setIsTemplateMode(templateMode);
+      
+      // Firmaları ve fiyat listelerini yükle
+      const [companiesData, pricelistsData] = await Promise.all([
+        offersService.fetchCompanies(),
+        axios.get('http://localhost:3000/api/pricelists-with-items')
+      ]);
+      
+      setCompanies(companiesData);
+      
+      if (pricelistsData.data.success) {
+        setPricelists(pricelistsData.data.pricelists || []);
+      }
+      
+      setEditingOffer(null);
+      setWizardVisible(true);
+    } catch (error) {
+      console.error('Create offer error:', error);
+      NotificationService.error('Hata', 'Veriler yüklenirken hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Wizard modal kapat
+  const handleWizardCancel = () => {
+    setWizardVisible(false);
+    wizardState.resetWizard();
+    setEditingOffer(null);
+  };
+
+  // Teklif düzenle
+  const handleEdit = async (offer) => {
+    try {
+      setLoading(true);
+      setEditingOffer(offer);
+      
+      // Firmalar ve fiyat listelerini yükle
+      const [companiesData, pricelistsData] = await Promise.all([
+        offersService.fetchCompanies(),
+        axios.get('http://localhost:3000/api/pricelists-with-items')
+      ]);
+      
+      setCompanies(companiesData);
+      
+      if (pricelistsData.data.success) {
+        setPricelists(pricelistsData.data.pricelists || []);
+      }
+      
+      // Teklif detaylarını yükle
+      const response = await offersService.getOfferById(offer.id);
+      if (!response.success) {
+        NotificationService.error('Hata', 'Teklif detayları yüklenemedi');
+        return;
+      }
+
+      const offerData = response.offer;
+      
+      // Wizard state'ini sıfırla ve doldur
+      wizardState.resetWizard();
+      wizardState.updateOfferData({
+        offer_no: offerData.offer_no,
+        customer: offerData.customer || '',
+        company_id: offerData.company_id
+      });
+
+      // Ürün kalemleri varsa doldur
+      if (offerData.items && offerData.items.length > 0) {
+        // Ürünleri map'le
+        const mappedItems = offerData.items.map(item => {
+          // Orijinal ürün bilgilerini fiyat listelerinden bul
+          const originalItem = pricelistsData.data.pricelists
+            .flatMap(p => p.items)
+            .find(pi => pi.id === item.pricelist_item_id);
+          
+          return {
+            id: item.pricelist_item_id,
+            product_id: item.product_id,
+            name_tr: item.product_name_tr,
+            name_en: item.product_name_en,
+            name: item.product_name_tr || item.product_name_en,
+            description_tr: originalItem?.description_tr || '',
+            description_en: originalItem?.description_en || '',
+            description: item.description || '',
+            price: parseFloat(item.original_price || item.price), // Orijinal fiyatı kullan!
+            unit: item.unit,
+            currency: item.currency,
+            pricelist_id: item.pricelist_id,
+            quantity: item.quantity,
+            total_price: parseFloat(item.original_price || item.price) * item.quantity,
+            stock: originalItem?.stock || 0
+          };
+        });
+        
+        wizardState.setSelectedItems(mappedItems);
+        
+        // Ürün bazında indirimleri geri yükle
+        const itemDiscountsMap = {};
+        offerData.items.forEach(item => {
+          if (item.item_discount_rate && item.item_discount_rate > 0) {
+            itemDiscountsMap[item.pricelist_item_id] = item.item_discount_rate;
+          }
+        });
+        wizardState.setItemDiscounts(itemDiscountsMap);
+        
+        // Ürün notlarını geri yükle
+        const itemNotesMap = {};
+        offerData.items.forEach(item => {
+          if (item.item_note) {
+            itemNotesMap[item.pricelist_item_id] = item.item_note;
+          }
+        });
+        wizardState.setItemNotes(itemNotesMap);
+        
+        // Liste bazında indirim ve kar oranlarını geri yükle
+        const discountsMap = {};
+        const profitsMap = {};
+        
+        offerData.items.forEach(item => {
+          // Liste bazında indirimler
+          if (item.list_discounts) {
+            try {
+              const discounts = typeof item.list_discounts === 'string' 
+                ? JSON.parse(item.list_discounts) 
+                : item.list_discounts;
+              if (Array.isArray(discounts) && discounts.length > 0) {
+                discountsMap[item.pricelist_id] = discounts;
+              }
+            } catch (e) {
+              console.error('Parse list_discounts error:', e);
+            }
+          }
+          
+          // Liste bazında kar oranları
+          if (item.list_profits) {
+            try {
+              const profits = typeof item.list_profits === 'string' 
+                ? JSON.parse(item.list_profits) 
+                : item.list_profits;
+              if (Array.isArray(profits) && profits.length > 0) {
+                profitsMap[item.pricelist_id] = profits;
+              }
+            } catch (e) {
+              console.error('Parse list_profits error:', e);
+            }
+          }
+        });
+        
+        wizardState.setDiscountData(discountsMap);
+        wizardState.setProfitData(profitsMap);
+        
+        // Manuel fiyatları geri yükle
+        const manualPricesMap = {};
+        offerData.items.forEach(item => {
+          if (item.manual_price) {
+            try {
+              const manualPrice = typeof item.manual_price === 'string' 
+                ? JSON.parse(item.manual_price) 
+                : item.manual_price;
+              if (manualPrice && manualPrice.enabled) {
+                manualPricesMap[item.pricelist_item_id] = manualPrice;
+              }
+            } catch (e) {
+              console.error('Parse manual_price error:', e);
+            }
+          }
+        });
+        wizardState.setManualPrices(manualPricesMap);
+      }
+      
+      setWizardVisible(true);
+    } catch (error) {
+      console.error('Edit offer error:', error);
+      NotificationService.error('Hata', 'Teklif düzenlenirken hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Revizyon oluştur
+  const handleCreateRevision = async (offer) => {
+    try {
+      setLoading(true);
+      
+      // Mevcut teklif verilerini yükle
+      const response = await offersService.getOfferById(offer.id);
+      if (!response.success) {
+        NotificationService.error('Hata', 'Teklif detayları yüklenemedi');
+        return;
+      }
+
+      const sourceOffer = response.offer;
+      
+      // Ana teklifi bul (parent_offer_id null olan)
+      const parentOfferId = sourceOffer.parent_offer_id || offer.id;
+      
+      // Ana teklifin tüm revizyonlarını getir ve en yüksek revizyon numarasını bul
+      const allOffersResponse = await offersService.getAllOffers();
+      if (!allOffersResponse.success) {
+        NotificationService.error('Hata', 'Teklifler yüklenemedi');
+        return;
+      }
+      
+      const allOffers = allOffersResponse.offers;
+      const relatedOffers = allOffers.filter(o => 
+        o.id === parentOfferId || o.parent_offer_id === parentOfferId
+      );
+      
+      const maxRevisionNo = Math.max(...relatedOffers.map(o => o.revision_no || 0));
+      const newRevisionNo = maxRevisionNo + 1;
+      
+      // Ana teklifin offer_no'sunu bul
+      const parentOffer = allOffers.find(o => o.id === parentOfferId);
+      const baseOfferNo = parentOffer ? parentOffer.offer_no : sourceOffer.offer_no.split('-R')[0];
+      
+      // Yeni teklif no
+      const newOfferNo = `${baseOfferNo}-R${newRevisionNo}`;
+      
+      // Firmalar ve fiyat listelerini yükle
+      const [companiesData, pricelistsData] = await Promise.all([
+        offersService.fetchCompanies(),
+        axios.get('http://localhost:3000/api/pricelists-with-items')
+      ]);
+      
+      setCompanies(companiesData);
+      
+      if (pricelistsData.data.success) {
+        setPricelists(pricelistsData.data.pricelists || []);
+      }
+      
+      // Wizard state'ini sıfırla ve doldur
+      wizardState.resetWizard();
+      wizardState.updateOfferData({
+        offer_no: newOfferNo,
+        customer: sourceOffer.customer || '',
+        company_id: sourceOffer.company_id,
+        parent_offer_id: parentOfferId,
+        revision_no: newRevisionNo
+      });
+
+      // Ürün kalemleri varsa doldur
+      if (sourceOffer.items && sourceOffer.items.length > 0) {
+        // Ürünleri map'le
+        const mappedItems = sourceOffer.items.map(item => {
+          // Orijinal ürün bilgilerini fiyat listelerinden bul
+          const originalItem = pricelistsData.data.pricelists
+            .flatMap(p => p.items)
+            .find(pi => pi.id === item.pricelist_item_id);
+          
+          return {
+            id: item.pricelist_item_id,
+            product_id: item.product_id,
+            name_tr: item.product_name_tr,
+            name_en: item.product_name_en,
+            name: item.product_name_tr || item.product_name_en,
+            description_tr: originalItem?.description_tr || '',
+            description_en: originalItem?.description_en || '',
+            description: item.description || '',
+            price: parseFloat(item.original_price || item.price), // Orijinal fiyatı kullan!
+            unit: item.unit,
+            currency: item.currency,
+            pricelist_id: item.pricelist_id,
+            quantity: item.quantity,
+            total_price: parseFloat(item.original_price || item.price) * item.quantity,
+            stock: originalItem?.stock || 0
+          };
+        });
+        
+        wizardState.setSelectedItems(mappedItems);
+        
+        // Ürün bazında indirimleri geri yükle
+        const itemDiscountsMap = {};
+        sourceOffer.items.forEach(item => {
+          if (item.item_discount_rate && item.item_discount_rate > 0) {
+            itemDiscountsMap[item.pricelist_item_id] = item.item_discount_rate;
+          }
+        });
+        wizardState.setItemDiscounts(itemDiscountsMap);
+        
+        // Ürün notlarını geri yükle
+        const itemNotesMap = {};
+        sourceOffer.items.forEach(item => {
+          if (item.item_note) {
+            itemNotesMap[item.pricelist_item_id] = item.item_note;
+          }
+        });
+        wizardState.setItemNotes(itemNotesMap);
+        
+        // Liste bazında indirim ve kar oranlarını geri yükle
+        const discountsMap = {};
+        const profitsMap = {};
+        
+        sourceOffer.items.forEach(item => {
+          // Liste bazında indirimler
+          if (item.list_discounts) {
+            try {
+              const discounts = typeof item.list_discounts === 'string' 
+                ? JSON.parse(item.list_discounts) 
+                : item.list_discounts;
+              if (Array.isArray(discounts) && discounts.length > 0) {
+                discountsMap[item.pricelist_id] = discounts;
+              }
+            } catch (e) {
+              console.error('Parse list_discounts error:', e);
+            }
+          }
+          
+          // Liste bazında kar oranları
+          if (item.list_profits) {
+            try {
+              const profits = typeof item.list_profits === 'string' 
+                ? JSON.parse(item.list_profits) 
+                : item.list_profits;
+              if (Array.isArray(profits) && profits.length > 0) {
+                profitsMap[item.pricelist_id] = profits;
+              }
+            } catch (e) {
+              console.error('Parse list_profits error:', e);
+            }
+          }
+        });
+        
+        wizardState.setDiscountData(discountsMap);
+        wizardState.setProfitData(profitsMap);
+        
+        // Manuel fiyatları geri yükle
+        const manualPricesMap = {};
+        sourceOffer.items.forEach(item => {
+          if (item.manual_price) {
+            try {
+              const manualPrice = typeof item.manual_price === 'string' 
+                ? JSON.parse(item.manual_price) 
+                : item.manual_price;
+              if (manualPrice && manualPrice.enabled) {
+                manualPricesMap[item.pricelist_item_id] = manualPrice;
+              }
+            } catch (e) {
+              console.error('Parse manual_price error:', e);
+            }
+          }
+        });
+        wizardState.setManualPrices(manualPricesMap);
+      }
+      
+      setEditingOffer(null); // Revizyon için editingOffer null olmalı (yeni teklif gibi davranır)
+      setWizardVisible(true);
+      
+      NotificationService.info('Bilgi', `Revizyon ${newRevisionNo} oluşturuluyor...`);
+    } catch (error) {
+      console.error('Create revision error:', error);
+      NotificationService.error('Hata', 'Revizyon oluşturulurken hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Teklif kaydet
+  const handleSaveOffer = async (wizardData) => {
+    try {
+      const { offerData, selectedItems, itemNotes, itemDiscounts, discountData, profitData, manualPrices } = wizardData;
+      
+      // Kullanıcı bilgisini al
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      
+      if (!user || !user.id) {
+        NotificationService.error('Hata', 'Kullanıcı bilgisi bulunamadı');
+        return;
+      }
+      
+      let offerId;
+      const isEditing = editingOffer !== null;
+      
+      if (isEditing) {
+        // Güncelleme modu
+        const updatePayload = {
+          offer_no: offerData.offer_no,
+          customer: offerData.customer || null,
+          company_id: offerData.company_id,
+          status: editingOffer.status || 'draft',
+          customer_response: editingOffer.customer_response || 'pending'
+        };
+        
+        const offerResponse = await offersService.updateOffer(editingOffer.id, updatePayload);
+        
+        if (!offerResponse.success) {
+          NotificationService.error('Hata', 'Teklif güncellenemedi');
+          return;
+        }
+        
+        offerId = editingOffer.id;
+      } else {
+        // Yeni teklif oluşturma modu
+        const offerPayload = {
+          offer_no: offerData.offer_no,
+          customer: offerData.customer || null,
+          company_id: offerData.company_id,
+          created_by: user.id,
+          parent_offer_id: offerData.parent_offer_id || null,
+          revision_no: offerData.revision_no || 0,
+          status: 'draft',
+          customer_response: 'pending'
+        };
+
+        const offerResponse = await offersService.createOffer(offerPayload);
+        
+        if (!offerResponse.success) {
+          NotificationService.error('Hata', 'Teklif kaydedilemedi');
+          return;
+        }
+        
+        offerId = offerResponse.offer.id;
+      }
+        
+        // Offer items'ı hazırla - Backend'in beklediği formatta
+        const offerItems = selectedItems.map(item => {
+          const itemDiscount = itemDiscounts[item.id] || 0;
+          const manualPrice = manualPrices[item.id];
+          const note = itemNotes[item.id] || null;
+          
+          // Birim fiyat hesapla (sales_price - final birim fiyat)
+          let salesPrice = parseFloat(item.price);
+          
+          // Manuel fiyat varsa onu kullan
+          if (manualPrice && manualPrice.enabled && manualPrice.price > 0) {
+            salesPrice = manualPrice.price;
+          } else {
+            // Ürün indirimi
+            if (itemDiscount > 0) {
+              salesPrice = salesPrice * (1 - itemDiscount / 100);
+            }
+            
+            // Liste bazında indirimler
+            const discounts = discountData[item.pricelist_id] || [];
+            discounts.forEach(discount => {
+              if (discount.rate > 0) {
+                salesPrice = salesPrice * (1 - discount.rate / 100);
+              }
+            });
+            
+            // Kar oranları
+            const profits = profitData[item.pricelist_id] || [];
+            profits.forEach(profit => {
+              if (profit.rate > 0) {
+                salesPrice = salesPrice * (1 + profit.rate / 100);
+              }
+            });
+          }
+          
+          // Backend'in beklediği format
+          return {
+            pricelist_item_id: item.id,
+            quantity: item.quantity,
+            price: salesPrice, // Birim satış fiyatı (final)
+            total_price: salesPrice * item.quantity, // Toplam fiyat
+            product_id: item.product_id,
+            product_name_tr: item.name_tr || item.name,
+            product_name_en: item.name_en || item.name,
+            description: note || (item.description_tr || item.description_en || item.description || ''),
+            unit: item.unit || 'adet',
+            currency: item.currency,
+            pricelist_id: item.pricelist_id,
+            // Yeni alanlar - indirim ve kar bilgileri
+            original_price: parseFloat(item.price), // Orijinal liste fiyatı
+            item_discount_rate: itemDiscount, // Ürün bazında indirim %
+            item_note: note, // Ürün notu
+            list_discounts: discountData[item.pricelist_id] || [], // Liste bazında indirimler
+            list_profits: profitData[item.pricelist_id] || [], // Liste bazında kar oranları
+            manual_price: manualPrice || null // Manuel fiyat bilgisi
+          };
+        });
+        
+      // Offer items'ı kaydet
+      await offersService.saveOfferItems(offerId, offerItems);
+      
+      NotificationService.success('Başarılı', isEditing ? 'Teklif başarıyla güncellendi' : 'Teklif başarıyla kaydedildi');
+      
+      // Modal'ı kapat ve listeyi yenile
+      handleWizardCancel();
+      fetchOffers();
+    } catch (error) {
+      console.error('Save offer error:', error);
+      NotificationService.error('Hata', 'Teklif kaydedilirken hata oluştu');
+      throw error;
+    }
+  };
+
   return (
     <div className={styles.mainContainer}>
       {/* Başlık ve Yeni Teklif butonu */}
@@ -944,6 +1449,8 @@ const OffersTemp = () => {
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
+          onClick={() => handleCreateOffer(true)}
+          loading={loading}
         >
           Yeni Teklif
         </Button>
@@ -1119,7 +1626,7 @@ const OffersTemp = () => {
               `${range[0]}-${range[1]} / ${total} sayfa`,
             pageSizeOptions: ['10', '20', '50'],
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1000 }}
           size="small"
           rowKey="id"
           bordered
@@ -1231,7 +1738,7 @@ const OffersTemp = () => {
 
             return (
               <Collapse defaultActiveKey={groupedEntries.map((_, index) => index.toString())}>
-                {groupedEntries.map(([pricelistId, group], index) => {
+                {groupedEntries.map(([, group], index) => {
                   const pricelistTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
                   const currency = group.items.length > 0 ? group.items[0].currency : 'EUR';
                   
@@ -1341,6 +1848,18 @@ const OffersTemp = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Offer Wizard Modal */}
+      <OfferWizard
+        visible={wizardVisible}
+        onCancel={handleWizardCancel}
+        editingOffer={editingOffer}
+        companies={companies}
+        isTemplateMode={wizardState.isTemplateMode}
+        wizardState={wizardState}
+        pricelists={pricelists}
+        onSave={handleSaveOffer}
+      />
     </div>
   );
 };

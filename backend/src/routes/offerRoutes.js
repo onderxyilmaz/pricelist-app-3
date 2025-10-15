@@ -373,17 +373,30 @@ async function offerRoutes(fastify, options) {
             description,
             unit,
             currency,
-            pricelist_id
+            pricelist_id,
+            original_price,
+            item_discount_rate,
+            item_note,
+            list_discounts,
+            list_profits,
+            manual_price
           } = item;
 
           await client.query(`
             INSERT INTO offer_items (
               offer_id, pricelist_item_id, quantity, price, total_price,
-              product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id,
+              original_price, item_discount_rate, item_note, list_discounts, list_profits, manual_price
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
           `, [
             id, pricelist_item_id, quantity, price, total_price,
-            product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id
+            product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id,
+            original_price || price, // original_price yoksa price'ı kullan
+            item_discount_rate || 0,
+            item_note || null,
+            list_discounts ? JSON.stringify(list_discounts) : '[]',
+            list_profits ? JSON.stringify(list_profits) : '[]',
+            manual_price ? JSON.stringify(manual_price) : null
           ]);
         }
         
