@@ -83,27 +83,23 @@ const Profile = ({ user, onUserUpdate }) => {
       
       if (response.data.success) {
         message.success('Avatar başarıyla güncellendi!');
-        
+
         // User state'ini güncelle
         const updatedUser = {
           ...user,
           avatar_filename: response.data.filename
         };
-        
-        // Parent component'i (App.jsx) bilgilendir
+
+        // Parent component'i (App.jsx) bilgilendir ve localStorage'a kaydet
         if (onUserUpdate) {
           onUserUpdate(updatedUser);
         }
-        
-        // Preview için dosyayı oku
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setProfileData(prev => ({
-            ...prev,
-            avatar: e.target.result
-          }));
-        };
-        reader.readAsDataURL(file);
+
+        // Profile data'yı temizle (user.avatar_filename kullanılacak)
+        setProfileData(prev => ({
+          ...prev,
+          avatar: null
+        }));
       } else {
         message.error('Avatar güncellenirken bir hata oluştu: ' + response.data.message);
       }
