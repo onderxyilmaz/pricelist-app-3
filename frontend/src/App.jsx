@@ -16,8 +16,7 @@ import Profile from './pages/Profile/index.jsx';
 import ImportExcel from './pages/ImportExcel/index.jsx';
 import UserManagement from './pages/UserManagement/index.jsx';
 import AllProducts from './pages/AllProducts/index.jsx';
-import Offers from './pages/Offers.jsx';
-import OffersTemp from './pages/OffersTemp/index.jsx';
+import Offers from './pages/Offers/index.jsx';
 import OfferTemplates from './pages/OfferTemplates/index.jsx';
 import Customers from './pages/Customers/index.jsx';
 import Companies from './pages/Companies/index.jsx';
@@ -65,7 +64,6 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
                 <Route path="/pricelists/:id" element={<PricelistDetail />} />
                 <Route path="/all-products" element={<AllProducts />} />
                 <Route path="/offers" element={<Offers />} />
-                <Route path="/offers-temp" element={<OffersTemp />} />
                 <Route path="/offer-templates" element={<OfferTemplates />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/companies" element={<Companies />} />
@@ -110,34 +108,54 @@ function App() {
             const freshUserData = userResponse.data.user;
             setUser(freshUserData);
             localStorage.setItem('user', JSON.stringify(freshUserData));
+            setHasUsers(true); // User var demek ki database'de en az 1 user var
           } else {
             console.warn('User validation failed:', userResponse.data.message);
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             setUser(null);
+            // User validate edilemedi, check users yap
+            await checkUsersInDb();
           }
         } catch (error) {
           console.warn('User validation error, clearing localStorage:', error);
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           setUser(null);
+          // Hata oldu, check users yap
+          await checkUsersInDb();
         }
 
         setLoading(false);
         return;
       }
 
-      // Check if any users exist in database
-      const response = await authApi.checkUsers();
-      
-      if (response.data.success) {
-        setHasUsers(response.data.hasUsers);
-        setShowRegister(!response.data.hasUsers); // Show register if no users exist
-      }
+      // Saved user yoksa, check if any users exist in database
+      await checkUsersInDb();
     } catch (error) {
       console.error('App initialization error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Check if any users exist in database
+  const checkUsersInDb = async () => {
+    try {
+      const response = await authApi.checkUsers();
+
+      if (response.data.success) {
+        const hasUsersInDb = response.data.hasUsers;
+        setHasUsers(hasUsersInDb);
+        setShowRegister(!hasUsersInDb); // Show register if no users exist
+        console.log('Has users in DB:', hasUsersInDb, 'Show register:', !hasUsersInDb);
+      }
+    } catch (error) {
+      console.error('Check users error:', error);
+      // Backend çalışmıyorsa veya hata varsa, register sayfasını göster
+      // (Yeni kurulumda backend çalışıyor ama DB boşsa register gösterilmeli)
+      setHasUsers(false);
+      setShowRegister(true);
     }
   };
 
@@ -151,6 +169,8 @@ function App() {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', token);
+    setHasUsers(true); // İlk kullanıcı kaydedildi
+    setShowRegister(false); // Artık login göster
   };
 
   const handleUserUpdate = (updatedUser) => {
@@ -158,13 +178,13 @@ function App() {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    setShowRegister(false);
-    // Logout sonrası login sayfasına yönlendir
-    window.location.href = '/login';
+
+    // Logout sonrası database'de kullanıcı var mı kontrol et
+    await checkUsersInDb();
   };
 
   const switchToRegister = () => {
