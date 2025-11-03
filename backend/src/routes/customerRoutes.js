@@ -35,7 +35,22 @@ async function customerRoutes(fastify, options) {
   });
 
   // Tüm müşterileri getir
-  fastify.get('/customers', async (request, reply) => {
+  fastify.get('/customers', {
+    schema: {
+      tags: ['Customers'],
+      summary: 'Get all customers',
+      description: 'Retrieve all customers with offer counts',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            customers: { type: 'array', items: { type: 'object' } }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       
@@ -59,7 +74,29 @@ async function customerRoutes(fastify, options) {
   });
 
   // Yeni müşteri oluştur
-  fastify.post('/customers', async (request, reply) => {
+  fastify.post('/customers', {
+    schema: {
+      tags: ['Customers'],
+      summary: 'Create new customer',
+      description: 'Create a new customer',
+      body: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', description: 'Customer name' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            customer: { type: 'object' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { name } = request.body;
       
@@ -146,7 +183,29 @@ async function customerRoutes(fastify, options) {
   });
 
   // Müşteri sil
-  fastify.delete('/customers/:id', async (request, reply) => {
+  fastify.delete('/customers/:id', {
+    schema: {
+      tags: ['Customers'],
+      summary: 'Delete customer',
+      description: 'Delete a customer (removes customer references from offers)',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Customer ID' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { id } = request.params;
       

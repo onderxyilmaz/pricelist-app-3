@@ -9,6 +9,7 @@ import {
   Col, 
   Input, 
   Select, 
+  AutoComplete, 
   Table, 
   Space, 
   Tag,
@@ -17,7 +18,8 @@ import {
   Popconfirm,
   Modal,
   Collapse,
-  Divider
+  Divider,
+  Form
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -36,7 +38,7 @@ import {
   BranchesOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
-import styles from './OffersTemp.module.css';
+import ExcelJS from 'exceljs';
 import NotificationService from '../../utils/notification';
 
 const { Title } = Typography;
@@ -45,13 +47,43 @@ const { RangePicker } = DatePicker;
 const { Panel } = Collapse;
 
 const OffersTemp = () => {
-  // State tanımları - orijinal Offers.jsx'teki gibi
+  // Ana state'ler - orijinal Offers.jsx'teki gibi
   const [offers, setOffers] = useState([]);
   const [filteredOffers, setFilteredOffers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingOffer, setEditingOffer] = useState(null);
+  
+  // Filtreleme state'leri
   const [availableCustomers, setAvailableCustomers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [availableCompanies, setAvailableCompanies] = useState([]);
   const [expandedRowKeys, setExpandedRowKeys] = useState([]); // Revizyon expand için
+  
+  // Wizard states - orijinal Offers.jsx'teki gibi
+  const [currentStep, setCurrentStep] = useState(0);
+  const [offerData, setOfferData] = useState({}); // Adım 1 verisi
+  const [selectedItems, setSelectedItems] = useState([]); // Adım 2 verisi
+  const [itemNotes, setItemNotes] = useState({}); // {itemId: note}
+  const [itemDiscounts, setItemDiscounts] = useState({}); // {itemId: discount_rate}
+  const [discountData, setDiscountData] = useState({}); // Adım 3 indirim verisi
+  const [profitData, setProfitData] = useState({}); // Adım 4 kar verisi
+  const [manualPrices, setManualPrices] = useState({}); // Adım 5 manuel fiyat verisi
+  
+  // Diğer state'ler - orijinal Offers.jsx'teki gibi
+  const [form] = Form.useForm();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [customerOptions, setCustomerOptions] = useState([]);
+  const [pricelists, setPricelists] = useState([]);
+  const [productFilter, setProductFilter] = useState('');
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  
+  // Template mode states - orijinal Offers.jsx'teki gibi
+  const [isTemplateMode, setIsTemplateMode] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [templateFilter, setTemplateFilter] = useState('');
   
   // Preview modal states
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
@@ -68,11 +100,301 @@ const OffersTemp = () => {
     dateRange: null
   });
 
-  // Sayfa yüklendiğinde verileri çek
+  // Helper functions - orijinal Offers.jsx'teki gibi
+  const isDescriptionItem = (record) => {
+    const note = itemNotes[record.id];
+    return record.quantity === 0 && note && note.trim() !== '';
+  };
+
+  // Excel export fonksiyonu - orijinal Offers.jsx'ten
+  const handleExportToExcel = async (offer) => {
+    try {
+      // Teklif detaylarını fetch et
+      const response = await axios.get(`http://localhost:3000/api/offers/${offer.id}/details`);
+      
+      console.log('Excel export response:', response.data); // Debug için
+      
+      if (!response.data.success) {
+        NotificationService.error('Hata', response.data.message || 'Teklif detayları alınamadı');
+        return;
+      }
+
+      const offerData = response.data.offer;
+      const groupedItems = offerData.items;
+
+      // Excel workbook oluştur
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Teklif');
+      
+      // A1:E3 boş satırlar
+      worksheet.addRow(['', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '']);
+      
+      // A4-E7 bilgi satırları
+      worksheet.addRow(['Proje Adı:', offerData.offer_no || '', 'Rev No:', offerData.revision_no || 0, '']);
+      worksheet.addRow(['Müşteri Adı:', offerData.customer || '', 'Proje No:', '', '']);
+      worksheet.addRow(['İlgili Kişi:', '', 'Tarih:', new Date(offerData.created_at).toLocaleDateString('tr-TR'), new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
+      worksheet.addRow(['Konu:', '', 'Hazırlayan:', offerData.created_by_name || '', '']);
+      
+      // Boş satır (8. satır)
+      worksheet.addRow(['', '', '', '', '']);
+      
+      // Boş satır (9. satır)
+      worksheet.addRow(['', '', '', '', '']);
+
+      // Ana tablo başlıkları (10. satır)
+      const headerRow = worksheet.addRow([
+        'Product Code /\nÜrün kodu', 
+        'Description / Açıklama', 
+        'Qty /\nMiktar', 
+        'Unit Price /\nBirim Fiyat', 
+        'Total Price /\nToplam Fiyat', 
+        'Net Price / Net\nFiyat', 
+        'Net Total /\nNet Toplam', 
+        'List Price / Liste\nFiyat', 
+        '', 
+        '', 
+        ''
+      ]);
+      
+      // 10. satır başlıklarını bold yap ve arkaplan rengini ayarla
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true, name: 'Tahoma', size: 9 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFD9D9D9' }
+        };
+        cell.alignment = { 
+          vertical: 'middle',
+          horizontal: 'center',
+          wrapText: true 
+        };
+      });
+      
+      // 10. satırın yüksekliğini ayarla (45px = 33.75 Excel point)
+      headerRow.height = 33.75;
+      
+      worksheet.addRow([]);
+
+      // Grup başına verileri ekle
+      Object.entries(groupedItems).forEach(([groupName, items]) => {
+        // Grup başlığı (B sütununa taşındı)
+        const groupRow = worksheet.addRow(['', groupName, '', '', '', '', '', '', '', '', '']);
+        
+        // Grup başlığının formatını ayarla (B sütunu)
+        const groupCell = groupRow.getCell(2); // B sütunu
+        groupCell.font = { 
+          bold: true, 
+          name: 'Tahoma', 
+          size: 12, 
+          color: { argb: 'FF0070C0' } 
+        };
+        
+        // Grup öğeleri
+        items.forEach(item => {
+          // Silinmiş ürün kontrolü
+          const isDeleted = !item.pricelist_item_id;
+          let description = item.description || '';
+          
+          // Eğer ürün silinmişse açıklamaya not ekle
+          if (isDeleted) {
+            description = description ? `${description} [SİLİNMİŞ ÜRÜN]` : '[SİLİNMİŞ ÜRÜN]';
+          }
+          
+          const productRow = worksheet.addRow([
+            item.product_code || '',
+            description,
+            item.quantity || 1,
+            parseFloat(item.unit_price || 0).toFixed(2),
+            parseFloat(item.total_price || 0).toFixed(2),
+            parseFloat(item.net_price || 0).toFixed(2),
+            parseFloat(item.net_total || item.total_price || 0).toFixed(2),
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            0.00, // Placeholder for additional columns
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            ''
+          ]);
+          
+          // Ürün satırlarına 9.5pt font boyutu uygula
+          productRow.eachCell((cell) => {
+            cell.font = { 
+              name: 'Tahoma', 
+              size: 9.5 
+            };
+            cell.alignment = { 
+              vertical: 'middle'
+            };
+          });
+        });
+        
+        // Grup toplamı
+        const groupTotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+        const groupNetTotal = items.reduce((sum, item) => sum + parseFloat(item.net_total || item.total_price || 0), 0);
+        
+        worksheet.addRow([
+          '', 
+          `${groupName} Orjinal Toplamı:`, 
+          groupTotal.toFixed(2) + ' €',
+          '', '', '', '', '', '', '', ''
+        ]);
+        worksheet.addRow([
+          '', 
+          `${groupName} Final Toplamı:`, 
+          groupNetTotal.toFixed(2) + ' €',
+          '', '', '', '', '', '', '', ''
+        ]);
+        worksheet.addRow([]);
+      });
+
+      // Genel toplam - açıklama ürünlerini hariç tut
+      const totalAmount = Object.values(groupedItems).flat()
+        .filter(item => !isDescriptionItem(item))
+        .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+      worksheet.addRow(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
+
+      // Sütun genişliklerini ayarla
+      worksheet.columns = [
+        { width: 15.86 }, // A - Product Code (116px)
+        { width: 71.43 }, // B - Description (505px)
+        { width: 8.71 },  // C - Qty (66px)
+        { width: 14.29 }, // D - Unit Price (105px)
+        { width: 16.00 }, // E - Total Price (117px)
+        { width: 12 }, // F - Net Price
+        { width: 12 }, // G - Net Total
+        { width: 12 }, // H - List Price
+        { width: 8 },  // I - Extra column
+        { width: 12 }, // J - List Price 2
+        { width: 8 }   // K - Extra column
+      ];
+
+      // A4:K7 aralığını bold yapalım
+      for (let row = 4; row <= 7; row++) {
+        for (let col of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']) {
+          const cell = worksheet.getCell(`${col}${row}`);
+          cell.font = { bold: true, name: 'Tahoma', size: 10.5 };
+          
+          // A sütununu sağa yasla
+          if (col === 'A' && row >= 4 && row <= 7) {
+            cell.alignment = { 
+              vertical: 'middle',
+              horizontal: 'right'
+            };
+          } else {
+            cell.alignment = { 
+              vertical: 'middle'
+            };
+          }
+        }
+      }
+
+      // Hücreleri birleştir ve formatla
+      worksheet.mergeCells('C4:D4'); // Rev No
+      worksheet.mergeCells('C5:D5'); // Proje No
+      worksheet.mergeCells('C6:D6'); // Tarih
+      worksheet.mergeCells('C7:D7'); // Hazırlayan
+
+      // Birleştirilen hücreleri sağa yasla
+      for (let row = 4; row <= 7; row++) {
+        const mergedCell = worksheet.getCell(`C${row}`);
+        mergedCell.alignment = { 
+          vertical: 'middle',
+          horizontal: 'right'
+        };
+      }
+
+      // A1:K3 aralığının font boyutunu ayarla
+      for (let row = 1; row <= 3; row++) {
+        for (let col of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']) {
+          const cell = worksheet.getCell(`${col}${row}`);
+          cell.font = { name: 'Tahoma', size: 9 };
+          cell.alignment = { 
+            vertical: 'middle'
+          };
+        }
+      }
+
+      // Tüm worksheet'e varsayılan font ayarla
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          if (!cell.font || !cell.font.name) {
+            cell.font = { 
+              ...cell.font, 
+              name: 'Tahoma', 
+              size: cell.font?.size || 11 
+            };
+          }
+          // Eğer hizalama ayarlanmamışsa dikey ortala
+          if (!cell.alignment) {
+            cell.alignment = { 
+              vertical: 'middle'
+            };
+          }
+        });
+      });
+
+      // Dosya adını oluştur
+      const fileName = `Teklif_${offerData.offer_no || 'w'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Excel dosyasını indir
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      NotificationService.success('Başarılı', 'Excel dosyası indirildi');
+      
+    } catch (error) {
+      console.error('Excel export error:', error);
+      NotificationService.error('Hata', 'Excel dosyası oluşturulurken hata oluştu: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  // Sayfa yüklendiğinde verileri çek - orijinal Offers.jsx'teki gibi
   useEffect(() => {
     document.title = 'Price List App v3 - Teklifler (Yeni)';
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
     fetchOffers();
   }, []);
+
+  // Step 1'de Teklif No alanına autofocus - orijinal Offers.jsx'teki gibi
+  useEffect(() => {
+    if (modalVisible && !editingOffer && currentStep === 0) {
+      const tryFocus = (attempt = 0) => {
+        const offerNoInput = document.querySelector('input[placeholder="Teklif numarasını girin"]');
+        if (offerNoInput && offerNoInput.offsetParent !== null) {
+          offerNoInput.focus();
+          offerNoInput.select();
+        } else if (attempt < 5) {
+          setTimeout(() => tryFocus(attempt + 1), 100);
+        }
+      };
+      setTimeout(() => tryFocus(), 50);
+    }
+  }, [modalVisible, editingOffer, currentStep]);
+
+  // Template seçim adımında arama alanına autofocus - orijinal Offers.jsx'teki gibi
+  useEffect(() => {
+    if (modalVisible && isTemplateMode && currentStep === 1) {
+      const tryFocus = (attempt = 0) => {
+        const templateSearchInput = document.querySelector('input[placeholder="Template ara..."]');
+        if (templateSearchInput && templateSearchInput.offsetParent !== null) {
+          templateSearchInput.focus();
+        } else if (attempt < 5) {
+          setTimeout(() => tryFocus(attempt + 1), 100);
+        }
+      };
+      setTimeout(() => tryFocus(), 100);
+    }
+  }, [modalVisible, isTemplateMode, currentStep]);
 
   // Filtreleme değişikliklerinde uygula
   useEffect(() => {
@@ -241,6 +563,128 @@ const OffersTemp = () => {
     }
   };
 
+  // Orijinal Offers.jsx'teki handleCreate fonksiyonu - birebir aynı
+  const handleCreate = async (templateMode = false) => {
+    setEditingOffer(null);
+    form.resetFields();
+    setCurrentStep(0);
+    setOfferData({});
+    setCustomerOptions([]);
+    setSelectedItems([]);
+    setProductFilter('');
+    setItemNotes({});
+    setItemDiscounts({});
+    setDiscountData({});
+    setProfitData({});
+    setManualPrices({});
+    setIsTemplateMode(templateMode);
+    setSelectedTemplate(null);
+    
+    if (templateMode) {
+      // Template mode ise template'leri yükle
+      await fetchTemplates();
+    }
+    
+    await fetchPricelistsWithItems();
+    await fetchCompanies(); // Firmaları da yükle
+    setModalVisible(true);
+  };
+
+  // Yardımcı API fonksiyonları - orijinal Offers.jsx'ten
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/offer-templates');
+      if (response.data.success) {
+        setAvailableTemplates(response.data.templates);
+      }
+    } catch (error) {
+      console.error('Templates fetch error:', error);
+    }
+  };
+
+  const fetchPricelistsWithItems = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/pricelists-with-items');
+      if (response.data.success) {
+        setPricelists(response.data.pricelists || []);
+      }
+    } catch (error) {
+      console.error('Pricelists fetch error:', error);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/companies');
+      if (response.data.success) {
+        setAvailableCompanies(response.data.companies || []);
+      }
+    } catch (error) {
+      console.error('Companies fetch error:', error);
+    }
+  };
+
+  // OfferWizard fonksiyonları yerine orijinal modal fonksiyonları
+  const handleNewOffer = () => handleCreate(true); // Template mode'da aç
+
+  const handleEdit = async (offer) => {
+    // Orijinal edit fonksiyonu logic'i buraya gelecek
+    setEditingOffer(offer);
+    setModalVisible(true);
+    console.log('Editing offer:', offer);
+  };
+
+  const handleCreateRevision = async (offer) => {
+    // Orijinal revizyon logic'i buraya gelecek
+    console.log('Creating revision from offer:', offer);
+  };
+
+  // Step 1 Submit Handler - orijinal Offers.jsx'ten
+  const handleStep1Submit = async (values) => {
+    // Düzenleme modunda teklif no kontrolü yapma
+    if (!editingOffer) {
+      // Teklif no kontrolü (sadece yeni teklif için)
+      const isOfferNoAvailable = await checkOfferNumber(values.offer_no);
+      if (!isOfferNoAvailable) {
+        NotificationService.error('Hata', 'Bu teklif numarası zaten kullanılıyor. Lütfen farklı bir numara girin.');
+        return;
+      }
+    }
+    
+    // Mevcut offerData'daki revizyon bilgilerini koru
+    setOfferData(prevData => ({
+      ...prevData,
+      ...values
+    }));
+    setCurrentStep(1);
+  };
+
+  // Teklif no kontrolü fonksiyonu
+  const checkOfferNumber = async (offerNo) => {
+    try {
+      const response = await api.get(`/api/offers/check-offer-number/${offerNo}`);
+      return response.data.available;
+    } catch (error) {
+      console.error('Teklif no kontrol hatası:', error);
+      return false;
+    }
+  };
+
+  // Müşteri arama
+  const searchCustomers = (value) => {
+    if (value && value.length > 0) {
+      const filtered = customers
+        .filter(customer => 
+          customer.toLowerCase().includes(value.toLowerCase())
+        )
+        .slice(0, 10)
+        .map(customer => ({ value: customer }));
+      setCustomerOptions(filtered);
+    } else {
+      setCustomerOptions([]);
+    }
+  };
+
   // Filtreleri uygula - parent offerlar üzerinde (orijinal Offers.jsx mantığı)
   const applyFilters = () => {
     const parentOffers = getUniqueParentOffers();
@@ -326,22 +770,34 @@ const OffersTemp = () => {
     const revisions = getRevisions(record.id);
     
     if (revisions.length === 0) {
-      return <div className={styles.noRevisionMessage}>Bu teklif için revizyon bulunmuyor</div>;
+      return <div style={{ padding: '16px', color: '#999' }}>Bu teklif için revizyon bulunmuyor</div>;
     }
 
     return (
-      <div className={styles.revisionContainer}>
-        <div className={styles.revisionTitle}>
+      <div style={{ 
+        margin: '0 0 0 40px', 
+        padding: '16px',
+        backgroundColor: '#f8f9fa',
+        borderLeft: '4px solid #1890ff',
+        borderRadius: '6px'
+      }}>
+        <div style={{ 
+          fontWeight: 'bold', 
+          marginBottom: '12px',
+          color: '#1890ff',
+          fontSize: '16px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
           📋 Revizyonlar ({revisions.length})
         </div>
         <Table
-          className={`${styles.revisionTable} ${styles.revisionTableStyle}`}
           columns={[
             {
               title: 'Revize No',
               dataIndex: 'revision_no',
               key: 'revision_no',
-              ellipsis: true,
+              width: 100,
               sorter: (a, b) => a.revision_no - b.revision_no,
               render: (rev_no) => `R${rev_no}`
             },
@@ -349,13 +805,12 @@ const OffersTemp = () => {
               title: 'Teklif No',
               dataIndex: 'offer_no',
               key: 'offer_no',
-              ellipsis: true,
             },
             {
               title: 'Oluşturma Tarihi',
               dataIndex: 'created_at',
               key: 'created_at',
-              ellipsis: true,
+              width: 140,
               sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
               render: (date) => new Date(date).toLocaleDateString('tr-TR'),
             },
@@ -363,7 +818,7 @@ const OffersTemp = () => {
               title: 'Durum',
               dataIndex: 'status',
               key: 'status',
-              ellipsis: true,
+              width: 120,
               sorter: (a, b) => (a.status || 'draft').localeCompare(b.status || 'draft', 'tr'),
               render: (status) => (
                 <Tag color={status === 'sent' ? 'green' : 'blue'}>
@@ -375,7 +830,7 @@ const OffersTemp = () => {
               title: 'Müşteri Yanıtı',
               dataIndex: 'customer_response',
               key: 'customer_response',
-              ellipsis: true,
+              width: 130,
               sorter: (a, b) => {
                 const aResponse = a.customer_response || 'pending';
                 const bResponse = b.customer_response || 'pending';
@@ -398,29 +853,26 @@ const OffersTemp = () => {
               title: 'Hazırlayan',
               dataIndex: 'created_by_name',
               key: 'created_by_name',
-              ellipsis: true,
               render: (name) => name || '-',
             },
             {
               title: 'Müşteri',
               dataIndex: 'customer',
               key: 'customer',
-              ellipsis: true,
               render: (customer) => customer || '-',
             },
             {
               title: 'Firma',
               dataIndex: 'company_name',
               key: 'company_name',
-              ellipsis: true,
               render: (company_name) => company_name || '-',
             },
             {
               title: 'İşlemler',
               key: 'actions',
-              fixed: 'right',
+              width: 320,
               render: (_, revRecord) => (
-                <Space className={styles.actionSpace}>
+                <Space>
                   {/* 1. Önizleme */}
                   <Button
                     type="default"
@@ -440,7 +892,7 @@ const OffersTemp = () => {
                     icon={<EditOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Edit revision:', revRecord);
+                      handleEdit(revRecord);
                     }}
                     title="Düzenle"
                   />
@@ -452,7 +904,7 @@ const OffersTemp = () => {
                     icon={<BranchesOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Create revision from:', revRecord);
+                      handleCreateRevision(revRecord);
                     }}
                     title="Revizyon Oluştur"
                   />
@@ -467,7 +919,10 @@ const OffersTemp = () => {
                       handleToggleStatus(revRecord);
                     }}
                     title={revRecord.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
-                    className={revRecord.status === 'sent' ? styles.buttonSent : styles.buttonDraft}
+                    style={{ 
+                      color: revRecord.status === 'sent' ? '#52c41a' : '#1890ff',
+                      borderColor: revRecord.status === 'sent' ? '#52c41a' : '#1890ff'
+                    }}
                   />
                   
                   {/* 5. Müşteri Yanıtı */}
@@ -475,7 +930,7 @@ const OffersTemp = () => {
                     title={revRecord.status === 'sent' ? "Müşteri yanıtını seçin:" : "Bu teklif henüz gönderilmemiş"}
                     description={
                       revRecord.status === 'sent' ? (
-                        <div className={styles.customerResponseContainer}>
+                        <div style={{ marginTop: 8 }}>
                           <Button
                             size="small"
                             icon={<CheckOutlined />}
@@ -484,7 +939,12 @@ const OffersTemp = () => {
                               handleCustomerResponse(revRecord, 'accepted');
                             }}
                             disabled={revRecord.customer_response === 'accepted'}
-                            className={revRecord.customer_response === 'accepted' ? styles.customerResponseButtonAccepted : styles.customerResponseButtonDefault}
+                            style={{ 
+                              marginRight: 8,
+                              color: revRecord.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
+                              borderColor: revRecord.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
+                              backgroundColor: revRecord.customer_response === 'accepted' ? '#f6ffed' : 'transparent'
+                            }}
                           >
                             Kabul
                           </Button>
@@ -496,7 +956,12 @@ const OffersTemp = () => {
                               handleCustomerResponse(revRecord, 'rejected');
                             }}
                             disabled={revRecord.customer_response === 'rejected'}
-                            className={revRecord.customer_response === 'rejected' ? styles.customerResponseButtonRejected : styles.customerResponseButtonDefault}
+                            style={{ 
+                              marginRight: 8,
+                              color: revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                              borderColor: revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                              backgroundColor: revRecord.customer_response === 'rejected' ? '#fff2f0' : 'transparent'
+                            }}
                           >
                             Red
                           </Button>
@@ -508,14 +973,17 @@ const OffersTemp = () => {
                                 e.stopPropagation();
                                 handleCustomerResponse(revRecord, null);
                               }}
-                              className={styles.buttonWarning}
+                              style={{ 
+                                color: '#faad14',
+                                borderColor: '#faad14'
+                              }}
                             >
                               Sıfırla
                             </Button>
                           )}
                         </div>
                       ) : (
-                        <div className={styles.disabledNotice}>
+                        <div style={{ color: '#8c8c8c', fontSize: '12px' }}>
                           Önce teklifin gönderildi olarak işaretlenmesi gerekiyor.
                         </div>
                       )
@@ -561,10 +1029,13 @@ const OffersTemp = () => {
                     icon={<FileExcelOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Export revision to Excel:', revRecord);
+                      handleExportToExcel(revRecord);
                     }}
                     title="Excel'e Aktar"
-                    className={styles.buttonExcel}
+                    style={{ 
+                      color: '#52c41a',
+                      borderColor: '#52c41a'
+                    }}
                   />
                   
                   {/* 7. PDF'e Aktar */}
@@ -577,7 +1048,10 @@ const OffersTemp = () => {
                       console.log('Export revision to PDF:', revRecord);
                     }}
                     title="PDF'e Aktar"
-                    className={styles.buttonPdf}
+                    style={{ 
+                      color: '#ff4d4f',
+                      borderColor: '#ff4d4f'
+                    }}
                   />
                   
                   {/* 8. Sil */}
@@ -711,7 +1185,7 @@ const OffersTemp = () => {
       key: 'actions',
       fixed: 'right',
       render: (_, record) => (
-        <Space className={styles.actionSpace}>
+        <Space>
           {/* 1. Önizleme */}
           <Button
             type="default"
@@ -732,8 +1206,7 @@ const OffersTemp = () => {
             icon={<EditOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              // handleEdit(record);
-              console.log('Edit:', record);
+              handleEdit(record);
             }}
             title="Düzenle"
           />
@@ -745,8 +1218,7 @@ const OffersTemp = () => {
             icon={<BranchesOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              // handleCreateRevision(record);
-              console.log('Create revision:', record);
+              handleCreateRevision(record);
             }}
             title="Revizyon Oluştur"
           />
@@ -761,7 +1233,10 @@ const OffersTemp = () => {
               handleToggleStatus(record);
             }}
             title={record.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
-            className={record.status === 'sent' ? styles.buttonSent : styles.buttonDraft}
+            style={{ 
+              color: record.status === 'sent' ? '#52c41a' : '#1890ff',
+              borderColor: record.status === 'sent' ? '#52c41a' : '#1890ff'
+            }}
           />
           
           {/* 5. Müşteri Yanıtı */}
@@ -769,7 +1244,7 @@ const OffersTemp = () => {
             title={record.status === 'sent' ? "Müşteri yanıtını seçin:" : "Bu teklif henüz gönderilmemiş"}
             description={
               record.status === 'sent' ? (
-                <div className={styles.customerResponseContainer}>
+                <div style={{ marginTop: 8 }}>
                   <Button
                     size="small"
                     icon={<CheckOutlined />}
@@ -822,7 +1297,7 @@ const OffersTemp = () => {
                   )}
                 </div>
               ) : (
-                <div className={styles.disabledNotice}>
+                <div style={{ color: '#8c8c8c', fontSize: '12px' }}>
                   Önce teklifin gönderildi olarak işaretlenmesi gerekiyor.
                 </div>
               )
@@ -868,11 +1343,13 @@ const OffersTemp = () => {
             icon={<FileExcelOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              // handleExportToExcel(record);
-              console.log('Export to Excel:', record);
+              handleExportToExcel(record);
             }}
             title="Excel'e Aktar"
-            className={styles.buttonExcel}
+            style={{ 
+              color: '#52c41a',
+              borderColor: '#52c41a'
+            }}
           />
           
           {/* 7. PDF'e Aktar */}
@@ -885,7 +1362,10 @@ const OffersTemp = () => {
               console.log('Export to PDF:', record);
             }}
             title="PDF'e Aktar"
-            className={styles.buttonPdf}
+            style={{ 
+              color: '#ff4d4f',
+              borderColor: '#ff4d4f'
+            }}
           />
           
           {/* 8. Sil */}
@@ -937,13 +1417,31 @@ const OffersTemp = () => {
   };
 
   return (
-    <div className={styles.mainContainer}>
-      {/* Başlık ve Yeni Teklif butonu */}
-      <div className={styles.pageHeader}>
-        <Title level={2} className={styles.pageTitle}>Teklifler</Title>
+    <>
+      <style>
+        {`
+          /* Revizyon tablosu için özel stiller */
+          .ant-table-expanded-row > td {
+            padding: 0 !important;
+            background-color: #f8f9fa !important;
+          }
+          
+          .ant-table-expanded-row .ant-table-thead > tr > th {
+            background-color: #e9ecef !important;
+            font-weight: 600 !important;
+            color: #495057 !important;
+            font-size: 13px !important;
+          }
+        `}
+      </style>
+      
+      <div style={{ padding: '24px' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Title level={2} style={{ margin: 0 }}>Teklifler</Title>
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
+          onClick={() => handleCreate(true)} // Direkt template mode'da aç - orijinal gibi
         >
           Yeni Teklif
         </Button>
@@ -951,8 +1449,20 @@ const OffersTemp = () => {
 
       <Card>
         {/* Filtreleme Alanı */}
-        <div className={styles.filterContainer}>
-          <div className={styles.filterHeader}>
+        <div style={{ 
+          marginBottom: '24px',
+          padding: '16px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '6px',
+          border: '1px solid #e9ecef'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '16px',
+            fontWeight: 'bold',
+            color: '#495057'
+          }}>
             <FilterOutlined style={{ marginRight: 8 }} />
             Filtreler
           </div>
@@ -960,7 +1470,7 @@ const OffersTemp = () => {
           <Row gutter={[16, 16]}>
             {/* İlk satır: Teklif No, Durum, Müşteri Yanıtı, Hazırlayan */}
             <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabel}>Teklif No</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Teklif No</div>
               <Input
                 value={filters.offerNo}
                 onChange={(e) => handleFilterChange('offerNo', e.target.value)}
@@ -972,7 +1482,7 @@ const OffersTemp = () => {
             </Col>
             
             <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabelInline}>Durum</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Durum</div>
               <Select
                 value={filters.status}
                 onChange={(value) => handleFilterChange('status', value)}
@@ -986,7 +1496,7 @@ const OffersTemp = () => {
             </Col>
             
             <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabelInline}>Müşteri Yanıtı</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Müşteri Yanıtı</div>
               <Select
                 value={filters.customerResponse}
                 onChange={(value) => handleFilterChange('customerResponse', value)}
@@ -1001,7 +1511,7 @@ const OffersTemp = () => {
             </Col>
             
             <Col xs={24} sm={12} md={6}>
-              <div className={styles.filterLabelInline}>Hazırlayan</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Hazırlayan</div>
               <Select
                 value={filters.createdBy}
                 onChange={(value) => handleFilterChange('createdBy', value)}
@@ -1018,10 +1528,10 @@ const OffersTemp = () => {
             </Col>
           </Row>
           
-          <Row gutter={[16, 16]} className={styles.filterRowMargin}>
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             {/* İkinci satır: Müşteri, Oluşturma Tarihi, Temizle butonu */}
             <Col xs={24} sm={12} md={8}>
-              <div className={styles.filterLabelInline}>Müşteri</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Müşteri</div>
               <Select
                 value={filters.customer}
                 onChange={(value) => handleFilterChange('customer', value)}
@@ -1038,7 +1548,7 @@ const OffersTemp = () => {
             </Col>
             
             <Col xs={24} sm={12} md={8}>
-              <div className={styles.filterLabelInline}>Oluşturma Tarihi</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>Oluşturma Tarihi</div>
               <RangePicker
                 value={filters.dateRange}
                 onChange={(dates) => handleFilterChange('dateRange', dates)}
@@ -1049,7 +1559,7 @@ const OffersTemp = () => {
             </Col>
             
             <Col xs={24} sm={12} md={8}>
-              <div className={styles.filterLabelInline}>&nbsp;</div>
+              <div style={{ marginBottom: 4, fontSize: '14px', fontWeight: '500' }}>&nbsp;</div>
               <Button
                 icon={<ClearOutlined />}
                 onClick={clearFilters}
@@ -1059,13 +1569,34 @@ const OffersTemp = () => {
               </Button>
             </Col>
           </Row>
+          
+          {/* Aktif filtre sayısı gösterimi */}
+          {(() => {
+            const activeFilters = [
+              filters.status !== 'all' ? 'Durum' : null,
+              filters.customer !== 'all' ? 'Müşteri' : null,
+              filters.createdBy !== 'all' ? 'Hazırlayan' : null,
+              filters.offerNo.trim() ? 'Teklif No' : null,
+              filters.dateRange ? 'Tarih' : null
+            ].filter(Boolean);
+            
+            return activeFilters.length > 0 && (
+              <div style={{ 
+                marginTop: '12px', 
+                fontSize: '12px', 
+                color: '#6c757d' 
+              }}>
+                <strong>{filteredOffers.length}</strong> teklif gösteriliyor 
+                ({activeFilters.length} filtre aktif: {activeFilters.join(', ')})
+              </div>
+            );
+          })()}
         </div>
 
-        {/* Teklifler tablosu - Expandable revizyon sistemi ile */}
         <Table
-          className={styles.table}
           columns={columns}
           dataSource={filteredOffers}
+          rowKey="id"
           loading={loading}
           onRow={(record) => ({
             onClick: (event) => {
@@ -1111,18 +1642,13 @@ const OffersTemp = () => {
             }
           })}
           pagination={{
-            total: filteredOffers.length,
-            pageSize: 10,
+            defaultPageSize: 10,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} / ${total} sayfa`,
-            pageSizeOptions: ['10', '20', '50'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} kayıt`,
+            pageSizeOptions: ['5', '10', '20', '50'],
           }}
-          scroll={{ x: 1200 }}
-          size="small"
-          rowKey="id"
-          bordered
+          scroll={{ x: 800 }}
           expandable={{
             expandedRowRender,
             expandedRowKeys: expandedRowKeys,
@@ -1341,7 +1867,296 @@ const OffersTemp = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Orijinal Modal - Tam wizard içeriği */}
+      <Modal
+        title={editingOffer 
+          ? `Teklif Düzenle: ${editingOffer.offer_no}` 
+          : offerData.parent_offer_id 
+            ? 'Revizyon Oluştur' 
+            : 'Yeni Teklif'
+        }
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={null}
+        width={1200}
+        afterOpenChange={(open) => {
+          if (open && !editingOffer && currentStep === 0) {
+            // Sadece yeni teklif modunda Teklif No alanına focus
+            setTimeout(() => {
+              const firstInput = document.querySelector('input[placeholder="Teklif numarasını girin"]');
+              if (firstInput) {
+                firstInput.focus();
+                firstInput.select();
+              }
+            }, 100);
+          }
+        }}
+      >
+        {/* Hem yeni teklif hem düzenleme modu - wizard */}
+        <div>
+          {/* Custom Steps Navigation - Orijinal Offers.jsx'teki gibi */}
+          <div style={{ 
+            marginBottom: 24,
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '1px solid #e9ecef'
+          }}>
+            {/* Step 1 - Teklif Bilgileri */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === 0 ? '#1890ff' : currentStep > 0 ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= 0 ? '#fff' : '#666',
+              position: 'relative',
+              clipPath: currentStep === 0 || (!isTemplateMode && currentStep > 0) || (isTemplateMode && currentStep > 0) 
+                ? 'polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)' 
+                : 'none'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step 1</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teklif No ve Müşteri</div>
+            </div>
+
+            {/* Step 2 - Template Seçimi (sadece template mode'da) */}
+            {isTemplateMode && (
+              <div style={{
+                flex: 1,
+                padding: '12px 16px',
+                backgroundColor: currentStep === 1 ? '#1890ff' : currentStep > 1 ? '#52c41a' : '#f8f9fa',
+                color: currentStep >= 1 ? '#fff' : '#666',
+                position: 'relative',
+                marginLeft: '-20px',
+                clipPath: currentStep === 1 || currentStep > 1 
+                  ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                  : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: '600' }}>Step 2</div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>Hazır template seç</div>
+              </div>
+            )}
+
+            {/* Step 3/2 - Ürün Seçimi */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 2 : 1) ? '#1890ff' : currentStep > (isTemplateMode ? 2 : 1) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 2 : 1) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 2 : 1) || currentStep > (isTemplateMode ? 2 : 1)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 3 : 2}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Fiyat listesi ve ürünler</div>
+            </div>
+
+            {/* Step 4/3 - İndirim Oranı */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 3 : 2) ? '#1890ff' : currentStep > (isTemplateMode ? 3 : 2) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 3 : 2) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 3 : 2) || currentStep > (isTemplateMode ? 3 : 2)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 4 : 3}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Liste bazında indirimler</div>
+            </div>
+
+            {/* Step 5/4 - Kar Oranı */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 4 : 3) ? '#1890ff' : currentStep > (isTemplateMode ? 4 : 3) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 4 : 3) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 4 : 3) || currentStep > (isTemplateMode ? 4 : 3)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 5 : 4}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Liste bazında kar marjları</div>
+            </div>
+
+            {/* Step 6/5 - Manuel Fiyat */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 5 : 4) ? '#1890ff' : currentStep > (isTemplateMode ? 5 : 4) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 5 : 4) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: currentStep === (isTemplateMode ? 5 : 4) || currentStep > (isTemplateMode ? 5 : 4)
+                ? 'polygon(20px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0 50%)' 
+                : 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 6 : 5}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Ürün bazında fiyat düzenleme</div>
+            </div>
+
+            {/* Step 7/6 - Ön İzleme */}
+            <div style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: currentStep === (isTemplateMode ? 6 : 5) ? '#1890ff' : currentStep > (isTemplateMode ? 6 : 5) ? '#52c41a' : '#f8f9fa',
+              color: currentStep >= (isTemplateMode ? 6 : 5) ? '#fff' : '#666',
+              position: 'relative',
+              marginLeft: '-20px',
+              clipPath: 'polygon(20px 0, 100% 0, 100% 100%, 20px 100%, 0 50%)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Step {isTemplateMode ? 7 : 6}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>Teklif özeti ve kontrol</div>
+            </div>
+          </div>
+
+          {/* Language Selection for specific steps */}
+          {(() => {
+            const productSelectionStep = isTemplateMode ? 2 : 1;
+            const manualPriceStep = isTemplateMode ? 5 : 4;
+            const previewStep = isTemplateMode ? 6 : 5;
+            return (currentStep === productSelectionStep || currentStep === manualPriceStep || currentStep === previewStep);
+          })() && (
+            <div style={{ marginBottom: 16, textAlign: 'center' }}>
+              <Button.Group>
+                <Button
+                  type={selectedLanguage === 'en' ? 'primary' : 'default'}
+                  onClick={() => setSelectedLanguage('en')}
+                  size="small"
+                  style={{ 
+                    backgroundColor: selectedLanguage === 'en' ? '#1890ff' : '#f0f0f0',
+                    color: selectedLanguage === 'en' ? 'white' : '#000'
+                  }}
+                >
+                  EN
+                </Button>
+                <Button
+                  type={selectedLanguage === 'tr' ? 'primary' : 'default'}
+                  onClick={() => setSelectedLanguage('tr')}
+                  size="small"
+                  style={{ 
+                    backgroundColor: selectedLanguage === 'tr' ? '#52c41a' : '#f0f0f0',
+                    color: selectedLanguage === 'tr' ? 'white' : '#000'
+                  }}
+                >
+                  TR
+                </Button>
+              </Button.Group>
+            </div>
+          )}
+
+          {/* Step Content */}
+          <div>
+            {/* Step 0 - Teklif Bilgileri ve Müşteri */}
+            {currentStep === 0 && (
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleStep1Submit}
+                autoComplete="off"
+              >
+                <Form.Item
+                  name="offer_no"
+                  label="Teklif No"
+                  rules={[{ required: true, message: 'Teklif No gereklidir!' }]}
+                >
+                  <Input 
+                    placeholder="Teklif numarasını girin" 
+                    autoComplete="off"
+                    disabled={editingOffer ? true : false}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="customer"
+                  label="Müşteri"
+                >
+                  <AutoComplete
+                    options={customerOptions}
+                    onSearch={searchCustomers}
+                    placeholder="Müşteri adını girin veya seçin"
+                    allowClear
+                    filterOption={false}
+                    autoComplete="off"
+                    autoFocus={true}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="company_id"
+                  label="Firma"
+                  rules={[{ required: true, message: 'Firma seçimi gereklidir!' }]}
+                >
+                  <Select 
+                    placeholder="Teklifin hangi firmadan hazırlandığını seçin"
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    }
+                  >
+                    {availableCompanies.map(company => (
+                      <Option key={company.id} value={company.id}>
+                        {company.company_name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                  <Space>
+                    <Button onClick={() => {
+                      setModalVisible(false);
+                      // Template state'lerini sıfırla
+                      setSelectedTemplate(null);
+                      setIsTemplateMode(false);
+                      setTemplateFilter('');
+                    }}>İptal</Button>
+                    <Button type="primary" htmlType="submit">Sonraki Adım</Button>
+                  </Space>
+                </Form.Item>
+              </Form>
+            )}
+
+            {/* Diğer step'ler placeholder - adım adım eklenecek */}
+            {currentStep > 0 && (
+              <div style={{ minHeight: '400px', padding: '20px', border: '1px dashed #ccc', textAlign: 'center' }}>
+                <h3>Step {currentStep + 1} İçeriği</h3>
+                <p>Template Mode: {isTemplateMode ? 'Aktif' : 'Pasif'}</p>
+                <p>Bu step'in içeriği orijinal Offers.jsx'ten eklenecek</p>
+                
+                {/* Geçici navigation butonları */}
+                <div style={{ marginTop: '40px' }}>
+                  {currentStep > 0 && (
+                    <Button style={{ marginRight: '10px' }} onClick={() => setCurrentStep(currentStep - 1)}>
+                      Geri
+                    </Button>
+                  )}
+                  <Button type="primary" onClick={() => {
+                    const maxStep = isTemplateMode ? 6 : 5;
+                    if (currentStep < maxStep) {
+                      setCurrentStep(currentStep + 1);
+                    } else {
+                      setModalVisible(false);
+                    }
+                  }}>
+                    {currentStep === (isTemplateMode ? 6 : 5) ? 'Tamamla' : 'İleri'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
+    </>
   );
 };
 

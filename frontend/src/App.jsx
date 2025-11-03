@@ -95,11 +95,13 @@ function App() {
     try {
       // Check if user is already logged in
       const savedUser = localStorage.getItem('user');
-      if (savedUser) {
+      const savedToken = localStorage.getItem('token');
+
+      if (savedUser && savedToken) {
         const userData = JSON.parse(savedUser);
-        console.log('Found saved user:', userData);
-        
-        // Validate user exists in database
+        console.log('Found saved user and token:', userData);
+
+        // Validate user exists in database and refresh token
         try {
           const userResponse = await authApi.getUser(userData.id);
           if (userResponse.data.success) {
@@ -111,14 +113,16 @@ function App() {
           } else {
             console.warn('User validation failed:', userResponse.data.message);
             localStorage.removeItem('user');
+            localStorage.removeItem('token');
             setUser(null);
           }
         } catch (error) {
           console.warn('User validation error, clearing localStorage:', error);
           localStorage.removeItem('user');
+          localStorage.removeItem('token');
           setUser(null);
         }
-        
+
         setLoading(false);
         return;
       }
@@ -137,14 +141,16 @@ function App() {
     }
   };
 
-  const handleLogin = (userData) => {
+  const handleLogin = (userData, token) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', token);
   };
 
-  const handleRegister = (userData) => {
+  const handleRegister = (userData, token) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', token);
   };
 
   const handleUserUpdate = (updatedUser) => {
@@ -155,6 +161,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setShowRegister(false);
     // Logout sonrası login sayfasına yönlendir
     window.location.href = '/login';

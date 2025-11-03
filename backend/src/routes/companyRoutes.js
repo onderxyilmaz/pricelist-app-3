@@ -1,6 +1,26 @@
 async function companyRoutes(fastify, options) {
   // Get all companies
-  fastify.get('/companies', async (request, reply) => {
+  fastify.get('/companies', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Get all companies',
+      description: 'Retrieve all companies with offer counts',
+      response: {
+        200: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              company_name: { type: 'string' },
+              offer_count: { type: 'string' },
+              created_at: { type: 'string', format: 'date-time' }
+            }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -21,7 +41,35 @@ async function companyRoutes(fastify, options) {
   });
 
   // Create new company
-  fastify.post('/companies', async (request, reply) => {
+  fastify.post('/companies', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Create new company',
+      description: 'Create a new company',
+      body: {
+        type: 'object',
+        required: ['company_name'],
+        properties: {
+          company_name: { type: 'string', description: 'Company name' }
+        }
+      },
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            company_name: { type: 'string' }
+          }
+        },
+        400: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { company_name } = request.body;
       
@@ -78,7 +126,34 @@ async function companyRoutes(fastify, options) {
   });
 
   // Delete company
-  fastify.delete('/companies/:id', async (request, reply) => {
+  fastify.delete('/companies/:id', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Delete company',
+      description: 'Delete a company (only if no offers are linked)',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Company ID' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' }
+          }
+        },
+        400: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { id } = request.params;
       

@@ -36,11 +36,11 @@ const RegisterForm = ({ onRegister }) => {
     try {
       // confirmPassword alanını çıkar, sadece backend'in beklediği alanları gönder
       const { confirmPassword, ...registerData } = values;
-      
+
       const response = await authApi.register(registerData);
-      if (response.data.success) {
+      if (response.data.success && response.data.token) {
         NotificationService.registerSuccess(response.data.user.first_name);
-        onRegister(response.data.user);
+        onRegister(response.data.user, response.data.token);
       } else {
         NotificationService.registerError(response.data.message);
       }

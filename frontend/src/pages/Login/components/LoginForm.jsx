@@ -30,9 +30,9 @@ const LoginForm = ({ onLogin }) => {
     try {
       const response = await authApi.login(values);
       console.log('Login response:', response.data);
-      if (response.data.success) {
+      if (response.data.success && response.data.token) {
         NotificationService.loginSuccess(`${response.data.user.first_name} ${response.data.user.last_name}`);
-        onLogin(response.data.user);
+        onLogin(response.data.user, response.data.token);
       } else {
         console.log('Login failed:', response.data.message);
         NotificationService.loginError(response.data.message);
