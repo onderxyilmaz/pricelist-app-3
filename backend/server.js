@@ -43,6 +43,11 @@ fastify.register(require('@fastify/rate-limit'), {
   }
 });
 
+// Global input sanitization and SQL injection protection
+const { sanitizeAllInputs, detectSqlInjection } = require('./src/middleware/validation');
+fastify.addHook('preHandler', sanitizeAllInputs());
+fastify.addHook('preHandler', detectSqlInjection());
+
 // JWT plugin
 fastify.register(require('@fastify/jwt'), {
   secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',

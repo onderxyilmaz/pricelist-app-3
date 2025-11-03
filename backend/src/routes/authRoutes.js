@@ -4,6 +4,8 @@ async function authRoutes(fastify, options) {
   const crypto = require('crypto');
   const bcrypt = require('bcryptjs');
   const { authenticate } = require('../middleware/auth');
+  const { validate } = require('../middleware/validation');
+  const authValidators = require('../validators/authValidators');
 
   // Stricter rate limit for auth endpoints (prevent brute force attacks)
   const authRateLimitConfig = {
@@ -48,7 +50,7 @@ async function authRoutes(fastify, options) {
     }
   });
 
-  // Register new user (with rate limiting)
+  // Register new user (with rate limiting and validation)
   fastify.post('/register', {
     schema: {
       tags: ['Auth'],
@@ -88,15 +90,14 @@ async function authRoutes(fastify, options) {
     },
     config: {
       rateLimit: authRateLimitConfig
-    }
+    },
+    preHandler: validate(authValidators.register, 'body')
   }, async (request, reply) => {
     try {
+      // Validation is done by preHandler middleware
       const { firstName, lastName, email, password } = request.body;
       // username'i email'den türet (ör: email'in @ öncesi kısmı)
-      const username = email ? email.split('@')[0] : null;
-      if (!firstName || !lastName || !email || !password || !username) {
-        return { success: false, message: 'Tüm alanlar gereklidir' };
-      }
+      const username = email.split('@')[0];
 
       const client = await fastify.pg.connect();
 
@@ -144,7 +145,7 @@ async function authRoutes(fastify, options) {
     }
   });
 
-  // Login user (with rate limiting)
+  // Login user (with rate limiting and validation)
   fastify.post('/login', {
     schema: {
       tags: ['Auth'],
@@ -181,14 +182,12 @@ async function authRoutes(fastify, options) {
     },
     config: {
       rateLimit: authRateLimitConfig
-    }
+    },
+    preHandler: validate(authValidators.login, 'body')
   }, async (request, reply) => {
     try {
+      // Validation is done by preHandler middleware
       const { email, password } = request.body;
-
-      if (!email || !password) {
-        return { success: false, message: 'E-mail ve şifre gereklidir' };
-      }
 
       const client = await fastify.pg.connect();
       const result = await client.query(
