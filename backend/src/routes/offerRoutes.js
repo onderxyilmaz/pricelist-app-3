@@ -37,22 +37,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Tüm teklifleri getir
-  fastify.get('/offers', {
-    schema: {
-      tags: ['Offers'],
-      summary: 'Get all offers',
-      description: 'Retrieve all offers with customer and company information',
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            offers: { type: 'array', items: { type: 'object' } }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  fastify.get('/offers', async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -77,29 +62,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Tek teklifi detayları ile getir
-  fastify.get('/offers/:id', {
-    schema: {
-      tags: ['Offers'],
-      summary: 'Get offer by ID',
-      description: 'Retrieve a specific offer with all its items',
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'integer', description: 'Offer ID' }
-        }
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            offer: { type: 'object' }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  fastify.get('/offers/:id', async (request, reply) => {
     try {
       const { id } = request.params;
       
@@ -182,7 +145,7 @@ async function offerRoutes(fastify, options) {
 
       // Teklif kalemleri ile ürün bilgileri
       const itemsResult = await client.query(`
-        SELECT 
+        SELECT
           oi.*,
           p.name as pricelist_name,
           p.currency as pricelist_currency,
@@ -228,34 +191,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Yeni teklif oluştur
-  fastify.post('/offers', {
-    schema: {
-      tags: ['Offers'],
-      summary: 'Create new offer',
-      description: 'Create a new offer with customer and company information',
-      body: {
-        type: 'object',
-        required: ['offer_no', 'created_by'],
-        properties: {
-          offer_no: { type: 'string', description: 'Offer number (e.g., 2025-0001)' },
-          customer: { type: 'string', description: 'Customer name' },
-          company_id: { type: 'integer', description: 'Company ID' },
-          created_by: { type: 'integer', description: 'User ID of creator' },
-          parent_offer_id: { type: 'integer', description: 'Parent offer ID for revisions' },
-          revision_no: { type: 'integer', default: 0, description: 'Revision number' }
-        }
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            offer: { type: 'object' }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  fastify.post('/offers', async (request, reply) => {
     try {
       const { offer_no, customer, company_id, created_by, parent_offer_id, revision_no } = request.body;
       
@@ -446,6 +382,11 @@ async function offerRoutes(fastify, options) {
             manual_price
           } = item;
 
+          // JSONB alanlarını stringify et
+          const listDiscountsJson = list_discounts ? JSON.stringify(list_discounts) : '[]';
+          const listProfitsJson = list_profits ? JSON.stringify(list_profits) : '[]';
+          const manualPriceJson = manual_price ? JSON.stringify(manual_price) : null;
+
           await client.query(`
             INSERT INTO offer_items (
               offer_id, pricelist_item_id, quantity, price, total_price,
@@ -455,12 +396,7 @@ async function offerRoutes(fastify, options) {
           `, [
             id, pricelist_item_id, quantity, price, total_price,
             product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id,
-            original_price || price, // original_price yoksa price'ı kullan
-            item_discount_rate || 0,
-            item_note || null,
-            list_discounts ? JSON.stringify(list_discounts) : '[]',
-            list_profits ? JSON.stringify(list_profits) : '[]',
-            manual_price ? JSON.stringify(manual_price) : null
+            original_price, item_discount_rate, item_note, listDiscountsJson, listProfitsJson, manualPriceJson
           ]);
         }
         

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/env';
 
 import PricelistHeader from './components/PricelistHeader';
 import PricelistSearch from './components/PricelistSearch';
@@ -65,7 +66,7 @@ const Pricelist = () => {
   const fetchPricelists = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3000/api/pricelists');
+      const response = await axios.get(`${API_BASE_URL}/api/pricelists`);
       if (response.data.success) {
         setPricelists(response.data.pricelists);
         setFilteredPricelists(response.data.pricelists);
@@ -123,7 +124,7 @@ const Pricelist = () => {
     try {
       if (editingPricelist) {
         // Güncelleme
-        const response = await axios.put(`http://localhost:3000/api/pricelists/${editingPricelist.id}`, submissionData);
+        const response = await axios.put(`${API_BASE_URL}/api/pricelists/${editingPricelist.id}`, submissionData);
         console.log('Update response:', response.data); // Debug log
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Fiyat listesi güncellendi');
@@ -131,7 +132,7 @@ const Pricelist = () => {
         }
       } else {
         // Yeni oluşturma
-        const response = await axios.post('http://localhost:3000/api/pricelists', submissionData);
+        const response = await axios.post(`${API_BASE_URL}/api/pricelists`, submissionData);
         console.log('Create response:', response.data); // Debug log
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Fiyat listesi oluşturuldu');
@@ -150,7 +151,7 @@ const Pricelist = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3000/api/pricelists/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/pricelists/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Fiyat listesi silindi');
         fetchPricelists();

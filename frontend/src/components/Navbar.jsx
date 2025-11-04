@@ -2,12 +2,12 @@ import React from 'react';
 import { Layout, Space, Avatar, Dropdown } from 'antd';
 import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/env';
 
 const { Header } = Layout;
 
 const Navbar = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const API_BASE_URL = 'http://localhost:3000';
 
   // Avatar renk belirleme fonksiyonu
   const getAvatarStyle = () => {
@@ -77,7 +77,7 @@ const Navbar = ({ user, onLogout }) => {
       
       <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
         <Space style={{ cursor: 'pointer', color: '#fff' }}>
-          <Avatar 
+          <Avatar
             icon={!user?.avatar_filename && <UserOutlined />}
             src={user?.avatar_filename ? `${API_BASE_URL}/uploads/avatars/${user.avatar_filename}` : null}
             style={!user?.avatar_filename ? getAvatarStyle() : {}}

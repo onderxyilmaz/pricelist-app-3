@@ -35,37 +35,25 @@ async function customerRoutes(fastify, options) {
   });
 
   // Tüm müşterileri getir
-  fastify.get('/customers', {
-    schema: {
-      tags: ['Customers'],
-      summary: 'Get all customers',
-      description: 'Retrieve all customers with offer counts',
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            customers: { type: 'array', items: { type: 'object' } }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  fastify.get('/customers', async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
-      
+
       const result = await client.query(`
-        SELECT 
-          c.*,
+        SELECT
+          c.id,
+          c.name,
+          c.created_at,
+          c.updated_at,
           COUNT(o.id) as offer_count
         FROM customers c
         LEFT JOIN offers o ON c.id = o.customer_id
         GROUP BY c.id, c.name, c.created_at, c.updated_at
         ORDER BY c.name
       `);
-      
+
       client.release();
-      
+
       return { success: true, customers: result.rows };
     } catch (error) {
       console.error('Get customers error:', error);

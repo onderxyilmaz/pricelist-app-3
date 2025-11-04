@@ -48,16 +48,22 @@ const OfferWizard = ({
     setManualPrices
   } = wizardState;
 
-  // offerData değiştiğinde form'u doldur
+  // Modal açıldığında form'u temizle veya doldur
   useEffect(() => {
-    if (offerData && Object.keys(offerData).length > 0) {
-      form.setFieldsValue({
-        offer_no: offerData.offer_no,
-        customer: offerData.customer,
-        company_id: offerData.company_id
-      });
+    if (visible) {
+      if (offerData && Object.keys(offerData).length > 0) {
+        // Düzenleme veya revizyon modundaysa form'u doldur
+        form.setFieldsValue({
+          offer_no: offerData.offer_no,
+          customer: offerData.customer,
+          company_id: offerData.company_id
+        });
+      } else {
+        // Yeni teklif modundaysa form'u temizle
+        form.resetFields();
+      }
     }
-  }, [offerData, form]);
+  }, [visible, offerData, form]);
 
   // Step 1 submit handler
   const handleStep1Submit = (values) => {

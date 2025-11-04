@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/env';
 import NotificationService from '../../utils/notification';
 import UserManagementHeader from './components/UserManagementHeader';
 import UserSearch from './components/UserSearch';
@@ -35,7 +36,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3000/api/admin/users');
+      const response = await axios.get(`${API_BASE_URL}/api/admin/users`);
       if (response.data.success) {
         setUsers(response.data.users);
         setFilteredUsers(response.data.users);
@@ -83,14 +84,14 @@ const UserManagement = () => {
           role: values.role
         };
         
-        const response = await axios.put(`http://localhost:3000/api/admin/users/${editingUser.id}`, updateData);
+        const response = await axios.put(`${API_BASE_URL}/api/admin/users/${editingUser.id}`, updateData);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Kullanıcı güncellendi');
           fetchUsers();
         }
       } else {
         // Yeni oluşturma
-        const response = await axios.post('http://localhost:3000/api/admin/users', values);
+        const response = await axios.post(`${API_BASE_URL}/api/admin/users`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Kullanıcı oluşturuldu');
           fetchUsers();
@@ -107,7 +108,7 @@ const UserManagement = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3000/api/admin/users/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/admin/users/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Kullanıcı silindi');
         fetchUsers();

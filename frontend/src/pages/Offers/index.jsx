@@ -36,6 +36,8 @@ import {
   BranchesOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import ExcelJS from 'exceljs';
+import { API_BASE_URL } from '../../config/env';
 import styles from './OffersTemp.module.css';
 import NotificationService from '../../utils/notification';
 import OfferWizard from './components/OfferWizard';
@@ -97,9 +99,8 @@ const OffersTemp = () => {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3000/api/offers');
+      const response = await axios.get(`${API_BASE_URL}/api/offers`);
       if (response.data.success) {
-        console.log('Fetched offers:', response.data.offers);
         setOffers(response.data.offers);
         
         // Filtreleme seçenekleri için unique değerleri topla
@@ -124,7 +125,6 @@ const OffersTemp = () => {
 
   const getRevisions = (parentOfferId) => {
     const revisions = offers.filter(offer => offer.parent_offer_id === parentOfferId);
-    console.log(`Revisions for offer ${parentOfferId}:`, revisions);
     return revisions;
   };
 
@@ -135,8 +135,8 @@ const OffersTemp = () => {
       
       // Teklif detayları ve fiyat listesi bilgilerini al
       const [offerResponse, pricelistsResponse] = await Promise.all([
-        axios.get(`http://localhost:3000/api/offers/${offer.id}/details`),
-        axios.get('http://localhost:3000/api/pricelists-with-items')
+        axios.get(`${API_BASE_URL}/api/offers/${offer.id}/details`),
+        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
       ]);
       
       if (offerResponse.data.success && pricelistsResponse.data.success) {
@@ -150,11 +150,11 @@ const OffersTemp = () => {
             };
           });
         }
-        
+
         // API response'unda offer.items şeklinde gruplandırılmış veri geliyor
         const offerData = offerResponse.data.offer;
         const groupedItems = offerData?.items || {};
-        
+
         // Gruplandırılmış verileri düz array'e çevir
         const allItems = [];
         Object.entries(groupedItems).forEach(([pricelistName, items]) => {
@@ -168,9 +168,9 @@ const OffersTemp = () => {
             });
           }
         });
-        
+
         const enrichedItems = allItems;
-        
+
         setPreviewOffer(offer);
         setPreviewItems(enrichedItems);
         setPreviewModalVisible(true);
@@ -190,7 +190,7 @@ const OffersTemp = () => {
     try {
       const newStatus = offer.status === 'sent' ? 'draft' : 'sent';
       
-      const response = await axios.put(`http://localhost:3000/api/offers/${offer.id}`, {
+      const response = await axios.put(`${API_BASE_URL}/api/offers/${offer.id}`, {
         offer_no: offer.offer_no,
         customer: offer.customer,
         status: newStatus
@@ -213,7 +213,7 @@ const OffersTemp = () => {
   // Müşteri yanıtını güncelle
   const handleCustomerResponse = async (offer, response) => {
     try {
-      const updateResponse = await axios.put(`http://localhost:3000/api/offers/${offer.id}`, {
+      const updateResponse = await axios.put(`${API_BASE_URL}/api/offers/${offer.id}`, {
         offer_no: offer.offer_no,
         customer: offer.customer,
         customer_response: response
@@ -242,7 +242,7 @@ const OffersTemp = () => {
   // Teklif silme fonksiyonu
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3000/api/offers/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/offers/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Teklif silindi');
         fetchOffers();
@@ -255,10 +255,261 @@ const OffersTemp = () => {
     }
   };
 
+  // Excel'e Aktar fonksiyonu
+  const handleExportToExcel = async (offer) => {
+    try {
+      // Teklif detaylarını fetch et
+      const response = await axios.get(`${API_BASE_URL}/api/offers/${offer.id}/details`);
+
+      if (!response.data.success) {
+        NotificationService.error('Hata', response.data.message || 'Teklif detayları alınamadı');
+        return;
+      }
+
+      const offerData = response.data.offer;
+      const groupedItems = offerData.items;
+
+      // Excel workbook oluştur
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Teklif');
+
+      // A1:E3 boş satırlar
+      worksheet.addRow(['', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '']);
+      worksheet.addRow(['', '', '', '', '']);
+
+      // A4-E7 bilgi satırları
+      worksheet.addRow(['Proje Adı:', offerData.offer_no || '', 'Rev No:', offerData.revision_no || 0, '']);
+      worksheet.addRow(['Müşteri Adı:', offerData.customer || '', 'Proje No:', '', '']);
+      worksheet.addRow(['İlgili Kişi:', '', 'Tarih:', new Date(offerData.created_at).toLocaleDateString('tr-TR'), new Date(offerData.created_at).toLocaleDateString('tr-TR')]);
+      worksheet.addRow(['Konu:', '', 'Hazırlayan:', offerData.created_by_name || '', '']);
+
+      // Boş satır (8. satır)
+      worksheet.addRow(['', '', '', '', '']);
+
+      // Boş satır (9. satır)
+      worksheet.addRow(['', '', '', '', '']);
+
+      // Ana tablo başlıkları (10. satır)
+      const headerRow = worksheet.addRow([
+        'Product Code /\nÜrün kodu',
+        'Description / Açıklama',
+        'Qty /\nMiktar',
+        'Unit Price /\nBirim Fiyat',
+        'Total Price /\nToplam Fiyat',
+        'Net Price / Net\nFiyat',
+        'Net Total /\nNet Toplam',
+        'List Price / Liste\nFiyat',
+        '',
+        '',
+        ''
+      ]);
+
+      // 10. satır başlıklarını bold yap ve arkaplan rengini ayarla
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true, name: 'Tahoma', size: 9 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFD9D9D9' }
+        };
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+          wrapText: true
+        };
+      });
+
+      // 10. satırın yüksekliğini ayarla (45px = 33.75 Excel point)
+      headerRow.height = 33.75;
+
+      worksheet.addRow([]);
+
+      // Helper function - Açıklama ürünü kontrolü
+      const isDescriptionItem = (item) => {
+        return item.quantity === 0 && item.description && item.description.trim() !== '';
+      };
+
+      // Grup başına verileri ekle
+      Object.entries(groupedItems).forEach(([groupName, items]) => {
+        // Grup başlığı (B sütununa taşındı)
+        const groupRow = worksheet.addRow(['', groupName, '', '', '', '', '', '', '', '', '']);
+
+        // Grup başlığının formatını ayarla (B sütunu)
+        const groupCell = groupRow.getCell(2); // B sütunu
+        groupCell.font = {
+          bold: true,
+          name: 'Tahoma',
+          size: 12,
+          color: { argb: 'FF0070C0' }
+        };
+
+        // Grup öğeleri
+        items.forEach(item => {
+          // Silinmiş ürün kontrolü
+          const isDeleted = !item.pricelist_item_id;
+          let description = item.description || '';
+
+          // Eğer ürün silinmişse açıklamaya not ekle
+          if (isDeleted) {
+            description = description ? `${description} [SİLİNMİŞ ÜRÜN]` : '[SİLİNMİŞ ÜRÜN]';
+          }
+
+          const productRow = worksheet.addRow([
+            item.product_code || '',
+            description,
+            item.quantity || 1,
+            parseFloat(item.unit_price || 0).toFixed(2),
+            parseFloat(item.total_price || 0).toFixed(2),
+            parseFloat(item.net_price || 0).toFixed(2),
+            parseFloat(item.net_total || item.total_price || 0).toFixed(2),
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            0.00, // Placeholder for additional columns
+            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            ''
+          ]);
+
+          // Ürün satırlarına 9.5pt font boyutu uygula
+          productRow.eachCell((cell) => {
+            cell.font = {
+              name: 'Tahoma',
+              size: 9.5
+            };
+            cell.alignment = {
+              vertical: 'middle'
+            };
+          });
+        });
+
+        // Grup toplamı
+        const groupTotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+        const groupNetTotal = items.reduce((sum, item) => sum + parseFloat(item.net_total || item.total_price || 0), 0);
+
+        worksheet.addRow([
+          '',
+          `${groupName} Orjinal Toplamı:`,
+          groupTotal.toFixed(2) + ' €',
+          '', '', '', '', '', '', '', ''
+        ]);
+        worksheet.addRow([
+          '',
+          `${groupName} Final Toplamı:`,
+          groupNetTotal.toFixed(2) + ' €',
+          '', '', '', '', '', '', '', ''
+        ]);
+        worksheet.addRow([]);
+      });
+
+      // Genel toplam - açıklama ürünlerini hariç tut
+      const totalAmount = Object.values(groupedItems).flat()
+        .filter(item => !isDescriptionItem(item))
+        .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+      worksheet.addRow(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
+
+      // Sütun genişliklerini ayarla
+      worksheet.columns = [
+        { width: 15.86 }, // A - Product Code (116px)
+        { width: 71.43 }, // B - Description (505px)
+        { width: 8.71 },  // C - Qty (66px)
+        { width: 14.29 }, // D - Unit Price (105px)
+        { width: 16.00 }, // E - Total Price (117px)
+        { width: 12 }, // F - Net Price
+        { width: 12 }, // G - Net Total
+        { width: 12 }, // H - List Price
+        { width: 8 },  // I - Extra column
+        { width: 12 }, // J - List Price 2
+        { width: 8 }   // K - Extra column
+      ];
+
+      // A4:K7 aralığını bold yapalım
+      for (let row = 4; row <= 7; row++) {
+        for (let col of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']) {
+          const cell = worksheet.getCell(`${col}${row}`);
+          cell.font = { bold: true, name: 'Tahoma', size: 10.5 };
+
+          // A sütununu sağa yasla
+          if (col === 'A' && row >= 4 && row <= 7) {
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: 'right'
+            };
+          } else {
+            cell.alignment = {
+              vertical: 'middle'
+            };
+          }
+        }
+      }
+
+      // Hücreleri birleştir ve formatla
+      worksheet.mergeCells('C4:D4'); // Rev No
+      worksheet.mergeCells('C5:D5'); // Proje No
+      worksheet.mergeCells('C6:D6'); // Tarih
+      worksheet.mergeCells('C7:D7'); // Hazırlayan
+
+      // Birleştirilen hücreleri sağa yasla
+      for (let row = 4; row <= 7; row++) {
+        const mergedCell = worksheet.getCell(`C${row}`);
+        mergedCell.alignment = {
+          vertical: 'middle',
+          horizontal: 'right'
+        };
+      }
+
+      // A1:K3 aralığının font boyutunu ayarla
+      for (let row = 1; row <= 3; row++) {
+        for (let col of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']) {
+          const cell = worksheet.getCell(`${col}${row}`);
+          cell.font = { name: 'Tahoma', size: 9 };
+          cell.alignment = {
+            vertical: 'middle'
+          };
+        }
+      }
+
+      // Tüm worksheet'e varsayılan font ayarla
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          if (!cell.font || !cell.font.name) {
+            cell.font = {
+              ...cell.font,
+              name: 'Tahoma',
+              size: cell.font?.size || 11
+            };
+          }
+          // Eğer hizalama ayarlanmamışsa dikey ortala
+          if (!cell.alignment) {
+            cell.alignment = {
+              vertical: 'middle'
+            };
+          }
+        });
+      });
+
+      // Dosya adını oluştur
+      const fileName = `Teklif_${offerData.offer_no || 'w'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Excel dosyasını indir
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      NotificationService.success('Başarılı', 'Excel dosyası indirildi');
+
+    } catch (error) {
+      console.error('Excel export error:', error);
+      NotificationService.error('Hata', 'Excel dosyası oluşturulurken hata oluştu: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   // Filtreleri uygula - parent offerlar üzerinde (orijinal Offers.jsx mantığı)
   const applyFilters = () => {
     const parentOffers = getUniqueParentOffers();
-    console.log('Parent offers:', parentOffers);
     let filtered = [...parentOffers];
 
     // Durum filtresi
@@ -576,7 +827,7 @@ const OffersTemp = () => {
                     icon={<FileExcelOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Export revision to Excel:', revRecord);
+                      handleExportToExcel(revRecord);
                     }}
                     title="Excel'e Aktar"
                     className={styles.buttonExcel}
@@ -589,7 +840,7 @@ const OffersTemp = () => {
                     icon={<FilePdfOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Export revision to PDF:', revRecord);
+                      // PDF export functionality to be implemented
                     }}
                     title="PDF'e Aktar"
                     className={styles.buttonPdf}
@@ -736,7 +987,6 @@ const OffersTemp = () => {
             onClick={(e) => {
               e.stopPropagation();
               handlePreview(record);
-              console.log('Preview:', record);
             }}
             title="Önizleme"
           />
@@ -882,8 +1132,7 @@ const OffersTemp = () => {
             icon={<FileExcelOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              // handleExportToExcel(record);
-              console.log('Export to Excel:', record);
+              handleExportToExcel(record);
             }}
             title="Excel'e Aktar"
             className={styles.buttonExcel}
@@ -896,7 +1145,7 @@ const OffersTemp = () => {
             icon={<FilePdfOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Export to PDF:', record);
+              // PDF export functionality to be implemented
             }}
             title="PDF'e Aktar"
             className={styles.buttonPdf}
@@ -962,7 +1211,7 @@ const OffersTemp = () => {
       // Firmaları ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
-        axios.get('http://localhost:3000/api/pricelists-with-items')
+        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
       ]);
       
       setCompanies(companiesData);
@@ -997,7 +1246,7 @@ const OffersTemp = () => {
       // Firmalar ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
-        axios.get('http://localhost:3000/api/pricelists-with-items')
+        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
       ]);
       
       setCompanies(companiesData);
@@ -1113,11 +1362,15 @@ const OffersTemp = () => {
         offerData.items.forEach(item => {
           if (item.manual_price) {
             try {
-              const manualPrice = typeof item.manual_price === 'string' 
-                ? JSON.parse(item.manual_price) 
+              const manualPrice = typeof item.manual_price === 'string'
+                ? JSON.parse(item.manual_price)
                 : item.manual_price;
-              if (manualPrice && manualPrice.enabled) {
-                manualPricesMap[item.pricelist_item_id] = manualPrice;
+              // enabled: false olanları da ekle ki checkbox durumu korunsun
+              if (manualPrice && typeof manualPrice === 'object') {
+                manualPricesMap[item.pricelist_item_id] = {
+                  enabled: manualPrice.enabled || false,
+                  price: manualPrice.price || 0
+                };
               }
             } catch (e) {
               console.error('Parse manual_price error:', e);
@@ -1126,7 +1379,7 @@ const OffersTemp = () => {
         });
         wizardState.setManualPrices(manualPricesMap);
       }
-      
+
       setWizardVisible(true);
     } catch (error) {
       console.error('Edit offer error:', error);
@@ -1178,7 +1431,7 @@ const OffersTemp = () => {
       // Firmalar ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
-        axios.get('http://localhost:3000/api/pricelists-with-items')
+        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
       ]);
       
       setCompanies(companiesData);
@@ -1287,11 +1540,15 @@ const OffersTemp = () => {
         sourceOffer.items.forEach(item => {
           if (item.manual_price) {
             try {
-              const manualPrice = typeof item.manual_price === 'string' 
-                ? JSON.parse(item.manual_price) 
+              const manualPrice = typeof item.manual_price === 'string'
+                ? JSON.parse(item.manual_price)
                 : item.manual_price;
-              if (manualPrice && manualPrice.enabled) {
-                manualPricesMap[item.pricelist_item_id] = manualPrice;
+              // enabled: false olanları da ekle ki checkbox durumu korunsun
+              if (manualPrice && typeof manualPrice === 'object') {
+                manualPricesMap[item.pricelist_item_id] = {
+                  enabled: manualPrice.enabled || false,
+                  price: manualPrice.price || 0
+                };
               }
             } catch (e) {
               console.error('Parse manual_price error:', e);
@@ -1362,12 +1619,12 @@ const OffersTemp = () => {
         };
 
         const offerResponse = await offersService.createOffer(offerPayload);
-        
+
         if (!offerResponse.success) {
-          NotificationService.error('Hata', 'Teklif kaydedilemedi');
+          NotificationService.error('Hata', 'Teklif kaydedilemedi: ' + (offerResponse.message || 'Bilinmeyen hata'));
           return;
         }
-        
+
         offerId = offerResponse.offer.id;
       }
         
@@ -1430,8 +1687,13 @@ const OffersTemp = () => {
         });
         
       // Offer items'ı kaydet
-      await offersService.saveOfferItems(offerId, offerItems);
-      
+      const saveItemsResponse = await offersService.saveOfferItems(offerId, offerItems);
+
+      if (!saveItemsResponse.success) {
+        NotificationService.error('Hata', 'Teklif kalemleri kaydedilemedi: ' + (saveItemsResponse.message || 'Bilinmeyen hata'));
+        return;
+      }
+
       NotificationService.success('Başarılı', isEditing ? 'Teklif başarıyla güncellendi' : 'Teklif başarıyla kaydedildi');
       
       // Modal'ı kapat ve listeyi yenile

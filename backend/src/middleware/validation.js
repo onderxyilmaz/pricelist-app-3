@@ -81,6 +81,11 @@ function sanitizeInput(input) {
  */
 function sanitizeAllInputs() {
   return async (request, reply) => {
+    // Skip sanitization for static file routes
+    if (request.url.startsWith('/uploads/')) {
+      return;
+    }
+
     if (request.body) {
       request.body = sanitizeInput(request.body);
     }
@@ -114,6 +119,11 @@ function checkSqlInjection(input) {
  */
 function detectSqlInjection() {
   return async (request, reply) => {
+    // Skip SQL injection check for static file routes
+    if (request.url.startsWith('/uploads/')) {
+      return;
+    }
+
     const checkObject = (obj, path = '') => {
       for (const key in obj) {
         const value = obj[key];

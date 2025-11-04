@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Typography, message, Form } from 'antd';
 import axios from 'axios';
 import ExcelJS from 'exceljs';
+import { API_BASE_URL } from '../../config/env';
 
 import ProductFilters from './components/ProductFilters';
 import ProductTable from './components/ProductTable';
@@ -44,7 +45,7 @@ const AllProducts = () => {
   const fetchAllProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3000/api/all-items');
+      const response = await axios.get(`${API_BASE_URL}/api/all-items`);
       if (response.data.success) {
         setProducts(response.data.items);
         setFilteredProducts(response.data.items);
@@ -58,7 +59,7 @@ const AllProducts = () => {
 
   const fetchPricelists = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/pricelists');
+      const response = await axios.get(`${API_BASE_URL}/api/pricelists`);
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -237,7 +238,7 @@ const AllProducts = () => {
 
   const handleDelete = async (productId) => {
     try {
-      await axios.delete(`http://localhost:3000/api/items/${productId}`);
+      await axios.delete(`${API_BASE_URL}/api/items/${productId}`);
       NotificationService.success('Başarılı', 'Ürün silindi');
       fetchAllProducts(); // Listeyi yenile
     } catch (error) {
@@ -247,7 +248,7 @@ const AllProducts = () => {
 
   const handleEditSubmit = async (values) => {
     try {
-      await axios.put(`http://localhost:3000/api/items/${editingProduct.id}`, values);
+      await axios.put(`${API_BASE_URL}/api/items/${editingProduct.id}`, values);
       NotificationService.success('Başarılı', 'Ürün güncellendi');
       setEditModalVisible(false);
       setEditingProduct(null);

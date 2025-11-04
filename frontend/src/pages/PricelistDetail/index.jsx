@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/env';
 import NotificationService from '../../utils/notification';
 import PricelistDetailHeader from './components/PricelistDetailHeader';
 import PricelistStats from './components/PricelistStats';
@@ -38,7 +39,7 @@ const PricelistDetail = () => {
   const fetchPricelistDetail = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:3000/api/pricelists/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/api/pricelists/${id}`);
       if (response.data.success) {
         setPricelist(response.data.data);
         setItems(response.data.data.items || []);
@@ -92,13 +93,13 @@ const PricelistDetail = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingItem) {
-        const response = await axios.put(`http://localhost:3000/api/items/${editingItem.id}`, values);
+        const response = await axios.put(`${API_BASE_URL}/api/items/${editingItem.id}`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Ürün güncellendi');
           fetchPricelistDetail();
         }
       } else {
-        const response = await axios.post(`http://localhost:3000/api/pricelists/${id}/items`, values);
+        const response = await axios.post(`${API_BASE_URL}/api/pricelists/${id}/items`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Ürün eklendi');
           fetchPricelistDetail();
@@ -112,7 +113,7 @@ const PricelistDetail = () => {
 
   const handleDelete = async (itemId) => {
     try {
-      const response = await axios.delete(`http://localhost:3000/api/items/${itemId}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/items/${itemId}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Ürün silindi');
         fetchPricelistDetail();
@@ -134,7 +135,7 @@ const PricelistDetail = () => {
   const handleBulkDelete = async () => {
     try {
       const deletePromises = selectedRowKeys.map(id => 
-        axios.delete(`http://localhost:3000/api/items/${id}`)
+        axios.delete(`${API_BASE_URL}/api/items/${id}`)
       );
       
       await Promise.all(deletePromises);

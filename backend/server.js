@@ -21,6 +21,14 @@ fastify.register(require('@fastify/multipart'), {
   }
 });
 
+// Serve static files from uploads directory
+fastify.register(require('@fastify/static'), {
+  root: path.join(__dirname, 'uploads'),
+  prefix: '/uploads/',
+  constraints: {},
+  decorateReply: false
+});
+
 // Rate limiting plugin - Global rate limit
 fastify.register(require('@fastify/rate-limit'), {
   global: true,
@@ -133,20 +141,6 @@ fastify.register(require('@fastify/postgres'), {
   connectionTimeoutMillis: 2000
 });
 
-// Static files for frontend (built React app)
-fastify.register(require('@fastify/static'), {
-  root: path.join(__dirname, 'public'),
-  prefix: '/',
-  wildcard: false
-});
-
-// Static files for uploads (separate registration with decorateReply: false)
-fastify.register(require('@fastify/static'), {
-  root: path.join(__dirname, 'uploads'),
-  prefix: '/uploads/',
-  decorateReply: false
-});
-
 // Routes
 fastify.register(require('./src/routes/authRoutes'), { prefix: '/api/auth' });
 fastify.register(require('./src/routes/pricelistRoutes'), { prefix: '/api' });
@@ -193,16 +187,9 @@ fastify.get('/health', {
 // Sentry error handler (should be registered AFTER all routes)
 sentryErrorHandler(fastify);
 
-// SPA fallback handler
+// 404 handler
 fastify.setNotFoundHandler(async (request, reply) => {
-  // API routes should return 404
-  if (request.url.startsWith('/api/')) {
-    reply.code(404).send({ error: 'Not found' });
-    return;
-  }
-
-  // For all other routes, serve index.html (SPA fallback)
-  return reply.sendFile('index.html');
+  reply.code(404).send({ error: 'Not found' });
 });
 
 // Database test endpoint

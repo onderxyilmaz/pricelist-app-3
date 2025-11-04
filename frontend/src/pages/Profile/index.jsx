@@ -78,9 +78,9 @@ const Profile = ({ user, onUserUpdate }) => {
       setLoading(true);
       const formData = new FormData();
       formData.append('avatar', file);
-      
+
       const response = await authApi.uploadAvatar(user.id, formData);
-      
+
       if (response.data.success) {
         message.success('Avatar başarıyla güncellendi!');
 

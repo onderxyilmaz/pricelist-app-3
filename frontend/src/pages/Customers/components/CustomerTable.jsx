@@ -30,7 +30,11 @@ const CustomerTable = ({
       key: 'created_at',
       width: 140,
       sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
-      render: (date) => new Date(date).toLocaleDateString('tr-TR'),
+      render: (date) => {
+        if (!date) return '-';
+        const parsedDate = new Date(date);
+        return isNaN(parsedDate.getTime()) ? '-' : parsedDate.toLocaleDateString('tr-TR');
+      },
     },
     {
       title: 'Güncellenme',
@@ -38,7 +42,11 @@ const CustomerTable = ({
       key: 'updated_at',
       width: 140,
       sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
-      render: (date) => new Date(date).toLocaleDateString('tr-TR'),
+      render: (date) => {
+        if (!date) return '-';
+        const parsedDate = new Date(date);
+        return isNaN(parsedDate.getTime()) ? '-' : parsedDate.toLocaleDateString('tr-TR');
+      },
     },
     {
       title: 'İşlemler',

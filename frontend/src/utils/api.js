@@ -1,10 +1,9 @@
 import axios from 'axios';
 import * as Sentry from '@sentry/react';
-
-const API_BASE_URL = 'http://localhost:3000/api';
+import { API_URL } from '../config/env';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

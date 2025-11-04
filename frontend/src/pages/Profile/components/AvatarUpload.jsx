@@ -1,9 +1,8 @@
 import React from 'react';
 import { Avatar, Button, Dropdown } from 'antd';
 import { UserOutlined, CameraOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { API_BASE_URL } from '../../../config/env';
 import styles from '../Profile.module.css';
-
-const API_BASE_URL = 'http://localhost:3000';
 
 const AvatarUpload = ({
   user,
@@ -65,7 +64,7 @@ const AvatarUpload = ({
           icon={!user?.avatar_filename && <UserOutlined />}
           className={`${styles.avatar} ${!user?.avatar_filename ? getAvatarStyle() : ''}`}
         />
-        
+
         <Dropdown
           menu={{ items: getAvatarMenuItems() }}
           placement="topLeft"
@@ -80,7 +79,7 @@ const AvatarUpload = ({
           />
         </Dropdown>
       </div>
-      
+
       <input
         ref={fileInputRef}
         type="file"

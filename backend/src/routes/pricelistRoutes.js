@@ -47,29 +47,7 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Get pricelist by ID with items
-  fastify.get('/pricelists/:id', {
-    schema: {
-      tags: ['Pricelists'],
-      summary: 'Get pricelist by ID',
-      description: 'Retrieve a specific pricelist with all its items',
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'integer', description: 'Pricelist ID' }
-        }
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object' }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  fastify.get('/pricelists/:id', async (request, reply) => {
     try {
       const { id } = request.params;
       const client = await fastify.pg.connect();
