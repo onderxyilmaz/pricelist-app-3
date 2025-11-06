@@ -85,7 +85,7 @@ const OffersTemp = () => {
 
   // Sayfa yüklendiğinde verileri çek
   useEffect(() => {
-    document.title = 'Price List App v3 - Teklifler (Yeni)';
+    document.title = 'Price List App v3 - Offers';
     fetchOffers();
   }, []);
 

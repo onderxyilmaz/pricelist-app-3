@@ -47,7 +47,14 @@ const OfferTemplates = () => {
 
   // Component mount edildiğinde templates'i yükle
   useEffect(() => {
+    document.title = 'Price List App v3 - Offer Templates';
     loadTemplates();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.title = 'Price List App v3';
+    };
   }, []);
 
   // Arama filtresi

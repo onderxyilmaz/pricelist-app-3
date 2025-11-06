@@ -19,7 +19,7 @@ const Customers = () => {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    document.title = 'Price List App v3 - Müşteriler';
+    document.title = 'Price List App v3 - Customers';
     fetchCustomers();
   }, []);
 

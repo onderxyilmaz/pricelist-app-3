@@ -1,0 +1,350 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.errorCode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  font-weight: 900;
+  font-size: 120px;
+  line-height: 1;
+}
+
+.four, .zero {
+  color: #fff;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 0 30px rgba(255, 255, 255, 0.2);
+  animation: float 3s ease-in-out infinite;
+}
+
+.four:first-child {
+  animation-delay: 0s;
+}
+
+.zero {
+  animation-delay: 0.5s;
+  color: #ffd700;
+}
+
+.four:last-child {
+  animation-delay: 1s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.title {
+  color: #fff !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  margin-bottom: 16px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 16px !important;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.homeButton {
+  background: #fff !important;
+  color: #667eea !important;
+  border: none !important;
+  font-weight: 600 !important;
+  height: 48px !important;
+  padding: 0 32px !important;
+  border-radius: 24px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease !important;
+}
+
+.homeButton:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.backButton {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  font-weight: 600 !important;
+  height: 48px !important;
+  padding: 0 32px !important;
+  border-radius: 24px !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease !important;
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+.illustration {
+  margin-top: 60px;
+  position: relative;
+  height: 200px;
+}
+
+.astronaut {
+  position: relative;
+  display: inline-block;
+  animation: astronautFloat 6s ease-in-out infinite;
+}
+
+@keyframes astronautFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-30px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-60px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-30px) rotate(5deg);
+  }
+}
+
+.head {
+  width: 60px;
+  height: 60px;
+  background: #fff;
+  border-radius: 50%;
+  position: relative;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.helmet {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 40px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 50% 50% 0 0;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(180deg, rgba(100, 100, 100, 0.3) 0%, rgba(150, 150, 150, 0.2) 100%);
+  border-radius: 50%;
+}
+
+.body {
+  width: 80px;
+  height: 100px;
+  background: #fff;
+  border-radius: 20px;
+  margin: 10px auto 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.arm {
+  width: 15px;
+  height: 60px;
+  background: #fff;
+  border-radius: 10px;
+  position: absolute;
+  top: 70px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.arm:first-of-type {
+  left: 25px;
+  transform: rotate(-20deg);
+}
+
+.arm:last-of-type {
+  right: 25px;
+  transform: rotate(20deg);
+}
+
+.leg {
+  width: 20px;
+  height: 50px;
+  background: #fff;
+  border-radius: 10px;
+  position: absolute;
+  bottom: -50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.leg:first-of-type {
+  left: 35px;
+}
+
+.leg:last-of-type {
+  right: 35px;
+}
+
+.floatingElements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.star {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffd700;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.star:nth-child(1) {
+  top: 20%;
+  left: 15%;
+  animation-delay: 0s;
+}
+
+.star:nth-child(2) {
+  top: 60%;
+  left: 80%;
+  animation-delay: 0.7s;
+}
+
+.star:nth-child(3) {
+  top: 40%;
+  right: 20%;
+  animation-delay: 1.4s;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+}
+
+.planet {
+  position: absolute;
+  bottom: 10%;
+  right: 10%;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 20px rgba(255, 107, 107, 0.5),
+    inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+  animation: rotatePlanet 20s linear infinite;
+}
+
+.planet::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -20px;
+  right: -20px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateY(-50%) rotate(-15deg);
+}
+
+@keyframes rotatePlanet {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .errorCode {
+    font-size: 80px;
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 24px !important;
+  }
+
+  .subtitle {
+    font-size: 14px !important;
+  }
+
+  .homeButton,
+  .backButton {
+    height: 40px !important;
+    padding: 0 24px !important;
+    font-size: 14px !important;
+  }
+
+  .illustration {
+    height: 150px;
+    margin-top: 40px;
+  }
+
+  .astronaut {
+    transform: scale(0.7);
+  }
+
+  .planet {
+    width: 60px;
+    height: 60px;
+  }
+}

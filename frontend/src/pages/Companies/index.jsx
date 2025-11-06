@@ -18,7 +18,7 @@ const Companies = () => {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    document.title = 'Price List App v3 - Firmalar';
+    document.title = 'Price List App v3 - Companies';
     fetchCompanies();
   }, []);
 

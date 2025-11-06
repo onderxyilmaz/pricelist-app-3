@@ -20,6 +20,7 @@ import Offers from './pages/Offers/index.jsx';
 import OfferTemplates from './pages/OfferTemplates/index.jsx';
 import Customers from './pages/Customers/index.jsx';
 import Companies from './pages/Companies/index.jsx';
+import NotFound from './pages/NotFound/index.jsx';
 import './App.css';
 
 const { Content } = Layout;
@@ -51,31 +52,138 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   };
 
   return (
-    <LogoutHandler onLogout={handleLogout}>
-      {({ onLogout }) => (
-        <Layout className="app-layout">
-          <Navbar user={user} onLogout={onLogout} />
-          <Layout>
-            <Sidebar user={user} />
-            <Content className="main-content">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile user={user} onUserUpdate={onUserUpdate} />} />
-                <Route path="/pricelists" element={<Pricelist />} />
-                <Route path="/pricelists/:id" element={<PricelistDetail />} />
-                <Route path="/all-products" element={<AllProducts />} />
-                <Route path="/offers" element={<Offers />} />
-                <Route path="/offer-templates" element={<OfferTemplates />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/companies" element={<Companies />} />
-                <Route path="/import-excel" element={<ImportExcel />} />
-                <Route path="/admin/users" element={<UserManagement />} />
-              </Routes>
-            </Content>
-          </Layout>
-        </Layout>
-      )}
-    </LogoutHandler>
+    <Routes>
+      <Route path="*" element={
+        <LogoutHandler onLogout={handleLogout}>
+          {({ onLogout }) => (
+            <Routes>
+              <Route path="/" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <Dashboard />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/profile" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <Profile user={user} onUserUpdate={onUserUpdate} />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/pricelists" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <Pricelist />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/pricelists/:id" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <PricelistDetail />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/all-products" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <AllProducts />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/offers" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <Offers />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/offer-templates" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <OfferTemplates />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/customers" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <Customers />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/companies" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <Companies />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/import-excel" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <ImportExcel />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="/admin/users" element={
+                <Layout className="app-layout">
+                  <Navbar user={user} onLogout={onLogout} />
+                  <Layout>
+                    <Sidebar user={user} />
+                    <Content className="main-content">
+                      <UserManagement />
+                    </Content>
+                  </Layout>
+                </Layout>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          )}
+        </LogoutHandler>
+      } />
+    </Routes>
   );
 };
 
