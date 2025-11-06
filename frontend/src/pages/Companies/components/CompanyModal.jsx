@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input } from 'antd';
+import { Modal, Form, Input, Button } from 'antd';
 import { showErrorNotification, showSuccessNotification } from '../../../utils/notification';
 
-const CompanyModal = ({ 
-  visible, 
-  onCancel, 
-  onSubmit, 
-  editingCompany, 
-  form 
+const CompanyModal = ({
+  visible,
+  onCancel,
+  onSubmit,
+  editingCompany,
+  form
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -25,16 +25,16 @@ const CompanyModal = ({
     }
   }, [visible, editingCompany, form]);
 
-  const handleSubmit = async () => {
+  const handleCancel = () => {
+    form.resetFields();
+    onCancel();
+  };
+
+  const handleSubmit = async (values) => {
     try {
-      const values = await form.validateFields();
       setLoading(true);
       await onSubmit(values);
     } catch (error) {
-      if (error.errorFields) {
-        // Form validation errors
-        return;
-      }
       console.error('Error in modal submit:', error);
     } finally {
       setLoading(false);
@@ -45,17 +45,28 @@ const CompanyModal = ({
     <Modal
       title={editingCompany ? 'Firma Düzenle' : 'Yeni Firma'}
       open={visible}
-      onCancel={onCancel}
-      onOk={handleSubmit}
-      confirmLoading={loading}
-      okText={editingCompany ? 'Güncelle' : 'Ekle'}
-      cancelText="İptal"
+      onCancel={handleCancel}
+      footer={null}
+      width={500}
       destroyOnClose
+      afterOpenChange={(open) => {
+        if (open) {
+          setTimeout(() => {
+            const firstInput = document.querySelector('input[placeholder="Firma adını girin"]');
+            if (firstInput) {
+              firstInput.focus();
+              firstInput.select();
+            }
+          }, 100);
+        }
+      }}
     >
       <Form
         form={form}
         layout="vertical"
         requiredMark={false}
+        onFinish={handleSubmit}
+        autoComplete="off"
       >
         <Form.Item
           label="Firma Adı"
@@ -66,10 +77,22 @@ const CompanyModal = ({
             { max: 255, message: 'Firma adı en fazla 255 karakter olabilir' }
           ]}
         >
-          <Input 
+          <Input
             placeholder="Firma adını girin"
+            autoComplete="off"
             autoFocus
           />
+        </Form.Item>
+
+        <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <Button onClick={handleCancel}>
+              İptal
+            </Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {editingCompany ? 'Güncelle' : 'Oluştur'}
+            </Button>
+          </div>
         </Form.Item>
       </Form>
     </Modal>

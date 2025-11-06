@@ -1,26 +1,6 @@
 async function companyRoutes(fastify, options) {
   // Get all companies
-  fastify.get('/companies', {
-    schema: {
-      tags: ['Companies'],
-      summary: 'Get all companies',
-      description: 'Retrieve all companies with offer counts',
-      response: {
-        200: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'integer' },
-              company_name: { type: 'string' },
-              offer_count: { type: 'string' },
-              created_at: { type: 'string', format: 'date-time' }
-            }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  fastify.get('/companies', async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -79,7 +59,7 @@ async function companyRoutes(fastify, options) {
 
       const client = await fastify.pg.connect();
       const result = await client.query(
-        'INSERT INTO companies (company_name) VALUES ($1) RETURNING *',
+        'INSERT INTO companies (company_name, created_at, updated_at) VALUES ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *',
         [company_name.trim()]
       );
       client.release();

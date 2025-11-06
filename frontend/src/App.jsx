@@ -28,21 +28,22 @@ const { Title } = Typography;
 // Router içindeki ana app component'i
 const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
-  const [hasNavigatedOnLogin, setHasNavigatedOnLogin] = useState(false);
+  const location = useLocation();
   const { notification } = AntApp.useApp();
-  
+
   useEffect(() => {
     // Set the notification API for the service
     setNotificationApi(notification);
   }, [notification]);
-  
+
   useEffect(() => {
-    // Sadece ilk login'de dashboard'a yönlendir
-    if (user && !hasNavigatedOnLogin) {
+    // Sadece yeni login/register sonrası dashboard'a yönlendir
+    const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+    if (justLoggedIn === 'true') {
+      sessionStorage.removeItem('justLoggedIn');
       navigate('/');
-      setHasNavigatedOnLogin(true);
     }
-  }, [user, navigate, hasNavigatedOnLogin]);
+  }, [navigate]);
 
   const handleLogout = () => {
     onLogout();
@@ -97,13 +98,11 @@ function App() {
 
       if (savedUser && savedToken) {
         const userData = JSON.parse(savedUser);
-        console.log('Found saved user and token:', userData);
 
         // Validate user exists in database and refresh token
         try {
           const userResponse = await authApi.getUser(userData.id);
           if (userResponse.data.success) {
-            console.log('User validated successfully');
             // Update user data with fresh info from database (including avatar)
             const freshUserData = userResponse.data.user;
             setUser(freshUserData);
@@ -148,7 +147,6 @@ function App() {
         const hasUsersInDb = response.data.hasUsers;
         setHasUsers(hasUsersInDb);
         setShowRegister(!hasUsersInDb); // Show register if no users exist
-        console.log('Has users in DB:', hasUsersInDb, 'Show register:', !hasUsersInDb);
       }
     } catch (error) {
       console.error('Check users error:', error);
@@ -163,6 +161,8 @@ function App() {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', token);
+    // Login sonrası flag ekle ki RouterApp ilk render'da dashboard'a yönlendirsin
+    sessionStorage.setItem('justLoggedIn', 'true');
   };
 
   const handleRegister = (userData, token) => {
@@ -171,6 +171,8 @@ function App() {
     localStorage.setItem('token', token);
     setHasUsers(true); // İlk kullanıcı kaydedildi
     setShowRegister(false); // Artık login göster
+    // Register sonrası flag ekle ki RouterApp ilk render'da dashboard'a yönlendirsin
+    sessionStorage.setItem('justLoggedIn', 'true');
   };
 
   const handleUserUpdate = (updatedUser) => {
