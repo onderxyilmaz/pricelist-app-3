@@ -93,9 +93,9 @@ ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#1890ff';
 -- 4. AVATAR KOLONU (add_avatar_column.sql)
 -- ========================================
 
--- Add avatar column to users
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
+-- Add avatar column to users (already in CREATE TABLE above, but keep for backward compatibility)
+-- ALTER TABLE users
+-- ADD COLUMN IF NOT EXISTS avatar_filename VARCHAR(255);
 
 -- 5. MÜŞTERİLER TABLOSU (add_customers_table.sql)
 -- =============================================
@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS offers (
     offer_no VARCHAR(20) UNIQUE NOT NULL,
     revision_no INTEGER DEFAULT 0,
     parent_offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
+    customer VARCHAR(255),
     customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent')),
     customer_response VARCHAR(20) DEFAULT NULL CHECK (customer_response IN ('accepted', 'rejected', NULL)),
@@ -178,6 +179,12 @@ CREATE TABLE IF NOT EXISTS offer_items (
     unit VARCHAR(20) DEFAULT 'adet',
     currency VARCHAR(10) DEFAULT 'EUR',
     pricelist_id INTEGER REFERENCES pricelists(id),
+    original_price NUMERIC(10, 2),
+    item_discount_rate NUMERIC(5, 2) DEFAULT 0,
+    item_note TEXT,
+    list_discounts JSONB DEFAULT '[]',
+    list_profits JSONB DEFAULT '[]',
+    manual_price JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
