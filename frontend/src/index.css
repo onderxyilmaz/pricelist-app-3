@@ -91,59 +91,50 @@ code {
   border-radius: 0 !important;
 }
 
-/* Notification animations */
-.ant-notification {
+/* React Hot Toast Custom Animations */
+@keyframes toast-enter {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-exit {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+/* Override react-hot-toast default animations */
+.react-hot-toast {
   z-index: 10000 !important;
 }
 
-/* Giriş animasyonu */
-.ant-notification-notice {
-  animation: slideInRight 0.3s ease-out !important;
+[data-sonner-toast][data-mounted="true"] {
+  animation: toast-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-/* Çıkış animasyonları - tüm durumları kapsar */
-.ant-notification-notice.ant-notification-notice-close,
-.ant-notification-notice[style*="opacity: 0"],
-.ant-notification-fade-leave,
-.ant-notification-fade-leave-active,
-.ant-notification-slide-up-leave,
-.ant-notification-slide-up-leave-active {
-  animation: slideOutRight 0.25s ease-in forwards !important;
+[data-sonner-toast][data-mounted="false"] {
+  animation: toast-exit 0.3s cubic-bezier(0.36, 0, 0.66, -0.56) forwards !important;
 }
 
-/* Double notification fix */
-.ant-notification-notice:not(:first-child) {
-  animation-delay: 0ms !important;
+/* Custom styling for react-hot-toast enter animation */
+div[class*="react-hot-toast"] > div {
+  animation: toast-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-    pointer-events: none;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-@keyframes slideOutRight {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-    max-height: 200px;
-    margin-bottom: 16px;
-    pointer-events: auto;
-  }
-  to {
-    transform: translateX(100%);
-    opacity: 0;
-    max-height: 0;
-    margin-bottom: 0;
-    pointer-events: none;
-  }
+/* Custom styling for react-hot-toast exit animation */
+div[class*="react-hot-toast"][style*="opacity: 0"] > div {
+  animation: toast-exit 0.3s cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
 }
 
 /* Auth pages styling */

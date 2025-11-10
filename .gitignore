@@ -2,10 +2,11 @@ node_modules/
 .env
 *.log
 .DS_Store
-backend/uploads/avatars/*.png
-!backend/uploads/avatars/.gitkeep
 .vscode/
 dist/
 build/
 .idea/
-backend/uploads/avatars/avatar_1_c7e1b7c1-cc25-45de-b793-4ae0081cca1c.jpg
+
+# Avatar uploads - ignore all avatar files but keep the directory structure
+backend/uploads/avatars/*
+!backend/uploads/avatars/.gitkeep

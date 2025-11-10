@@ -1,66 +1,79 @@
-// Global notification instance
-let notificationApi = null;
+import toast from 'react-hot-toast';
 
-// Set the notification API instance
+// Backward compatibility - no longer needed but keeping the function
 export const setNotificationApi = (api) => {
-  notificationApi = api;
+  // Not needed for react-hot-toast
 };
 
 const NotificationService = {
   success: (message, description = '') => {
-    if (notificationApi) {
-      notificationApi.success({
-        message,
-        description,
-        duration: 3,
-        closable: true,
-        onClose: () => {
-          // Kapanırken ek işlem yok, sadece animasyon
-        },
-      });
-    }
+    toast.success(
+      description ? (
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{message}</div>
+          <div style={{ fontSize: '14px' }}>{description}</div>
+        </div>
+      ) : (
+        message
+      ),
+      {
+        duration: 3000,
+        position: 'top-center',
+      }
+    );
   },
 
   error: (message, description = '') => {
-    if (notificationApi) {
-      notificationApi.error({
-        message,
-        description,
-        duration: 3,
-        closable: true,
-        onClose: () => {
-          // Kapanırken ek işlem yok, sadece animasyon
-        },
-      });
-    }
+    toast.error(
+      description ? (
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{message}</div>
+          <div style={{ fontSize: '14px' }}>{description}</div>
+        </div>
+      ) : (
+        message
+      ),
+      {
+        duration: 3000,
+        position: 'top-center',
+      }
+    );
   },
 
   warning: (message, description = '') => {
-    if (notificationApi) {
-      notificationApi.warning({
-        message,
-        description,
-        duration: 3,
-        closable: true,
-        onClose: () => {
-          // Kapanırken ek işlem yok, sadece animasyon
-        },
-      });
-    }
+    toast(
+      description ? (
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{message}</div>
+          <div style={{ fontSize: '14px' }}>{description}</div>
+        </div>
+      ) : (
+        message
+      ),
+      {
+        duration: 3000,
+        position: 'top-center',
+        icon: '⚠️',
+      }
+    );
   },
 
   info: (message, description = '') => {
-    if (notificationApi) {
-      notificationApi.info({
-        message,
-        description,
-        duration: 3,
-        closable: true,
-        onClose: () => {
-          // Kapanırken ek işlem yok, sadece animasyon
-        },
-      });
-    }
+    toast(
+      description ? (
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{message}</div>
+          <div style={{ fontSize: '14px' }}>{description}</div>
+        </div>
+      ) : (
+        message
+      ),
+      {
+        duration: 3000,
+        position: 'top-center',
+        icon: 'ℹ️',
+      }
+    );
   },
 
   // Özel login/logout mesajları

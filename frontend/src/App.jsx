@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ConfigProvider, Layout, Spin, App as AntApp, Typography } from 'antd';
+import { Toaster } from 'react-hot-toast';
 import trTR from 'antd/locale/tr_TR';
 import { authApi } from './utils/api';
 import NotificationService, { setNotificationApi } from './utils/notification';
@@ -27,7 +28,7 @@ const { Title } = Typography;
 // Router içindeki ana app component'i
 const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
-  const [hasNavigatedOnLogin, setHasNavigatedOnLogin] = useState(false);
+  const location = useLocation();
   const { notification } = AntApp.useApp();
   
   useEffect(() => {
@@ -36,12 +37,14 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   }, [notification]);
   
   useEffect(() => {
-    // Sadece ilk login'de dashboard'a yönlendir
-    if (user && !hasNavigatedOnLogin) {
-      navigate('/');
-      setHasNavigatedOnLogin(true);
+    // Sadece yeni login/register yapıldığında dashboard'a yönlendir
+    // localStorage'da 'shouldNavigateToDashboard' flag'i varsa yönlendir
+    const shouldNavigate = localStorage.getItem('shouldNavigateToDashboard');
+    if (shouldNavigate === 'true' && location.pathname !== '/') {
+      localStorage.removeItem('shouldNavigateToDashboard');
+      navigate('/', { replace: true });
     }
-  }, [user, navigate, hasNavigatedOnLogin]);
+  }, [navigate, location.pathname]);
 
   const handleLogout = () => {
     onLogout();
@@ -76,17 +79,21 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   );
 };
 
-function App() {
+// AntApp içinde kullanılacak iç component
+const AppContent = () => {
   const [user, setUser] = useState(null);
   const [hasUsers, setHasUsers] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const { notification } = AntApp.useApp();
 
   useEffect(() => {
-    initializeApp();
-  }, []);
+    // Set the notification API for the service (for login/register pages)
+    setNotificationApi(notification);
+  }, [notification]);
 
-  const initializeApp = async () => {
+  useEffect(() => {
+    const initializeApp = async () => {
     setLoading(true);
     try {
       // Check if user is already logged in
@@ -128,16 +135,23 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+    };
+    
+    initializeApp();
+  }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    // Login sonrası dashboard'a yönlendirmek için flag set et
+    localStorage.setItem('shouldNavigateToDashboard', 'true');
   };
 
   const handleRegister = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    // Register sonrası dashboard'a yönlendirmek için flag set et
+    localStorage.setItem('shouldNavigateToDashboard', 'true');
   };
 
   const handleUserUpdate = (updatedUser) => {
@@ -146,11 +160,17 @@ function App() {
   };
 
   const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    setShowRegister(false);
-    // Logout sonrası login sayfasına yönlendir
-    window.location.href = '/login';
+    // Logout bildirimini göster
+    NotificationService.logoutSuccess();
+    
+    // Bildirimin görünmesi için kısa bir gecikme ekle
+    setTimeout(() => {
+      setUser(null);
+      localStorage.removeItem('user');
+      setShowRegister(false);
+      // Logout sonrası login sayfasına yönlendir
+      window.location.href = '/login';
+    }, 500);
   };
 
   const switchToRegister = () => {
@@ -176,27 +196,62 @@ function App() {
 
   // Render main app
   return (
-    <ConfigProvider locale={trTR}>
-      <AntApp>
-        {user ? (
-          <Router>
-            <RouterApp user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
-          </Router>
+    <>
+      {user ? (
+        <Router>
+          <RouterApp user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
+        </Router>
+      ) : (
+        showRegister ? (
+          <Register 
+            onRegister={handleRegister}
+            onSwitchToLogin={switchToLogin}
+          />
         ) : (
-          showRegister ? (
-            <Register 
-              onRegister={handleRegister}
-              onSwitchToLogin={switchToLogin}
-            />
-          ) : (
-            <Login 
-              onLogin={handleLogin}
-              onSwitchToRegister={switchToRegister}
-            />
-          )
-        )}
-      </AntApp>
-    </ConfigProvider>
+          <Login 
+            onLogin={handleLogin}
+            onSwitchToRegister={switchToRegister}
+          />
+        )
+      )}
+    </>
+  );
+};
+
+function App() {
+  return (
+    <>
+      <ConfigProvider locale={trTR}>
+        <AntApp>
+          <AppContent />
+        </AntApp>
+      </ConfigProvider>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#52c41a',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ff4d4f',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </>
   );
 }
 

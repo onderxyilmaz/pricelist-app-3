@@ -1,13 +1,9 @@
 import React from 'react';
-import NotificationService from '../utils/notification';
 
 const LogoutHandler = ({ children, onLogout }) => {
-  const handleLogout = () => {
-    NotificationService.logoutSuccess();
-    onLogout();
-  };
-
-  return children({ onLogout: handleLogout });
+  // Logout bildirimi App.jsx'deki handleLogout fonksiyonunda gösteriliyor
+  // Bu component sadece logout işlemini yönetiyor
+  return children({ onLogout });
 };
 
 export default LogoutHandler;

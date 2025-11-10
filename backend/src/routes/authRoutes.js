@@ -223,10 +223,10 @@ async function authRoutes(fastify, options) {
 
   // Delete avatar
   fastify.delete('/avatar/:id', async (request, reply) => {
+    const client = await fastify.pg.connect();
     try {
       const { id } = request.params;
       const userId = parseInt(id); // Convert to integer
-      const client = await fastify.pg.connect();
       
       // Get current avatar filename
       const userResult = await client.query(
@@ -236,8 +236,14 @@ async function authRoutes(fastify, options) {
       
       if (userResult.rows.length > 0 && userResult.rows[0].avatar_filename) {
         const avatarPath = path.join(__dirname, '../../uploads/avatars', userResult.rows[0].avatar_filename);
-        if (await fs.pathExists(avatarPath)) {
-          await fs.remove(avatarPath);
+        try {
+          if (await fs.pathExists(avatarPath)) {
+            await fs.remove(avatarPath);
+            console.log(`Avatar dosyası silindi: ${userResult.rows[0].avatar_filename}`);
+          }
+        } catch (fileError) {
+          // Dosya silme hatası olsa bile devam et
+          console.error(`Avatar dosyası silinirken hata: ${fileError.message}`);
         }
       }
       
@@ -256,6 +262,70 @@ async function authRoutes(fastify, options) {
       client.release();
       return { success: true, message: 'Avatar silindi', user: updatedUser.rows[0] };
     } catch (err) {
+      client.release();
+      console.error('Avatar silme hatası:', err);
+      return { success: false, message: err.message };
+    }
+  });
+
+  // Cleanup orphaned avatar files (files that don't have a reference in database)
+  fastify.post('/cleanup-avatars', async (request, reply) => {
+    try {
+      const avatarsDir = path.join(__dirname, '../../uploads/avatars');
+      
+      // Ensure directory exists
+      if (!(await fs.pathExists(avatarsDir))) {
+        return { success: false, message: 'Avatars dizini bulunamadı' };
+      }
+
+      // Get all files in avatars directory
+      const files = await fs.readdir(avatarsDir);
+      
+      // Get all avatar filenames from database
+      const client = await fastify.pg.connect();
+      const dbResult = await client.query(
+        'SELECT avatar_filename FROM users WHERE avatar_filename IS NOT NULL'
+      );
+      client.release();
+      
+      const validFilenames = new Set(
+        dbResult.rows.map(row => row.avatar_filename).filter(Boolean)
+      );
+      
+      // Find orphaned files (files not in database)
+      const orphanedFiles = files.filter(file => {
+        // Skip .gitkeep and other hidden files
+        if (file.startsWith('.')) return false;
+        return !validFilenames.has(file);
+      });
+      
+      // Delete orphaned files
+      let deletedCount = 0;
+      let errorCount = 0;
+      
+      for (const file of orphanedFiles) {
+        try {
+          const filePath = path.join(avatarsDir, file);
+          if (await fs.pathExists(filePath)) {
+            await fs.remove(filePath);
+            deletedCount++;
+            console.log(`Orphaned avatar dosyası silindi: ${file}`);
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`Dosya silinirken hata (${file}):`, error.message);
+        }
+      }
+      
+      return {
+        success: true,
+        message: `Temizlik tamamlandı`,
+        deletedCount,
+        errorCount,
+        totalOrphaned: orphanedFiles.length
+      };
+    } catch (err) {
+      console.error('Avatar cleanup hatası:', err);
       return { success: false, message: err.message };
     }
   });

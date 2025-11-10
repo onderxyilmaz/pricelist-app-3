@@ -68,7 +68,8 @@ export const authApi = {
       'Content-Type': 'multipart/form-data'
     }
   }),
-  deleteAvatar: (id) => api.delete(`/auth/avatar/${id}`)
+  deleteAvatar: (id) => api.delete(`/auth/avatar/${id}`),
+  cleanupAvatars: () => api.post('/auth/cleanup-avatars')
 };
 
 export const pricelistApi = {
