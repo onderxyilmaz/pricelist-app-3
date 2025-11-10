@@ -1,0 +1,370 @@
+/* OfferTemplates Page Styles */
+.templatesContainer {
+  padding: 24px;
+}
+
+.pageHeader {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pageTitle {
+  margin: 0;
+}
+
+.createButton {
+  /* Orijinal buton styling korunuyor, sadece ek geliştirmeler */
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+.createButton:hover {
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
+}
+
+/* Search Styles */
+.searchCard {
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* Table Styles */
+.tableCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.templatesTable .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.actionButton {
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  height: auto;
+  line-height: 1.2;
+}
+
+.editButton {
+  color: #1890ff;
+  border-color: #1890ff;
+}
+
+.editButton:hover {
+  background-color: #e6f7ff;
+}
+
+.previewButton {
+  color: #52c41a;
+  border-color: #52c41a;
+}
+
+.previewButton:hover {
+  background-color: #f6ffed;
+}
+
+.deleteButton {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.deleteButton:hover {
+  background-color: #fff2f0;
+}
+
+/* Template Modal Styles */
+.templateModal .ant-modal-content {
+  border-radius: 8px;
+}
+
+.templateModal .ant-modal-header {
+  border-radius: 8px 8px 0 0;
+}
+
+.formContainer {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.formItem {
+  margin-bottom: 16px;
+}
+
+.languageToggle {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.languageLabel {
+  font-weight: 500;
+  margin: 0;
+}
+
+.languageButtons {
+  display: flex;
+}
+
+.languageButton {
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.languageButtonActive {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.languageButtonTr {
+  background-color: #52c41a !important;
+  border-color: #52c41a !important;
+}
+
+.productFilter {
+  width: 100%;
+  margin-bottom: 16px;
+  border-radius: 6px;
+}
+
+/* Collapse Styles */
+.pricelistCollapse .ant-collapse-header {
+  padding: 8px 16px !important;
+  font-weight: 500;
+}
+
+.pricelistCollapse .ant-collapse-content {
+  border-top: 1px solid #f0f0f0;
+}
+
+.pricelistHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.pricelistInfo {
+  display: flex;
+  align-items: center;
+}
+
+.pricelistColorDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.pricelistStats {
+  margin: 0;
+}
+
+.productItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.productItem:last-child {
+  border-bottom: none;
+}
+
+.productCheckbox {
+  margin-right: 12px;
+}
+
+.productInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.productName {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.productDetails {
+  font-size: 12px;
+  color: #666;
+}
+
+.productPrice {
+  font-weight: 500;
+  color: #1890ff;
+  margin-left: 8px;
+}
+
+.quantityInput {
+  width: 80px;
+  margin-left: 8px;
+}
+
+.noteInput {
+  width: 180px;
+  margin-left: 8px;
+}
+
+.selectedSummary {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.selectedTitle {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.selectedItem {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+/* Preview Modal Styles */
+.previewModal .ant-modal-content {
+  border-radius: 8px;
+}
+
+.previewHeader {
+  margin-bottom: 16px;
+}
+
+.previewTitle {
+  margin: 0;
+  margin-bottom: 8px;
+}
+
+.previewDescription {
+  color: #666;
+  margin: 0;
+  margin-bottom: 16px;
+}
+
+.previewContent {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.previewFooter {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.previewLanguageControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.previewLanguageLabel {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.previewLanguageButton {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.previewLanguageButtonEn {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: white;
+}
+
+.previewLanguageButtonTr {
+  background-color: #52c41a;
+  border-color: #52c41a;
+  color: white;
+}
+
+.previewTable {
+  margin-bottom: 16px;
+}
+
+.previewTotal {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  text-align: right;
+}
+
+.previewTotalTitle {
+  margin: 0;
+  color: #1890ff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .templatesContainer {
+    padding: 16px;
+  }
+  
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .searchInput {
+    width: 100%;
+  }
+  
+  .productItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .quantityInput,
+  .noteInput {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+  }
+  
+  .previewFooter {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Animation */
+.tableCard,
+.searchCard,
+.templateModal .ant-modal-content,
+.previewModal .ant-modal-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover Effects */
+.templatesTable .ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+.productItem:hover {
+  background-color: #fafafa;
+}

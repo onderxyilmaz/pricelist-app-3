@@ -1,9 +1,8 @@
 import React from 'react';
 import { Avatar, Button, Dropdown } from 'antd';
 import { UserOutlined, CameraOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { API_BASE_URL } from '../../../config/env';
 import styles from '../Profile.module.css';
-
-const API_BASE_URL = 'http://localhost:3001';
 
 const AvatarUpload = ({
   user,
@@ -29,7 +28,7 @@ const AvatarUpload = ({
   };
 
   const getAvatarMenuItems = () => {
-    if (user?.avatar_filename || profileData?.avatar) {
+    if (user?.avatar_filename) {
       return [
         {
           key: 'change',
@@ -61,11 +60,11 @@ const AvatarUpload = ({
       <div className={styles.avatarContainer}>
         <Avatar
           size={120}
-          src={profileData?.avatar || (user?.avatar_filename ? `${API_BASE_URL}/uploads/avatars/${user.avatar_filename}` : null)}
-          icon={(!profileData?.avatar && !user?.avatar_filename) && <UserOutlined />}
-          className={`${styles.avatar} ${(!profileData?.avatar && !user?.avatar_filename) ? getAvatarStyle() : ''}`}
+          src={user?.avatar_filename ? `${API_BASE_URL}/uploads/avatars/${user.avatar_filename}` : null}
+          icon={!user?.avatar_filename && <UserOutlined />}
+          className={`${styles.avatar} ${!user?.avatar_filename ? getAvatarStyle() : ''}`}
         />
-        
+
         <Dropdown
           menu={{ items: getAvatarMenuItems() }}
           placement="topLeft"
@@ -80,7 +79,7 @@ const AvatarUpload = ({
           />
         </Dropdown>
       </div>
-      
+
       <input
         ref={fileInputRef}
         type="file"

@@ -1,17 +1,20 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
-import { 
-  HomeOutlined, 
-  UnorderedListOutlined, 
+import {
+  HomeOutlined,
+  UnorderedListOutlined,
   UserOutlined,
   SettingOutlined,
   ImportOutlined,
   ProfileOutlined,
   AppstoreOutlined,
   FileTextOutlined,
-  FormOutlined
+  FormOutlined,
+  BankOutlined,
+  CodeOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { TypeAnimation } from 'react-type-animation';
 import './Sidebar.css';
 
 const { Sider } = Layout;
@@ -56,6 +59,12 @@ const Sidebar = ({ user }) => {
       icon: <UserOutlined />,
       label: 'Müşteriler',
       onClick: () => navigate('/customers')
+    },
+    {
+      key: '/companies',
+      icon: <BankOutlined />,
+      label: 'Firmalar',
+      onClick: () => navigate('/companies')
     },
     {
       key: '/import-excel',
@@ -109,9 +118,40 @@ const Sidebar = ({ user }) => {
         theme="dark"
         mode="inline"
         selectedKeys={[location.pathname]}
-        style={{ height: '100%', borderRight: 0 }}
+        style={{ borderRight: 0 }}
         items={menuItems}
       />
+
+      {/* Developer Credit Section */}
+      <div className="sidebar-footer">
+        <a
+          href="mailto:onderxyilmaz@gmail.com"
+          className="developer-credit"
+          style={{ textDecoration: 'none', color: 'inherit' }}
+        >
+          <div className="credit-icon">
+            <CodeOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+          </div>
+          <div className="credit-text">
+            <div className="credit-label">Developed by</div>
+            <div className="credit-name">
+              <TypeAnimation
+                sequence={[
+                  'Önder Yılmaz',
+                  3000,
+                  'onderxyilmaz@gmail.com',
+                  3000,
+                ]}
+                wrapper="span"
+                speed={30}
+                repeat={Infinity}
+                cursor={true}
+                style={{ display: 'inline-block' }}
+              />
+            </div>
+          </div>
+        </a>
+      </div>
     </Sider>
   );
 };

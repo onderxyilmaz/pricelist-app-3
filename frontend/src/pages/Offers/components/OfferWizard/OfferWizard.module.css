@@ -1,0 +1,52 @@
+/* OfferWizard styles */
+.wizardModal .ant-modal-content {
+  border-radius: 8px;
+}
+
+.wizardContainer {
+  padding: 20px 0;
+}
+
+.wizardSteps {
+  margin-bottom: 30px;
+}
+
+.stepsContent {
+  min-height: 200px;
+  padding: 20px 0;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fafafa;
+  margin-bottom: 20px;
+}
+
+.stepsAction {
+  text-align: right;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .wizardModal .ant-modal {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+  }
+  
+  .wizardContainer {
+    padding: 10px 0;
+  }
+  
+  .stepsContent {
+    min-height: 300px;
+    padding: 15px;
+  }
+  
+  .wizardSteps {
+    margin-bottom: 20px;
+  }
+  
+  .wizardSteps .ant-steps-item-title {
+    font-size: 12px;
+  }
+}

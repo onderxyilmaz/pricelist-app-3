@@ -1,0 +1,208 @@
+/* Dashboard Page Styles */
+
+/* Main Container */
+.container {
+  padding: 24px;
+}
+
+/* Title */
+.title {
+  margin-bottom: 24px;
+  color: #262626;
+}
+
+/* Stats Section */
+.statsSection {
+  margin-bottom: 24px;
+}
+
+.statsCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.statsCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Quick Actions Section */
+.quickActionsSection {
+  margin-bottom: 24px;
+}
+
+.quickActionsCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.quickActionsSpace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quickActionButton {
+  transition: all 0.2s ease;
+}
+
+.quickActionButton:hover {
+  transform: translateY(-1px);
+}
+
+/* Recent Products Section */
+.recentProductsSection {
+  margin-bottom: 24px;
+}
+
+.recentProductsCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.languageToggle {
+  display: flex;
+  gap: 0;
+}
+
+.languageButton {
+  transition: all 0.2s ease;
+}
+
+.languageButtonActive {
+  background-color: #1890ff;
+  color: white;
+  border-color: #1890ff;
+}
+
+.languageButtonInactive {
+  background-color: #f0f0f0;
+  color: #000;
+  border-color: #d9d9d9;
+}
+
+.languageButtonTr {
+  background-color: #52c41a;
+  color: white;
+  border-color: #52c41a;
+}
+
+.table {
+  border-radius: 8px;
+}
+
+/* Loading States */
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Empty States */
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+/* Animations */
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .title {
+    margin-bottom: 16px;
+    font-size: 24px;
+  }
+  
+  .statsSection,
+  .quickActionsSection,
+  .recentProductsSection {
+    margin-bottom: 16px;
+  }
+  
+  .quickActionsSpace {
+    flex-direction: column;
+  }
+  
+  .quickActionButton {
+    width: 100%;
+  }
+  
+  .languageToggle {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .title {
+    font-size: 20px;
+  }
+  
+  .table {
+    font-size: 14px;
+  }
+}
+
+/* Utility Classes */
+.fullWidth {
+  width: 100%;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.marginBottom16 {
+  margin-bottom: 16px;
+}
+
+.marginBottom24 {
+  margin-bottom: 24px;
+}
+
+.padding16 {
+  padding: 16px;
+}
+
+/* Focus States */
+.focusable:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Hover Effects */
+.hoverCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}

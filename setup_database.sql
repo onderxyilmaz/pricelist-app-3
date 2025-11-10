@@ -93,9 +93,9 @@ ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#1890ff';
 -- 4. AVATAR KOLONU (add_avatar_column.sql)
 -- ========================================
 
--- Add avatar column to users
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);
+-- Add avatar column to users (already in CREATE TABLE above, but keep for backward compatibility)
+-- ALTER TABLE users
+-- ADD COLUMN IF NOT EXISTS avatar_filename VARCHAR(255);
 
 -- 5. MÜŞTERİLER TABLOSU (add_customers_table.sql)
 -- =============================================
@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS offers (
     offer_no VARCHAR(20) UNIQUE NOT NULL,
     revision_no INTEGER DEFAULT 0,
     parent_offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
+    customer VARCHAR(255),
     customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent')),
     customer_response VARCHAR(20) DEFAULT NULL CHECK (customer_response IN ('accepted', 'rejected', NULL)),
@@ -166,7 +167,7 @@ CREATE TRIGGER update_offers_revised_at
 CREATE TABLE IF NOT EXISTS offer_items (
     id SERIAL PRIMARY KEY,
     offer_id INTEGER REFERENCES offers(id) ON DELETE CASCADE,
-    pricelist_item_id INTEGER REFERENCES pricelist_items(id),
+    pricelist_item_id INTEGER REFERENCES pricelist_items(id) ON DELETE SET NULL,
     product_id VARCHAR(50) NOT NULL,
     product_name VARCHAR(200), -- Legacy field, kept for backward compatibility
     product_name_tr VARCHAR(200),
@@ -178,6 +179,12 @@ CREATE TABLE IF NOT EXISTS offer_items (
     unit VARCHAR(20) DEFAULT 'adet',
     currency VARCHAR(10) DEFAULT 'EUR',
     pricelist_id INTEGER REFERENCES pricelists(id),
+    original_price NUMERIC(10, 2),
+    item_discount_rate NUMERIC(5, 2) DEFAULT 0,
+    item_note TEXT,
+    list_discounts JSONB DEFAULT '[]',
+    list_profits JSONB DEFAULT '[]',
+    manual_price JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -252,6 +259,39 @@ CREATE INDEX IF NOT EXISTS idx_offer_template_items_pricelist_id ON offer_templa
 CREATE OR REPLACE TRIGGER update_offer_templates_modtime 
     BEFORE UPDATE ON offer_templates 
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- 10. FİRMALAR TABLOSU (add_companies_table.sql)
+-- ============================================
+
+-- Companies table
+CREATE TABLE IF NOT EXISTS companies (
+    id SERIAL PRIMARY KEY,
+    company_name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(company_name);
+
+-- Create trigger
+CREATE OR REPLACE TRIGGER update_companies_modtime 
+    BEFORE UPDATE ON companies 
+    FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- Add company_id to offers table
+ALTER TABLE offers 
+ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id);
+
+-- Create index for company_id in offers
+CREATE INDEX IF NOT EXISTS idx_offers_company_id ON offers(company_id);
+
+-- Insert some sample companies
+INSERT INTO companies (company_name) VALUES 
+('Firma 1'),
+('Firma 2'), 
+('Firma 3')
+ON CONFLICT (company_name) DO NOTHING;
 
 -- ====================================
 -- KURULUM TAMAMLANDI!

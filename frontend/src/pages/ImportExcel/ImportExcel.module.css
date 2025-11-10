@@ -1,0 +1,277 @@
+/* ImportExcel Page Styles */
+.importContainer {
+  padding: 24px;
+}
+
+.pageTitle {
+  color: #1890ff;
+  margin-bottom: 24px;
+  font-weight: 600;
+}
+
+.stepsContainer {
+  margin-bottom: 24px;
+}
+
+.contentCard {
+  min-height: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* File Upload Styles */
+.uploadContainer {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.uploadIcon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.uploadTitle {
+  margin-bottom: 8px;
+}
+
+.uploadDescription {
+  margin-bottom: 16px;
+}
+
+.languageSelection {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.languageLabel {
+  margin-right: 12px;
+  font-weight: 500;
+}
+
+.languageSelect {
+  width: 200px;
+}
+
+.languageHelper {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+.uploadDragger {
+  padding: 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.uploadDragger:hover {
+  border-color: #40a9ff;
+}
+
+.uploadDraggerDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Sheet Preview Styles */
+.sheetPreviewContainer {
+  margin-bottom: 16px;
+}
+
+.sheetPreviewTitle {
+  margin-bottom: 8px;
+}
+
+.sheetPreviewDescription {
+  margin-bottom: 16px;
+}
+
+.sheetControls {
+  margin-bottom: 16px;
+}
+
+.sheetControlsLeft {
+  display: flex;
+  gap: 8px;
+}
+
+.sheetControlsRight {
+  text-align: right;
+}
+
+.pricelistLabel {
+  font-weight: 500;
+}
+
+.pricelistSelect {
+  width: 200px;
+}
+
+.sheetTable {
+  margin-bottom: 16px;
+}
+
+.sheetNavigation {
+  text-align: center;
+  padding-top: 16px;
+}
+
+/* Import Summary Styles */
+.summaryContainer {
+  padding: 16px 0;
+}
+
+.summaryTitle {
+  margin-bottom: 16px;
+}
+
+.summaryAlert {
+  margin-bottom: 16px;
+}
+
+.summaryItem {
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.summaryRow {
+  padding: 8px 12px;
+}
+
+.summarySheetName {
+  font-weight: 500;
+}
+
+.summaryItemCount {
+  display: inline-block;
+}
+
+.summaryTarget {
+  color: #666;
+}
+
+.progressContainer {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.progressText {
+  margin-bottom: 8px;
+}
+
+.summaryNavigation {
+  text-align: center;
+  padding-top: 16px;
+}
+
+/* Steps Navigation Styles */
+.stepsNavigation {
+  margin-bottom: 24px;
+}
+
+.customStep {
+  cursor: pointer;
+}
+
+.customStep:hover .ant-steps-item-title {
+  color: #40a9ff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .importContainer {
+    padding: 16px;
+  }
+  
+  .sheetControls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .sheetControlsLeft,
+  .sheetControlsRight {
+    text-align: center;
+  }
+  
+  .languageSelect,
+  .pricelistSelect {
+    width: 100%;
+  }
+  
+  .summaryRow {
+    flex-direction: column;
+    text-align: center;
+    gap: 4px;
+  }
+}
+
+/* Animation */
+.contentCard {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab Styles */
+.sheetTab {
+  position: relative;
+}
+
+.sheetTabBadge {
+  margin-left: 8px;
+}
+
+/* Table Styles */
+.previewTable {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.previewTable .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+/* Button Styles */
+.actionButton {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+  border: none;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+.primaryButton:hover {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
+}
+
+/* Alert Styles */
+.infoAlert {
+  border-radius: 6px;
+  border-left: 4px solid #1890ff;
+}
+
+.warningAlert {
+  border-radius: 6px;
+  border-left: 4px solid #faad14;
+}
+
+.successAlert {
+  border-radius: 6px;
+  border-left: 4px solid #52c41a;
+}

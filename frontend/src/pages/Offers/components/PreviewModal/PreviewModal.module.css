@@ -1,0 +1,130 @@
+/* PreviewModal styles */
+.previewModal .ant-modal-content {
+  border-radius: 8px;
+}
+
+.previewContainer {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.offerHeader {
+  margin-bottom: 16px;
+  border: 2px solid #1890ff;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.companyInfo {
+  flex: 1;
+}
+
+.offerInfo {
+  text-align: right;
+  min-width: 200px;
+}
+
+.detailsCard,
+.productsCard,
+.notesCard,
+.termsCard {
+  margin-bottom: 16px;
+}
+
+.productsTable {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.productsTable .ant-table-thead > tr > th {
+  background: #fafafa;
+  color: #262626;
+  font-weight: 600;
+}
+
+.totalsSection {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 6px;
+  margin-top: 16px;
+}
+
+.totalsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  color: #595959;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.actionButton:hover {
+  border-color: #40a9ff;
+  color: #1890ff;
+  background: #f0f8ff;
+}
+
+/* Print styles */
+@media print {
+  .previewModal .ant-modal-mask,
+  .previewModal .ant-modal-wrap {
+    display: none !important;
+  }
+  
+  .previewContainer {
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+  
+  .actionButton {
+    display: none;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .previewModal .ant-modal {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+  }
+  
+  .headerRow {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .offerInfo {
+    text-align: left;
+    min-width: unset;
+  }
+  
+  .previewContainer {
+    max-height: 60vh;
+  }
+  
+  .totalsSection {
+    padding: 12px;
+  }
+  
+  .actionButton {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

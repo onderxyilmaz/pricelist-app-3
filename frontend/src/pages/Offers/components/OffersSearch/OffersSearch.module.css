@@ -1,0 +1,31 @@
+.filterContainer {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.filterHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  font-weight: bold;
+  color: #495057;
+}
+
+.filterLabel {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.filterLabelInline {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.filterRowMargin {
+  margin-top: 16px;
+}

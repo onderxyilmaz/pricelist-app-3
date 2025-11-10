@@ -1,6 +1,35 @@
 async function pricelistRoutes(fastify, options) {
   // Get all pricelists
-  fastify.get('/pricelists', async (request, reply) => {
+  fastify.get('/pricelists', {
+    schema: {
+      tags: ['Pricelists'],
+      summary: 'Get all pricelists',
+      description: 'Retrieve all pricelists with item counts',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            pricelists: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                  currency: { type: 'string' },
+                  color: { type: 'string' },
+                  item_count: { type: 'string' },
+                  created_at: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -48,7 +77,32 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Create new pricelist
-  fastify.post('/pricelists', async (request, reply) => {
+  fastify.post('/pricelists', {
+    schema: {
+      tags: ['Pricelists'],
+      summary: 'Create new pricelist',
+      description: 'Create a new pricelist',
+      body: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', description: 'Pricelist name' },
+          description: { type: 'string', description: 'Pricelist description' },
+          currency: { type: 'string', default: 'EUR', description: 'Currency code' },
+          color: { type: 'string', default: '#1890ff', description: 'Color in hex format' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { name, description, currency = 'EUR', color = '#1890ff' } = request.body;
       const client = await fastify.pg.connect();
@@ -85,7 +139,50 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Add item to pricelist
-  fastify.post('/pricelists/:id/items', async (request, reply) => {
+  fastify.post('/pricelists/:id/items', {
+    schema: {
+      tags: ['Items'],
+      summary: 'Add item to pricelist',
+      description: 'Add a new item to a pricelist',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Pricelist ID' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['product_id', 'name_tr', 'price'],
+        properties: {
+          product_id: { type: 'string', description: 'Product ID' },
+          name_tr: { type: 'string', description: 'Product name (Turkish)' },
+          name_en: { type: 'string', description: 'Product name (English)' },
+          description_tr: { type: 'string', description: 'Description (Turkish)' },
+          description_en: { type: 'string', description: 'Description (English)' },
+          price: { type: 'number', description: 'Product price' },
+          stock: { type: 'integer', default: 0, description: 'Stock quantity' },
+          unit: { type: 'string', default: 'adet', description: 'Unit of measurement' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' }
+          }
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet' } = request.body;
@@ -121,7 +218,43 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Update pricelist item
-  fastify.put('/items/:id', async (request, reply) => {
+  fastify.put('/items/:id', {
+    schema: {
+      tags: ['Items'],
+      summary: 'Update pricelist item',
+      description: 'Update an existing pricelist item',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Item ID' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['product_id', 'name_tr', 'price'],
+        properties: {
+          product_id: { type: 'string', description: 'Product ID' },
+          name_tr: { type: 'string', description: 'Product name (Turkish)' },
+          name_en: { type: 'string', description: 'Product name (English)' },
+          description_tr: { type: 'string', description: 'Description (Turkish)' },
+          description_en: { type: 'string', description: 'Description (English)' },
+          price: { type: 'number', description: 'Product price' },
+          stock: { type: 'integer', description: 'Stock quantity' },
+          unit: { type: 'string', description: 'Unit of measurement' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { product_id, name_tr, name_en, description_tr, description_en, price, stock, unit } = request.body;
@@ -156,7 +289,29 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Delete pricelist item
-  fastify.delete('/items/:id', async (request, reply) => {
+  fastify.delete('/items/:id', {
+    schema: {
+      tags: ['Items'],
+      summary: 'Delete pricelist item',
+      description: 'Delete an item from a pricelist',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Item ID' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { id } = request.params;
       const client = await fastify.pg.connect();
@@ -171,7 +326,29 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Delete pricelist
-  fastify.delete('/pricelists/:id', async (request, reply) => {
+  fastify.delete('/pricelists/:id', {
+    schema: {
+      tags: ['Pricelists'],
+      summary: 'Delete pricelist',
+      description: 'Delete a pricelist and all its items',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Pricelist ID' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
     try {
       const { id } = request.params;
       const client = await fastify.pg.connect();
@@ -314,7 +491,7 @@ async function pricelistRoutes(fastify, options) {
 
       // Son 5 eklenen ürün
       const recentItemsResult = await client.query(`
-        SELECT pi.name_tr, pi.name_en, pi.price, p.currency, p.name as pricelist_name, pi.created_at
+        SELECT pi.name_tr, pi.name_en, pi.description_tr, pi.description_en, pi.price, p.currency, p.name as pricelist_name, pi.created_at
         FROM pricelist_items pi
         JOIN pricelists p ON pi.pricelist_id = p.id
         ORDER BY pi.created_at DESC

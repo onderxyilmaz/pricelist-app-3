@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/env';
 
 import CustomerHeader from './components/CustomerHeader';
 import CustomerSearch from './components/CustomerSearch';
@@ -18,7 +19,7 @@ const Customers = () => {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    document.title = 'Price List App v3 - Müşteriler';
+    document.title = 'Price List App v3 - Customers';
     fetchCustomers();
   }, []);
 
@@ -31,7 +32,7 @@ const Customers = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/customers');
+      const response = await axios.get(`${API_BASE_URL}/api/customers`);
       if (response.data.success) {
         setCustomers(response.data.customers);
         setFilteredCustomers(response.data.customers);
@@ -68,7 +69,7 @@ const Customers = () => {
     try {
       if (editingCustomer) {
         // Güncelleme
-        const response = await axios.put(`http://localhost:3001/api/customers/${editingCustomer.id}`, values);
+        const response = await axios.put(`${API_BASE_URL}/api/customers/${editingCustomer.id}`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Müşteri güncellendi');
           fetchCustomers();
@@ -77,7 +78,7 @@ const Customers = () => {
         }
       } else {
         // Yeni oluşturma
-        const response = await axios.post('http://localhost:3001/api/customers', values);
+        const response = await axios.post(`${API_BASE_URL}/api/customers`, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Müşteri oluşturuldu');
           fetchCustomers();
@@ -94,7 +95,7 @@ const Customers = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:3001/api/customers/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/customers/${id}`);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Müşteri silindi');
         fetchCustomers();

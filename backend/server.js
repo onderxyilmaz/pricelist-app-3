@@ -1,6 +1,11 @@
-require('dotenv').config();
-const fastify = require('fastify')({ logger: true });
 const path = require('path');
+require('dotenv').config(); // Backend dizinindeki .env dosyasını kullan
+
+// Initialize Sentry FIRST (before any other code)
+const { initSentry, sentryErrorHandler } = require('./src/utils/sentry');
+initSentry();
+
+const fastify = require('fastify')({ logger: true });
 const fs = require('fs-extra');
 
 // CORS plugin
@@ -16,15 +21,124 @@ fastify.register(require('@fastify/multipart'), {
   }
 });
 
-// PostgreSQL plugin
-fastify.register(require('@fastify/postgres'), {
-  connectionString: `postgres://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
-});
-
-// Static files
+// Serve static files from uploads directory
 fastify.register(require('@fastify/static'), {
   root: path.join(__dirname, 'uploads'),
-  prefix: '/uploads/'
+  prefix: '/uploads/',
+  constraints: {},
+  decorateReply: false
+});
+
+// Rate limiting plugin - Global rate limit
+fastify.register(require('@fastify/rate-limit'), {
+  global: true,
+  max: 100, // Maximum 100 requests
+  timeWindow: '15 minutes', // Per 15 minutes
+  cache: 10000, // Cache up to 10,000 different client IPs
+  // allowList: ['127.0.0.1'], // Remove for testing - in production, add trusted IPs here
+  redis: null, // Can be configured with Redis for distributed systems
+  skipOnError: true, // Skip rate limiting if there's an error
+  keyGenerator: (request) => {
+    // Use IP address as key
+    return request.ip || request.headers['x-forwarded-for'] || request.socket.remoteAddress;
+  },
+  errorResponseBuilder: (request, context) => {
+    return {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Rate limit exceeded. You have made ${context.max} requests in ${context.after}. Please try again later.`
+    };
+  }
+});
+
+// Global input sanitization and SQL injection protection
+const { sanitizeAllInputs, detectSqlInjection } = require('./src/middleware/validation');
+fastify.addHook('preHandler', sanitizeAllInputs());
+fastify.addHook('preHandler', detectSqlInjection());
+
+// JWT plugin
+fastify.register(require('@fastify/jwt'), {
+  secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
+  sign: {
+    expiresIn: '7d' // Access token expires in 7 days
+  }
+});
+
+// Swagger/OpenAPI Documentation
+fastify.register(require('@fastify/swagger'), {
+  openapi: {
+    info: {
+      title: 'Pricelist & Offer Management API',
+      description: 'API documentation for Pricelist and Offer Management System',
+      version: '1.0.0',
+      contact: {
+        name: 'API Support',
+        email: 'support@pricelist-app.com'
+      }
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+        description: 'Development server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Enter your JWT token'
+        }
+      }
+    },
+    security: [{ bearerAuth: [] }],
+    tags: [
+      { name: 'Auth', description: 'Authentication endpoints' },
+      { name: 'Pricelists', description: 'Pricelist management' },
+      { name: 'Items', description: 'Pricelist items management' },
+      { name: 'Offers', description: 'Offer management' },
+      { name: 'Customers', description: 'Customer management' },
+      { name: 'Companies', description: 'Company management' },
+      { name: 'Admin', description: 'Admin endpoints (requires admin role)' },
+      { name: 'Health', description: 'Health check endpoints' }
+    ]
+  }
+});
+
+// Swagger UI
+fastify.register(require('@fastify/swagger-ui'), {
+  routePrefix: '/api/docs',
+  uiConfig: {
+    docExpansion: 'list',
+    deepLinking: true,
+    displayRequestDuration: true
+  },
+  staticCSP: true,
+  transformStaticCSP: (header) => header,
+  transformSpecification: (swaggerObject, request, reply) => { return swaggerObject },
+  transformSpecificationClone: true
+});
+
+// PostgreSQL plugin
+console.log('Environment variables:', {
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD ? '[SET]' : '[NOT SET]',
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_NAME: process.env.DB_NAME
+});
+
+// Object config yerine connection string kullanmayı dene
+fastify.register(require('@fastify/postgres'), {
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20, // maximum connection pool size
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000
 });
 
 // Routes
@@ -33,13 +147,50 @@ fastify.register(require('./src/routes/pricelistRoutes'), { prefix: '/api' });
 fastify.register(require('./src/routes/adminRoutes'), { prefix: '/api/admin' });
 fastify.register(require('./src/routes/offerRoutes'), { prefix: '/api' });
 fastify.register(require('./src/routes/customerRoutes'), { prefix: '/api' });
+fastify.register(require('./src/routes/companyRoutes'), { prefix: '/api' });
+
+// Root endpoint - API information
+fastify.get('/', async (request, reply) => {
+  return {
+    name: 'Pricelist & Offer Management API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      api: 'http://localhost:3000/api',
+      documentation: 'http://localhost:3000/api/docs',
+      health: 'http://localhost:3000/health'
+    },
+    message: 'Welcome to Pricelist API! Visit /api/docs for Swagger documentation.'
+  };
+});
 
 // Health check
-fastify.get('/health', async (request, reply) => {
+fastify.get('/health', {
+  schema: {
+    tags: ['Health'],
+    summary: 'Health check',
+    description: 'Check if the server is running',
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          status: { type: 'string' },
+          message: { type: 'string' }
+        }
+      }
+    }
+  }
+}, async (request, reply) => {
   return { status: 'OK', message: 'Server is running' };
 });
 
+// Sentry error handler (should be registered AFTER all routes)
+sentryErrorHandler(fastify);
 
+// 404 handler
+fastify.setNotFoundHandler(async (request, reply) => {
+  reply.code(404).send({ error: 'Not found' });
+});
 
 // Database test endpoint
 fastify.get('/api/test-db', async (request, reply) => {

@@ -10,10 +10,8 @@ const EditProductModal = ({
   onSubmit,
   editingProduct,
   form,
-  nameLanguage,
-  onNameLanguageChange,
-  descriptionLanguage,
-  onDescriptionLanguageChange
+  formLanguage,
+  onLanguageChange
 }) => {
   const handleCancel = () => {
     form.resetFields();
@@ -57,33 +55,36 @@ const EditProductModal = ({
           />
         </Form.Item>
 
-        <Form.Item label="Ürün Adı">
+        {/* Tek dil seçimi - hem ürün adı hem açıklama için */}
+        <Form.Item label="Dil Seçimi">
           <div className={styles.formLanguageToggle}>
             <Button.Group className={styles.formLanguageButtonGroup}>
               <Button 
-                type={nameLanguage === 'en' ? 'primary' : 'default'}
-                onClick={() => onNameLanguageChange('en')}
+                type={formLanguage === 'en' ? 'primary' : 'default'}
+                onClick={() => onLanguageChange('en')}
                 className={`${styles.languageButton} ${
-                  nameLanguage === 'en' ? styles.languageButtonEn : styles.languageButtonEnDefault
+                  formLanguage === 'en' ? styles.languageButtonEn : styles.languageButtonEnDefault
                 }`}
               >
                 EN
               </Button>
               <Button 
-                type={nameLanguage === 'tr' ? 'primary' : 'default'}
-                onClick={() => onNameLanguageChange('tr')}
+                type={formLanguage === 'tr' ? 'primary' : 'default'}
+                onClick={() => onLanguageChange('tr')}
                 className={`${styles.languageButton} ${
-                  nameLanguage === 'tr' ? styles.languageButtonTr : styles.languageButtonTrDefault
+                  formLanguage === 'tr' ? styles.languageButtonTr : styles.languageButtonTrDefault
                 }`}
               >
                 TR
               </Button>
             </Button.Group>
           </div>
-          
+        </Form.Item>
+
+        <Form.Item label="Ürün Adı">
           <Form.Item
             name="name_tr"
-            className={nameLanguage === 'tr' ? styles.visibleFormItem : styles.hiddenFormItem}
+            className={formLanguage === 'tr' ? styles.visibleFormItem : styles.hiddenFormItem}
           >
             <Input 
               placeholder="Türkçe ürün adı" 
@@ -93,7 +94,7 @@ const EditProductModal = ({
           
           <Form.Item
             name="name_en"
-            className={nameLanguage === 'en' ? styles.visibleFormItem : styles.hiddenFormItem}
+            className={formLanguage === 'en' ? styles.visibleFormItem : styles.hiddenFormItem}
           >
             <Input 
               placeholder="İngilizce ürün adı" 
@@ -103,32 +104,9 @@ const EditProductModal = ({
         </Form.Item>
 
         <Form.Item label="Açıklama">
-          <div className={styles.formLanguageToggle}>
-            <Button.Group className={styles.formLanguageButtonGroup}>
-              <Button 
-                type={descriptionLanguage === 'en' ? 'primary' : 'default'}
-                onClick={() => onDescriptionLanguageChange('en')}
-                className={`${styles.languageButton} ${
-                  descriptionLanguage === 'en' ? styles.languageButtonEn : styles.languageButtonEnDefault
-                }`}
-              >
-                EN
-              </Button>
-              <Button 
-                type={descriptionLanguage === 'tr' ? 'primary' : 'default'}
-                onClick={() => onDescriptionLanguageChange('tr')}
-                className={`${styles.languageButton} ${
-                  descriptionLanguage === 'tr' ? styles.languageButtonTr : styles.languageButtonTrDefault
-                }`}
-              >
-                TR
-              </Button>
-            </Button.Group>
-          </div>
-          
           <Form.Item
             name="description_tr"
-            className={descriptionLanguage === 'tr' ? styles.visibleFormItem : styles.hiddenFormItem}
+            className={formLanguage === 'tr' ? styles.visibleFormItem : styles.hiddenFormItem}
           >
             <Input.TextArea 
               rows={2} 
@@ -139,7 +117,7 @@ const EditProductModal = ({
           
           <Form.Item
             name="description_en"
-            className={descriptionLanguage === 'en' ? styles.visibleFormItem : styles.hiddenFormItem}
+            className={formLanguage === 'en' ? styles.visibleFormItem : styles.hiddenFormItem}
           >
             <Input.TextArea 
               rows={2} 

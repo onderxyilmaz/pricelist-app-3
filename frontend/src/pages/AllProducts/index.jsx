@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Typography, message, Form } from 'antd';
 import axios from 'axios';
 import ExcelJS from 'exceljs';
+import { API_BASE_URL } from '../../config/env';
 
 import ProductFilters from './components/ProductFilters';
 import ProductTable from './components/ProductTable';
@@ -25,8 +26,7 @@ const AllProducts = () => {
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [nameLanguage, setNameLanguage] = useState('en');
-  const [descriptionLanguage, setDescriptionLanguage] = useState('en');
+  const [formLanguage, setFormLanguage] = useState('en'); // Tek dil state'i
   const [tableLanguage, setTableLanguage] = useState('en');
   const [editForm] = Form.useForm();
 
@@ -45,7 +45,7 @@ const AllProducts = () => {
   const fetchAllProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/all-items');
+      const response = await axios.get(`${API_BASE_URL}/api/all-items`);
       if (response.data.success) {
         setProducts(response.data.items);
         setFilteredProducts(response.data.items);
@@ -59,7 +59,7 @@ const AllProducts = () => {
 
   const fetchPricelists = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/pricelists');
+      const response = await axios.get(`${API_BASE_URL}/api/pricelists`);
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -221,9 +221,8 @@ const AllProducts = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    // Mevcut verilere göre dil seçimini ayarla
-    setNameLanguage(product.name_tr ? 'tr' : 'en');
-    setDescriptionLanguage(product.description_tr ? 'tr' : 'en');
+    // Default olarak EN seç
+    setFormLanguage('en');
     editForm.setFieldsValue({
       product_id: product.product_id,
       name_tr: product.name_tr,
@@ -239,7 +238,7 @@ const AllProducts = () => {
 
   const handleDelete = async (productId) => {
     try {
-      await axios.delete(`http://localhost:3001/api/items/${productId}`);
+      await axios.delete(`${API_BASE_URL}/api/items/${productId}`);
       NotificationService.success('Başarılı', 'Ürün silindi');
       fetchAllProducts(); // Listeyi yenile
     } catch (error) {
@@ -249,7 +248,7 @@ const AllProducts = () => {
 
   const handleEditSubmit = async (values) => {
     try {
-      await axios.put(`http://localhost:3001/api/items/${editingProduct.id}`, values);
+      await axios.put(`${API_BASE_URL}/api/items/${editingProduct.id}`, values);
       NotificationService.success('Başarılı', 'Ürün güncellendi');
       setEditModalVisible(false);
       setEditingProduct(null);
@@ -276,8 +275,7 @@ const AllProducts = () => {
   const handleEditModalCancel = () => {
     setEditModalVisible(false);
     setEditingProduct(null);
-    setNameLanguage('en');
-    setDescriptionLanguage('en');
+    setFormLanguage('en'); // Tek dil state'i
     editForm.resetFields();
   };
 
@@ -327,10 +325,8 @@ const AllProducts = () => {
         onSubmit={handleEditSubmit}
         editingProduct={editingProduct}
         form={editForm}
-        nameLanguage={nameLanguage}
-        onNameLanguageChange={setNameLanguage}
-        descriptionLanguage={descriptionLanguage}
-        onDescriptionLanguageChange={setDescriptionLanguage}
+        formLanguage={formLanguage}
+        onLanguageChange={setFormLanguage}
       />
     </div>
   );

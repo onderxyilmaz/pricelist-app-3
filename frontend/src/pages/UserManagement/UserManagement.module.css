@@ -1,0 +1,230 @@
+/* UserManagement page styles */
+.container {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.title {
+  margin: 0 !important;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.addButton {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.addButton:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+}
+
+.searchContainer {
+  margin-bottom: 16px;
+}
+
+.searchInput {
+  width: 300px;
+  border-radius: 6px;
+}
+
+.table {
+  border-radius: 6px;
+}
+
+.table :global(.ant-table-thead > tr > th) {
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.table :global(.ant-table-tbody > tr:hover > td) {
+  background-color: #f8f9ff;
+}
+
+.actionButton {
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.editButton {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.editButton:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+}
+
+.editButton:disabled {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.25);
+}
+
+.deleteButton {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.deleteButton:hover {
+  background-color: #ff7875;
+  border-color: #ff7875;
+  transform: translateY(-1px);
+}
+
+.deleteButton:disabled {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.25);
+}
+
+.roleTag {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.superAdminTag {
+  background-color: #fff2f0;
+  border-color: #ffccc7;
+  color: #a8071a;
+}
+
+.userTag {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+  color: #389e0d;
+}
+
+.modal {
+  border-radius: 8px;
+}
+
+.modal :global(.ant-modal-header) {
+  border-radius: 8px 8px 0 0;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal :global(.ant-modal-title) {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.form {
+  margin-top: 24px;
+}
+
+.formItem {
+  margin-bottom: 16px;
+}
+
+.formFooter {
+  margin-bottom: 0;
+  text-align: right;
+}
+
+.input {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.select {
+  border-radius: 6px;
+}
+
+.select :global(.ant-select-selector) {
+  border-radius: 6px;
+}
+
+.cancelButton {
+  border-radius: 6px;
+  border-color: #d9d9d9;
+  color: #595959;
+}
+
+.cancelButton:hover {
+  border-color: #40a9ff;
+  color: #40a9ff;
+}
+
+.submitButton {
+  border-radius: 6px;
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.submitButton:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .searchInput {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .table {
+    font-size: 12px;
+  }
+  
+  .actionButton {
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .header {
+    margin-bottom: 16px;
+  }
+  
+  .title {
+    font-size: 20px !important;
+  }
+  
+  .modal {
+    margin: 0 !important;
+  }
+  
+  .modal :global(.ant-modal-content) {
+    margin: 16px;
+  }
+}
