@@ -6,6 +6,7 @@ node_modules/
 dist/
 build/
 .idea/
+.claude/
 
 # Avatar uploads - ignore all avatar files but keep the directory structure
 backend/uploads/avatars/*
