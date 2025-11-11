@@ -1,43 +1,40 @@
 // API services for offers
-import axios from 'axios';
-import { API_BASE_URL } from '../../../config/env';
-
-const API_URL = `${API_BASE_URL}/api`;
+import { offersApi, companyApi } from '../../../utils/api';
 
 export const offersService = {
   // Tüm teklifleri getir
   getAllOffers: async () => {
-    const response = await axios.get(`${API_URL}/offers`);
+    const response = await offersApi.getOffers();
     return response.data;
   },
   
   // Teklif detaylarını getir
   getOfferById: async (id) => {
-    const response = await axios.get(`${API_URL}/offers/${id}`);
+    const response = await offersApi.getOfferById(id);
     return response.data;
   },
 
   // Teklif detayları ve ürünlerini getir
   getOfferDetails: async (id) => {
-    const response = await axios.get(`${API_URL}/offers/${id}/details`);
+    const response = await offersApi.getOfferDetails(id);
     return response.data;
   },
   
   // Yeni teklif oluştur
   createOffer: async (offerData) => {
-    const response = await axios.post(`${API_URL}/offers`, offerData);
+    const response = await offersApi.createOffer(offerData);
     return response.data;
   },
   
   // Teklif güncelle
   updateOffer: async (id, offerData) => {
-    const response = await axios.put(`${API_URL}/offers/${id}`, offerData);
+    const response = await offersApi.updateOffer(id, offerData);
     return response.data;
   },
   
   // Teklif sil
   deleteOffer: async (id) => {
-    const response = await axios.delete(`${API_URL}/offers/${id}`);
+    const response = await offersApi.deleteOffer(id);
     return response.data;
   },
 
@@ -46,7 +43,7 @@ export const offersService = {
     if (!offerNo || offerNo.trim() === '') return true;
     
     try {
-      const response = await axios.get(`${API_URL}/offers`);
+      const response = await offersApi.getOffers();
       if (response.data.success) {
         const existingOffer = response.data.offers.find(offer => 
           offer.offer_no === offerNo.trim()
@@ -62,9 +59,11 @@ export const offersService = {
   // Firmaları getir
   fetchCompanies: async () => {
     try {
-      const response = await axios.get(`${API_URL}/companies`);
+      const response = await companyApi.getCompanies();
       if (response.data && Array.isArray(response.data)) {
         return response.data;
+      } else if (response.data.success && Array.isArray(response.data.companies)) {
+        return response.data.companies;
       }
       return [];
     } catch (error) {
@@ -80,9 +79,7 @@ export const offersService = {
         return [];
       }
 
-      const response = await axios.get(`${API_URL}/customers/search`, {
-        params: { query: searchText.trim() }
-      });
+      const response = await offersApi.searchCustomers(searchText.trim());
       
       if (response.data.success) {
         return response.data.customers.map(customer => ({
@@ -99,25 +96,25 @@ export const offersService = {
 
   // Sonraki teklif numarasını getir
   getNextOfferNumber: async () => {
-    const response = await axios.get(`${API_URL}/offers/next-number`);
+    const response = await offersApi.getNextOfferNumber();
     return response.data;
   },
 
   // Boş teklif numaralarını getir
   getAvailableOfferNumbers: async () => {
-    const response = await axios.get(`${API_URL}/offers/available-numbers`);
+    const response = await offersApi.getAvailableOfferNumbers();
     return response.data;
   },
 
   // Teklif ürünlerini kaydet
   saveOfferItems: async (offerId, items) => {
-    const response = await axios.post(`${API_URL}/offers/${offerId}/items`, { items });
+    const response = await offersApi.saveOfferItems(offerId, items);
     return response.data;
   },
 
   // Teklif ürünlerini getir
   getOfferItems: async (offerId) => {
-    const response = await axios.get(`${API_URL}/offers/${offerId}/items`);
+    const response = await offersApi.getOfferItems(offerId);
     return response.data;
   }
 };

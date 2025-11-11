@@ -35,9 +35,7 @@ import {
   DeleteOutlined,
   BranchesOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
 import ExcelJS from 'exceljs';
-import { API_BASE_URL } from '../../config/env';
 import styles from './OffersTemp.module.css';
 import NotificationService from '../../utils/notification';
 import OfferWizard from './components/OfferWizard';
@@ -47,6 +45,7 @@ import PreviewModal from './components/PreviewModal';
 import OffersTable from './components/OffersTable';
 import { useWizard } from './hooks/useWizard';
 import { offersService } from './services/offersService';
+import { offersApi, offerTemplatesApi } from '../../utils/api';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -99,7 +98,7 @@ const OffersTemp = () => {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/offers`);
+      const response = await offersApi.getOffers();
       if (response.data.success) {
         setOffers(response.data.offers);
         
@@ -135,8 +134,8 @@ const OffersTemp = () => {
       
       // Teklif detayları ve fiyat listesi bilgilerini al
       const [offerResponse, pricelistsResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/offers/${offer.id}/details`),
-        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
+        offersApi.getOfferDetails(offer.id),
+        offerTemplatesApi.getPricelistsWithItems()
       ]);
       
       if (offerResponse.data.success && pricelistsResponse.data.success) {
@@ -190,7 +189,7 @@ const OffersTemp = () => {
     try {
       const newStatus = offer.status === 'sent' ? 'draft' : 'sent';
       
-      const response = await axios.put(`${API_BASE_URL}/api/offers/${offer.id}`, {
+      const response = await offersApi.updateOffer(offer.id, {
         offer_no: offer.offer_no,
         customer: offer.customer,
         status: newStatus
@@ -213,7 +212,7 @@ const OffersTemp = () => {
   // Müşteri yanıtını güncelle
   const handleCustomerResponse = async (offer, response) => {
     try {
-      const updateResponse = await axios.put(`${API_BASE_URL}/api/offers/${offer.id}`, {
+      const updateResponse = await offersApi.updateOffer(offer.id, {
         offer_no: offer.offer_no,
         customer: offer.customer,
         customer_response: response
@@ -242,7 +241,7 @@ const OffersTemp = () => {
   // Teklif silme fonksiyonu
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/api/offers/${id}`);
+      const response = await offersApi.deleteOffer(id);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Teklif silindi');
         fetchOffers();
@@ -259,7 +258,7 @@ const OffersTemp = () => {
   const handleExportToExcel = async (offer) => {
     try {
       // Teklif detaylarını fetch et
-      const response = await axios.get(`${API_BASE_URL}/api/offers/${offer.id}/details`);
+      const response = await offersApi.getOfferDetails(offer.id);
 
       if (!response.data.success) {
         NotificationService.error('Hata', response.data.message || 'Teklif detayları alınamadı');
@@ -1211,7 +1210,7 @@ const OffersTemp = () => {
       // Firmaları ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
-        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
+        offerTemplatesApi.getPricelistsWithItems()
       ]);
       
       setCompanies(companiesData);
@@ -1246,7 +1245,7 @@ const OffersTemp = () => {
       // Firmalar ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
-        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
+        offerTemplatesApi.getPricelistsWithItems()
       ]);
       
       setCompanies(companiesData);
@@ -1431,7 +1430,7 @@ const OffersTemp = () => {
       // Firmalar ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
-        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
+        offerTemplatesApi.getPricelistsWithItems()
       ]);
       
       setCompanies(companiesData);

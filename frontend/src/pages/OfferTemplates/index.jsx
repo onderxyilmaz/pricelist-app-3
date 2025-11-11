@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { message } from 'antd';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/env';
 import TemplatesHeader from './components/TemplatesHeader';
 import TemplatesSearch from './components/TemplatesSearch';
 import TemplatesTable from './components/TemplatesTable';
 import TemplateModal from './components/TemplateModal';
 import PreviewModal from './components/PreviewModal';
+import { offerTemplatesApi, pricelistApi } from '../../utils/api';
 import styles from './OfferTemplates.module.css';
 
 const OfferTemplates = () => {
@@ -30,7 +29,7 @@ const OfferTemplates = () => {
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/offer-templates`);
+      const response = await offerTemplatesApi.getTemplates();
       console.log('Templates loaded:', response.data); // Debug log
       if (response.data.success) {
         setTemplates(response.data.templates || []);
@@ -90,7 +89,7 @@ const OfferTemplates = () => {
       setEditingTemplate(template);
       
       // Template detaylarını yükle
-      const response = await axios.get(`${API_BASE_URL}/api/offer-templates/${template.id}/items`);
+      const response = await offerTemplatesApi.getTemplateItems(template.id);
       if (response.data.success) {
         const templateWithItems = {
           ...template,
@@ -118,8 +117,8 @@ const OfferTemplates = () => {
       // Template items ve fiyat listesi bilgilerini al
       console.log('Fetching items and pricelists for template:', template.id); // Debug log
       const [itemsResponse, pricelistsResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/offer-templates/${template.id}/items`),
-        axios.get(`${API_BASE_URL}/api/pricelists-with-items`)
+        offerTemplatesApi.getTemplateItems(template.id),
+        offerTemplatesApi.getPricelistsWithItems()
       ]);
       
       if (itemsResponse.data.success && pricelistsResponse.data.success) {
@@ -158,7 +157,7 @@ const OfferTemplates = () => {
     try {
       setLoading(true);
       
-      const response = await axios.delete(`${API_BASE_URL}/api/offer-templates/${templateId}`);
+      const response = await offerTemplatesApi.deleteTemplate(templateId);
       if (response.data.success) {
         message.success('Template başarıyla silindi');
         await loadTemplates(); // Listeyi yenile
@@ -179,13 +178,13 @@ const OfferTemplates = () => {
       setSubmitting(true);
       
       if (editingTemplate) {
-        const response = await axios.put(`${API_BASE_URL}/api/offer-templates/${editingTemplate.id}`, templateData);
+        const response = await offerTemplatesApi.updateTemplate(editingTemplate.id, templateData);
         if (response.data.success) {
           message.success('Template güncellendi');
           await loadTemplates(); // Listeyi yenile
         }
       } else {
-        const response = await axios.post(`${API_BASE_URL}/api/offer-templates`, templateData);
+        const response = await offerTemplatesApi.createTemplate(templateData);
         if (response.data.success) {
           message.success('Template oluşturuldu');
           await loadTemplates(); // Listeyi yenile

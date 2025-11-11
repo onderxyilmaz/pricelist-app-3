@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
-import axios from 'axios';
 
 import CompanyHeader from './components/CompanyHeader';
 import CompanySearch from './components/CompanySearch';
 import CompanyTable from './components/CompanyTable';
 import CompanyModal from './components/CompanyModal';
-import { showErrorNotification, showSuccessNotification } from '../../utils/notification';
+import NotificationService from '../../utils/notification';
+import { companyApi } from '../../utils/api';
 import styles from './Companies.module.css';
 
 const Companies = () => {
@@ -31,14 +31,17 @@ const Companies = () => {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/companies');
+      const response = await companyApi.getCompanies();
       if (response.data && Array.isArray(response.data)) {
         setCompanies(response.data);
         setFilteredCompanies(response.data);
+      } else if (response.data.success && Array.isArray(response.data.companies)) {
+        setCompanies(response.data.companies);
+        setFilteredCompanies(response.data.companies);
       }
     } catch (error) {
       console.error('Error loading companies:', error);
-      showErrorNotification('Hata', 'Firmalar yüklenirken hata oluştu');
+      NotificationService.error('Hata', 'Firmalar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -69,62 +72,44 @@ const Companies = () => {
     try {
       if (editingCompany) {
         // Güncelleme
-        const response = await fetch(`/api/companies/${editingCompany.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
-
-        if (response.ok) {
-          showSuccessNotification('Başarılı', 'Firma güncellendi');
+        const response = await companyApi.updateCompany(editingCompany.id, values);
+        if (response.data.success) {
+          NotificationService.success('Başarılı', 'Firma güncellendi');
           fetchCompanies();
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Güncelleme başarısız');
+          NotificationService.error('Hata', response.data.message || 'Güncelleme başarısız');
         }
       } else {
         // Yeni oluşturma
-        const response = await fetch('/api/companies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
-
-        if (response.ok) {
-          showSuccessNotification('Başarılı', 'Firma oluşturuldu');
+        const response = await companyApi.createCompany(values);
+        if (response.data.success) {
+          NotificationService.success('Başarılı', 'Firma oluşturuldu');
           fetchCompanies();
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Oluşturma başarısız');
+          NotificationService.error('Hata', response.data.message || 'Oluşturma başarısız');
         }
       }
       setModalVisible(false);
     } catch (error) {
       console.error('Error saving company:', error);
-      showErrorNotification('Hata', error.message);
+      const errorMessage = error.response?.data?.message || error.message || (editingCompany ? 'Güncelleme başarısız' : 'Oluşturma başarısız');
+      NotificationService.error('Hata', errorMessage);
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`/api/companies/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        showSuccessNotification('Başarılı', 'Firma silindi');
+      const response = await companyApi.deleteCompany(id);
+      if (response.data.success) {
+        NotificationService.success('Başarılı', 'Firma silindi');
         fetchCompanies();
       } else {
-        const error = await response.json();
-        throw new Error(error.error || 'Silme işlemi başarısız');
+        NotificationService.error('Hata', response.data.message || 'Silme işlemi başarısız');
       }
     } catch (error) {
       console.error('Error deleting company:', error);
-      showErrorNotification('Hata', error.message);
+      const errorMessage = error.response?.data?.message || error.message || 'Silme işlemi başarısız';
+      NotificationService.error('Hata', errorMessage);
     }
   };
 

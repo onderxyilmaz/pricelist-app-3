@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/env';
 
 import CustomerHeader from './components/CustomerHeader';
 import CustomerSearch from './components/CustomerSearch';
 import CustomerTable from './components/CustomerTable';
 import CustomerModal from './components/CustomerModal';
 import NotificationService from '../../utils/notification';
+import { customerApi } from '../../utils/api';
 import styles from './Customers.module.css';
 
 const Customers = () => {
@@ -32,7 +31,7 @@ const Customers = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/customers`);
+      const response = await customerApi.getCustomers();
       if (response.data.success) {
         setCustomers(response.data.customers);
         setFilteredCustomers(response.data.customers);
@@ -69,7 +68,7 @@ const Customers = () => {
     try {
       if (editingCustomer) {
         // Güncelleme
-        const response = await axios.put(`${API_BASE_URL}/api/customers/${editingCustomer.id}`, values);
+        const response = await customerApi.updateCustomer(editingCustomer.id, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Müşteri güncellendi');
           fetchCustomers();
@@ -78,7 +77,7 @@ const Customers = () => {
         }
       } else {
         // Yeni oluşturma
-        const response = await axios.post(`${API_BASE_URL}/api/customers`, values);
+        const response = await customerApi.createCustomer(values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Müşteri oluşturuldu');
           fetchCustomers();
@@ -95,7 +94,7 @@ const Customers = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/api/customers/${id}`);
+      const response = await customerApi.deleteCustomer(id);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Müşteri silindi');
         fetchCustomers();

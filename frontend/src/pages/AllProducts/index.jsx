@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, message, Form } from 'antd';
-import axios from 'axios';
 import ExcelJS from 'exceljs';
-import { API_BASE_URL } from '../../config/env';
 
 import ProductFilters from './components/ProductFilters';
 import ProductTable from './components/ProductTable';
 import ExportModal from './components/ExportModal';
 import EditProductModal from './components/EditProductModal';
 import NotificationService from '../../utils/notification';
+import { pricelistApi } from '../../utils/api';
+import api from '../../utils/api';
 import styles from './AllProducts.module.css';
 
 const { Title } = Typography;
@@ -45,7 +45,7 @@ const AllProducts = () => {
   const fetchAllProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/all-items`);
+      const response = await api.get('/all-items');
       if (response.data.success) {
         setProducts(response.data.items);
         setFilteredProducts(response.data.items);
@@ -59,7 +59,7 @@ const AllProducts = () => {
 
   const fetchPricelists = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/pricelists`);
+      const response = await pricelistApi.getPricelists();
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -238,7 +238,7 @@ const AllProducts = () => {
 
   const handleDelete = async (productId) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/items/${productId}`);
+      await pricelistApi.deleteItem(productId);
       NotificationService.success('Başarılı', 'Ürün silindi');
       fetchAllProducts(); // Listeyi yenile
     } catch (error) {
@@ -248,7 +248,7 @@ const AllProducts = () => {
 
   const handleEditSubmit = async (values) => {
     try {
-      await axios.put(`${API_BASE_URL}/api/items/${editingProduct.id}`, values);
+      await pricelistApi.updateItem(editingProduct.id, values);
       NotificationService.success('Başarılı', 'Ürün güncellendi');
       setEditModalVisible(false);
       setEditingProduct(null);

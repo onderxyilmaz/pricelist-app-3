@@ -29,7 +29,7 @@ const Dashboard = () => {
       if (response.data.success) {
         setStats(response.data.stats);
         console.log('Dashboard stats:', response.data.stats);
-        console.log('Recent Products:', response.data.stats.recentProducts);
+        console.log('Recent Items:', response.data.stats.recentItems);
       }
     } catch (error) {
       NotificationService.error('Hata', 'Dashboard verileri yüklenemedi');

@@ -29,8 +29,8 @@ import {
   ClearOutlined
 } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
-import axios from 'axios';
 import NotificationService from '../../utils/notification';
+import { pricelistApi } from '../../utils/api';
 import { useLocation } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -69,7 +69,7 @@ const ImportExcel = () => {
 
   const fetchPricelists = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/pricelists');
+      const response = await pricelistApi.getPricelists();
       if (response.data.success) {
         setPricelists(response.data.pricelists);
       }
@@ -390,11 +390,11 @@ const ImportExcel = () => {
       
       // Tüm fiyat listelerini al (duplikasyon kontrolü için)
       try {
-        const allPricelistsResponse = await axios.get('http://localhost:3001/api/pricelists');
+        const allPricelistsResponse = await pricelistApi.getPricelists();
         if (allPricelistsResponse.data.success) {
           for (const pricelist of allPricelistsResponse.data.pricelists) {
             try {
-              const response = await axios.get(`http://localhost:3001/api/pricelists/${pricelist.id}`);
+              const response = await pricelistApi.getPricelistById(pricelist.id);
               if (response.data.success) {
                 allPricelistItems[pricelist.id] = {
                   name: pricelist.name,
@@ -512,7 +512,7 @@ const ImportExcel = () => {
         await Promise.all(
           batch.map(async ({ pricelistId, item }) => {
             try {
-              await axios.post(`http://localhost:3001/api/pricelists/${pricelistId}/items`, item);
+              await pricelistApi.addItem(pricelistId, item);
               newItemsAdded++;
               setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
             } catch (error) {
@@ -541,7 +541,7 @@ const ImportExcel = () => {
                 unit: existingItem.unit
               };
               
-              await axios.put(`http://localhost:3001/api/items/${existingItem.id}`, updatedItem);
+              await pricelistApi.updateItem(existingItem.id, updatedItem);
               existingItemsUpdated++;
               setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
             } catch (error) {

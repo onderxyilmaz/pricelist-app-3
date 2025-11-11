@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as Sentry from '@sentry/react';
-import { API_URL } from '../config/env';
+import { API_URL, API_BASE_URL } from '../config/env';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -105,7 +105,7 @@ api.interceptors.response.use(
         try {
           console.log('Attempting to refresh token...');
           const response = await axios.post(
-            'http://localhost:3000/api/auth/refresh',
+            `${API_URL}/auth/refresh`,
             {},
             {
               headers: {
@@ -192,6 +192,7 @@ export const pricelistApi = {
   getPricelists: () => api.get('/pricelists'),
   getPricelistById: (id) => api.get(`/pricelists/${id}`),
   createPricelist: (data) => api.post('/pricelists', data),
+  updatePricelist: (id, data) => api.put(`/pricelists/${id}`, data),
   deletePricelist: (id) => api.delete(`/pricelists/${id}`),
 
   // Item operations
@@ -201,7 +202,60 @@ export const pricelistApi = {
 
   // Test operations
   testConnection: () => api.get('/test-db'),
-  healthCheck: () => axios.get('http://localhost:3000/health'),
+  healthCheck: () => axios.get(`${API_BASE_URL}/health`),
+};
+
+export const customerApi = {
+  // Customer operations
+  getCustomers: () => api.get('/customers'),
+  getCustomerById: (id) => api.get(`/customers/${id}`),
+  createCustomer: (data) => api.post('/customers', data),
+  updateCustomer: (id, data) => api.put(`/customers/${id}`, data),
+  deleteCustomer: (id) => api.delete(`/customers/${id}`),
+};
+
+export const companyApi = {
+  // Company operations
+  getCompanies: () => api.get('/companies'),
+  getCompanyById: (id) => api.get(`/companies/${id}`),
+  createCompany: (data) => api.post('/companies', data),
+  updateCompany: (id, data) => api.put(`/companies/${id}`, data),
+  deleteCompany: (id) => api.delete(`/companies/${id}`),
+};
+
+export const offerTemplatesApi = {
+  // Offer template operations
+  getTemplates: () => api.get('/offer-templates'),
+  getTemplateById: (id) => api.get(`/offer-templates/${id}`),
+  getTemplateItems: (id) => api.get(`/offer-templates/${id}/items`),
+  createTemplate: (data) => api.post('/offer-templates', data),
+  updateTemplate: (id, data) => api.put(`/offer-templates/${id}`, data),
+  deleteTemplate: (id) => api.delete(`/offer-templates/${id}`),
+  getPricelistsWithItems: () => api.get('/pricelists-with-items'),
+};
+
+export const offersApi = {
+  // Offer operations
+  getOffers: () => api.get('/offers'),
+  getOfferById: (id) => api.get(`/offers/${id}`),
+  getOfferDetails: (id) => api.get(`/offers/${id}/details`),
+  createOffer: (data) => api.post('/offers', data),
+  updateOffer: (id, data) => api.put(`/offers/${id}`, data),
+  deleteOffer: (id) => api.delete(`/offers/${id}`),
+  getNextOfferNumber: () => api.get('/offers/next-number'),
+  getAvailableOfferNumbers: () => api.get('/offers/available-numbers'),
+  saveOfferItems: (offerId, items) => api.post(`/offers/${offerId}/items`, { items }),
+  getOfferItems: (offerId) => api.get(`/offers/${offerId}/items`),
+  searchCustomers: (query) => api.get('/customers/search', { params: { query } }),
+};
+
+export const adminApi = {
+  // Admin operations
+  getUsers: () => api.get('/admin/users'),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
+  createUser: (data) => api.post('/admin/users', data),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
 };
 
 export default api;

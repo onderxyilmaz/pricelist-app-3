@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Input, Tag, Button, Space } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import { API_BASE_URL } from '../../../../config/env';
 import NotificationService from '../../../../utils/notification';
+import { offerTemplatesApi } from '../../../../utils/api';
 import styles from './OfferWizard.module.css';
 
 const { Search } = Input;
@@ -41,7 +40,7 @@ const TemplateStep = ({
   const fetchTemplates = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/offer-templates`);
+      const response = await offerTemplatesApi.getTemplates();
       if (response.data.success) {
         setTemplates(response.data.templates || []);
       }
@@ -71,7 +70,7 @@ const TemplateStep = ({
       // Template seçilmişse template items'ları yükle
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/api/offer-templates/${selectedTemplate.id}/items`);
+        const response = await offerTemplatesApi.getTemplateItems(selectedTemplate.id);
         if (response.data.success) {
           // Template'den gelen ürünleri mevcut pricelist items ile eşleştir
           const templateItems = response.data.items.map(templateItem => {

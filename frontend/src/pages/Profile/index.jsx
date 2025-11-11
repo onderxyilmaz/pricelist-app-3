@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { authApi } from '../../utils/api';
 import NotificationService from '../../utils/notification';
+import { API_BASE_URL } from '../../config/env';
 import ProfileCard from './components/ProfileCard';
 
 const Profile = ({ user, setUser }) => {
@@ -14,21 +15,77 @@ const Profile = ({ user, setUser }) => {
   });
   
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Sayfa yüklendiğinde backend'den güncel kullanıcı bilgilerini çek
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
-        email: user.email || '',
-        password: '',
-        confirmPassword: '',
-        avatar: user.avatar
-      });
+    const fetchCurrentUser = async () => {
+      if (user?.id) {
+        try {
+          setInitialLoading(true);
+          const response = await authApi.getUser(user.id);
+          
+          if (response.data.success && response.data.user) {
+            const currentUser = response.data.user;
+            
+            // Backend'den gelen güncel bilgileri localStorage'a kaydet
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            
+            // Parent component'teki user state'ini güncelle
+            if (setUser) {
+              setUser(currentUser);
+            }
+            
+            // Profile data'yı güncelle
+            setProfileData({
+              firstName: currentUser.first_name || '',
+              lastName: currentUser.last_name || '',
+              email: currentUser.email || '',
+              password: '',
+              confirmPassword: '',
+              avatar: currentUser.avatar_filename 
+                ? `${API_BASE_URL}/uploads/avatars/${currentUser.avatar_filename}`
+                : null
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching current user:', error);
+          // Hata durumunda localStorage'dan göster (fallback)
+          if (user) {
+            setProfileData({
+              firstName: user.first_name || '',
+              lastName: user.last_name || '',
+              email: user.email || '',
+              password: '',
+              confirmPassword: '',
+              avatar: user.avatar
+            });
+          }
+        } finally {
+          setInitialLoading(false);
+        }
+      }
+    };
+
+    fetchCurrentUser();
+  }, []); // Sadece component mount olduğunda çalışsın
+
+  // User prop'u değiştiğinde de güncelle (fallback)
+  useEffect(() => {
+    if (user && !initialLoading) {
+      setProfileData(prev => ({
+        ...prev,
+        firstName: user.first_name || prev.firstName,
+        lastName: user.last_name || prev.lastName,
+        email: user.email || prev.email,
+        avatar: user.avatar_filename 
+          ? `${API_BASE_URL}/uploads/avatars/${user.avatar_filename}`
+          : user.avatar || prev.avatar
+      }));
     }
-  }, [user]);
+  }, [user, initialLoading]);
 
   const onInputChange = (field, value) => {
     setProfileData(prev => {
@@ -179,7 +236,7 @@ const Profile = ({ user, setUser }) => {
       profileData={profileData}
       user={user}
       hasChanges={hasChanges}
-      loading={loading}
+      loading={loading || initialLoading}
       onInputChange={onInputChange}
       onSave={onSave}
       onFileChange={onFileChange}

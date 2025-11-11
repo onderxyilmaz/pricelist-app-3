@@ -13,8 +13,7 @@ import {
 import {
   SearchOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
-import { API_BASE_URL } from '../../../config/env';
+import { offerTemplatesApi } from '../../../utils/api';
 import styles from '../OfferTemplates.module.css';
 
 const { TextArea } = Input;
@@ -52,7 +51,7 @@ const TemplateModal = ({
   const fetchPricelists = async () => {
     try {
       console.log('Fetching pricelists...'); // Debug log
-      const response = await axios.get(`${API_BASE_URL}/api/pricelists-with-items`);
+      const response = await offerTemplatesApi.getPricelistsWithItems();
       console.log('Pricelists response:', response.data); // Debug log
       if (response.data.success) {
         setPricelists(response.data.pricelists);

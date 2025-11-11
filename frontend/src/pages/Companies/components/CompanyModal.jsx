@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Button } from 'antd';
-import { showErrorNotification, showSuccessNotification } from '../../../utils/notification';
+import NotificationService from '../../../utils/notification';
 
 const CompanyModal = ({
   visible,
