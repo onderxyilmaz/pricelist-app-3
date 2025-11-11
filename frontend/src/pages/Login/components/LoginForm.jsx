@@ -3,6 +3,7 @@ import { Form, Input, Button } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { authApi } from '../../../utils/api';
 import NotificationService from '../../../utils/notification';
+import logger from '../../../utils/logger';
 import styles from '../Login.module.css';
 
 const LoginForm = ({ onLogin }) => {
@@ -29,18 +30,24 @@ const LoginForm = ({ onLogin }) => {
     setLoading(true);
     try {
       const response = await authApi.login(values);
-      console.log('Login response:', response.data);
+      // Log only success status and user info (token is automatically redacted)
+      logger.info('Login successful:', { 
+        success: response.data.success,
+        userId: response.data.user?.id,
+        userName: response.data.user ? `${response.data.user.first_name} ${response.data.user.last_name}` : null
+      });
+      
       if (response.data.success && response.data.user && response.data.token) {
         // Store token in localStorage
         localStorage.setItem('token', response.data.token);
         NotificationService.loginSuccess(`${response.data.user.first_name} ${response.data.user.last_name}`);
         onLogin(response.data.user);
       } else {
-        console.log('Login failed:', response.data.message);
+        logger.warn('Login failed:', response.data.message);
         NotificationService.loginError(response.data.message);
       }
     } catch (error) {
-      console.log('Login error:', error);
+      logger.error('Login error:', error);
       if (error.code === 'ERR_NETWORK') {
         NotificationService.connectionError();
       } else {

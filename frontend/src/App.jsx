@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import trTR from 'antd/locale/tr_TR';
 import { authApi } from './utils/api';
 import NotificationService, { setNotificationApi } from './utils/notification';
+import logger from './utils/logger';
 import Login from './pages/Login/index.jsx';
 import Register from './pages/Register/index.jsx';
 import Navbar from './components/Navbar.jsx';
@@ -38,6 +39,12 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
   }, [notification]);
   
   useEffect(() => {
+    // Eğer /login veya /register path'indeyse ve user varsa, dashboard'a yönlendir
+    if ((location.pathname === '/login' || location.pathname === '/register') && user) {
+      navigate('/', { replace: true });
+      return;
+    }
+    
     // Sadece yeni login/register yapıldığında dashboard'a yönlendir
     // localStorage'da 'shouldNavigateToDashboard' flag'i varsa yönlendir
     const shouldNavigate = localStorage.getItem('shouldNavigateToDashboard');
@@ -45,7 +52,7 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
       localStorage.removeItem('shouldNavigateToDashboard');
       navigate('/', { replace: true });
     }
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, user]);
 
   const handleLogout = () => {
     onLogout();
@@ -102,21 +109,21 @@ const AppContent = () => {
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
-        console.log('Found saved user:', userData);
+        logger.debug('Found saved user:', { userId: userData.id, email: userData.email });
         
         // Validate user exists in database
         try {
           const userResponse = await authApi.getUser(userData.id);
           if (userResponse.data.success) {
-            console.log('User validated successfully');
+            logger.debug('User validated successfully');
             setUser(userData);
           } else {
-            console.warn('User validation failed:', userResponse.data.message);
+            logger.warn('User validation failed:', userResponse.data.message);
             localStorage.removeItem('user');
             setUser(null);
           }
         } catch (error) {
-          console.warn('User validation error, clearing localStorage:', error);
+          logger.warn('User validation error, clearing localStorage:', error);
           localStorage.removeItem('user');
           setUser(null);
         }
@@ -147,6 +154,10 @@ const AppContent = () => {
     localStorage.setItem('user', JSON.stringify(userData));
     // Login sonrası dashboard'a yönlendirmek için flag set et
     localStorage.setItem('shouldNavigateToDashboard', 'true');
+    // URL'i değiştir (sayfa yenilemeden)
+    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+      window.history.replaceState(null, '', '/');
+    }
   };
 
   const handleRegister = (userData) => {
@@ -154,6 +165,10 @@ const AppContent = () => {
     localStorage.setItem('user', JSON.stringify(userData));
     // Register sonrası dashboard'a yönlendirmek için flag set et
     localStorage.setItem('shouldNavigateToDashboard', 'true');
+    // URL'i değiştir (sayfa yenilemeden)
+    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+      window.history.replaceState(null, '', '/');
+    }
   };
 
   const handleUserUpdate = (updatedUser) => {

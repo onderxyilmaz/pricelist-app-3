@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as Sentry from '@sentry/react';
 import { API_URL, API_BASE_URL } from '../config/env';
+import logger from './logger';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -12,7 +13,8 @@ const api = axios.create({
 // Request interceptor - Add JWT token to headers
 api.interceptors.request.use(
   (config) => {
-    console.log('API Request:', config.method.toUpperCase(), config.url);
+    // Log API request (only method and URL, no sensitive data)
+    logger.debug('API Request:', config.method.toUpperCase(), config.url);
 
     // Get token from localStorage
     const token = localStorage.getItem('token');
@@ -35,7 +37,7 @@ api.interceptors.response.use(
     // Başarılı response'larda da kontrol et
     if (response.data && response.data.success === false &&
         response.data.message === 'Kullanıcı bulunamadı') {
-      console.warn('User not found in database (success:false), clearing localStorage');
+      logger.warn('User not found in database (success:false), clearing localStorage');
       localStorage.removeItem('user');
       localStorage.removeItem('token');
 
@@ -46,7 +48,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    logger.error('API Error:', error.response?.data || error.message);
 
     // Capture API errors in Sentry (excluding auth errors)
     if (error.response?.status !== 401 && error.response?.status !== 403) {
@@ -103,7 +105,7 @@ api.interceptors.response.use(
 
       if (token) {
         try {
-          console.log('Attempting to refresh token...');
+          logger.debug('Attempting to refresh token...');
           const response = await axios.post(
             `${API_URL}/auth/refresh`,
             {},
@@ -126,7 +128,7 @@ api.interceptors.response.use(
             return api(originalRequest);
           }
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
+          logger.error('Token refresh failed:', refreshError);
           localStorage.removeItem('user');
           localStorage.removeItem('token');
 
@@ -148,7 +150,7 @@ api.interceptors.response.use(
 
     // Handle 403 Forbidden (insufficient permissions)
     if (error.response?.status === 403) {
-      console.warn('Access forbidden:', error.response.data?.message);
+      logger.warn('Access forbidden:', error.response.data?.message);
       // Could show a notification here
     }
 
