@@ -1,10 +1,10 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { requireAdmin } = require('../middleware/auth');
+const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
 
 module.exports = async function (fastify, opts) {
   // Tüm kullanıcıları listele (admin only)
-  fastify.get('/users', { preHandler: requireAdmin }, async (request, reply) => {
+  fastify.get('/users', { preHandler: [authMiddleware, requireRole(['super_admin'])] }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(
@@ -26,7 +26,7 @@ module.exports = async function (fastify, opts) {
   });
 
   // Yeni kullanıcı oluştur (admin only)
-  fastify.post('/users', { preHandler: requireAdmin }, async (request, reply) => {
+  fastify.post('/users', { preHandler: [authMiddleware, requireRole(['super_admin'])] }, async (request, reply) => {
     const { first_name, last_name, email, password, role } = request.body;
 
     try {
@@ -68,7 +68,7 @@ module.exports = async function (fastify, opts) {
   });
 
   // Kullanıcı güncelle (admin only)
-  fastify.put('/users/:id', { preHandler: requireAdmin }, async (request, reply) => {
+  fastify.put('/users/:id', { preHandler: [authMiddleware, requireRole(['super_admin'])] }, async (request, reply) => {
     const { id } = request.params;
     const { first_name, last_name, role } = request.body;
 
@@ -103,7 +103,7 @@ module.exports = async function (fastify, opts) {
   });
 
   // Kullanıcı sil (admin only)
-  fastify.delete('/users/:id', { preHandler: requireAdmin }, async (request, reply) => {
+  fastify.delete('/users/:id', { preHandler: [authMiddleware, requireRole(['super_admin'])] }, async (request, reply) => {
     const { id } = request.params;
 
     try {

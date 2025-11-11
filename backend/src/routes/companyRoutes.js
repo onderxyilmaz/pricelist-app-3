@@ -1,6 +1,8 @@
+const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
+
 async function companyRoutes(fastify, options) {
   // Get all companies
-  fastify.get('/companies', async (request, reply) => {
+  fastify.get('/companies', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -22,6 +24,7 @@ async function companyRoutes(fastify, options) {
 
   // Create new company
   fastify.post('/companies', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Companies'],
       summary: 'Create new company',
@@ -75,7 +78,7 @@ async function companyRoutes(fastify, options) {
   });
 
   // Update company
-  fastify.put('/companies/:id', async (request, reply) => {
+  fastify.put('/companies/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { company_name } = request.body;
@@ -107,6 +110,7 @@ async function companyRoutes(fastify, options) {
 
   // Delete company
   fastify.delete('/companies/:id', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Companies'],
       summary: 'Delete company',

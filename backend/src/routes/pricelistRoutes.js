@@ -1,6 +1,9 @@
+const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
+
 async function pricelistRoutes(fastify, options) {
   // Get all pricelists
   fastify.get('/pricelists', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Pricelists'],
       summary: 'Get all pricelists',
@@ -47,7 +50,7 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Get pricelist by ID with items
-  fastify.get('/pricelists/:id', async (request, reply) => {
+  fastify.get('/pricelists/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const client = await fastify.pg.connect();
@@ -78,6 +81,7 @@ async function pricelistRoutes(fastify, options) {
 
   // Create new pricelist
   fastify.post('/pricelists', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Pricelists'],
       summary: 'Create new pricelist',
@@ -120,7 +124,7 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Update pricelist
-  fastify.put('/pricelists/:id', async (request, reply) => {
+  fastify.put('/pricelists/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { name, description, currency, color } = request.body;
@@ -140,6 +144,7 @@ async function pricelistRoutes(fastify, options) {
 
   // Add item to pricelist
   fastify.post('/pricelists/:id/items', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Items'],
       summary: 'Add item to pricelist',
@@ -219,6 +224,7 @@ async function pricelistRoutes(fastify, options) {
 
   // Update pricelist item
   fastify.put('/items/:id', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Items'],
       summary: 'Update pricelist item',
@@ -290,6 +296,7 @@ async function pricelistRoutes(fastify, options) {
 
   // Delete pricelist item
   fastify.delete('/items/:id', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Items'],
       summary: 'Delete pricelist item',
@@ -327,6 +334,7 @@ async function pricelistRoutes(fastify, options) {
 
   // Delete pricelist
   fastify.delete('/pricelists/:id', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Pricelists'],
       summary: 'Delete pricelist',
@@ -364,7 +372,7 @@ async function pricelistRoutes(fastify, options) {
   });
 
   // Get all items from all pricelists
-  fastify.get('/all-items', async (request, reply) => {
+  fastify.get('/all-items', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -396,7 +404,7 @@ async function pricelistRoutes(fastify, options) {
 
   // Dashboard statistics
   // Teklif için fiyat listeleri ve ürünleri getir (stok bilgisi ile)
-  fastify.get('/pricelists-with-items', async (request, reply) => {
+  fastify.get('/pricelists-with-items', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       
@@ -432,7 +440,7 @@ async function pricelistRoutes(fastify, options) {
     }
   });
 
-  fastify.get('/dashboard/stats', async (request, reply) => {
+  fastify.get('/dashboard/stats', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       

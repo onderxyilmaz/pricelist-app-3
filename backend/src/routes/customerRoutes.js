@@ -1,6 +1,8 @@
+const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
+
 async function customerRoutes(fastify, options) {
   // Müşteri arama endpoint'i
-  fastify.get('/customers/search', async (request, reply) => {
+  fastify.get('/customers/search', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { query } = request.query;
       
@@ -35,7 +37,7 @@ async function customerRoutes(fastify, options) {
   });
 
   // Tüm müşterileri getir
-  fastify.get('/customers', async (request, reply) => {
+  fastify.get('/customers', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
 
@@ -63,6 +65,7 @@ async function customerRoutes(fastify, options) {
 
   // Yeni müşteri oluştur
   fastify.post('/customers', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Customers'],
       summary: 'Create new customer',
@@ -117,7 +120,7 @@ async function customerRoutes(fastify, options) {
   });
 
   // Müşteri güncelle
-  fastify.put('/customers/:id', async (request, reply) => {
+  fastify.put('/customers/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { name } = request.body;
@@ -172,6 +175,7 @@ async function customerRoutes(fastify, options) {
 
   // Müşteri sil
   fastify.delete('/customers/:id', {
+    preHandler: authMiddleware,
     schema: {
       tags: ['Customers'],
       summary: 'Delete customer',

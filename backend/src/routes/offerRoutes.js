@@ -1,8 +1,9 @@
 const fastify = require('fastify');
+const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
 
 async function offerRoutes(fastify, options) {
   // Bu yıl için boş (silinmiş) teklif numaralarını getir
-  fastify.get('/offers/available-numbers', async (request, reply) => {
+  fastify.get('/offers/available-numbers', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const currentYear = new Date().getFullYear();
@@ -37,7 +38,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Tüm teklifleri getir
-  fastify.get('/offers', async (request, reply) => {
+  fastify.get('/offers', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(`
@@ -60,7 +61,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Tek teklifi detayları ile getir
-  fastify.get('/offers/:id', async (request, reply) => {
+  fastify.get('/offers/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       
@@ -114,7 +115,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Excel export için teklif detaylarını gruplu olarak getir
-  fastify.get('/offers/:id/details', async (request, reply) => {
+  fastify.get('/offers/:id/details', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       
@@ -186,7 +187,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Yeni teklif oluştur
-  fastify.post('/offers', async (request, reply) => {
+  fastify.post('/offers', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { offer_no, customer, created_by, parent_offer_id, revision_no } = request.body;
       
@@ -243,7 +244,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Teklif güncelle
-  fastify.put('/offers/:id', async (request, reply) => {
+  fastify.put('/offers/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { offer_no, customer, revision_no, status, parent_offer_id, customer_response } = request.body;
@@ -329,7 +330,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Teklife ürün ekleme
-  fastify.post('/offers/:id/items', async (request, reply) => {
+  fastify.post('/offers/:id/items', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { items } = request.body; // [{pricelist_item_id, quantity, price, ...}, ...]
@@ -395,7 +396,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Teklif kalemlerini getir
-  fastify.get('/offers/:id/items', async (request, reply) => {
+  fastify.get('/offers/:id/items', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       
@@ -418,7 +419,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Teklif sil
-  fastify.delete('/offers/:id', async (request, reply) => {
+  fastify.delete('/offers/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       
@@ -443,7 +444,7 @@ async function offerRoutes(fastify, options) {
   // ====================================
 
   // Get all offer templates
-  fastify.get('/offer-templates', async (request, reply) => {
+  fastify.get('/offer-templates', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const client = await fastify.pg.connect();
       
@@ -478,7 +479,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Get template items
-  fastify.get('/offer-templates/:id/items', async (request, reply) => {
+  fastify.get('/offer-templates/:id/items', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const client = await fastify.pg.connect();
@@ -511,7 +512,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Create new offer template
-  fastify.post('/offer-templates', async (request, reply) => {
+  fastify.post('/offer-templates', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { name, description, items, created_by } = request.body;
       
@@ -577,7 +578,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Update offer template
-  fastify.put('/offer-templates/:id', async (request, reply) => {
+  fastify.put('/offer-templates/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       const { name, description, items, updated_by } = request.body;
@@ -651,7 +652,7 @@ async function offerRoutes(fastify, options) {
   });
 
   // Delete offer template
-  fastify.delete('/offer-templates/:id', async (request, reply) => {
+  fastify.delete('/offer-templates/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
       

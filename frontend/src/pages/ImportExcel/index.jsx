@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
 import axios from 'axios';
-import NotificationService from '../utils/notification';
+import NotificationService from '../../utils/notification';
 import { useLocation } from 'react-router-dom';
 
 const { Title, Text } = Typography;

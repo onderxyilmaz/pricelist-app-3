@@ -5,20 +5,20 @@ import { Toaster } from 'react-hot-toast';
 import trTR from 'antd/locale/tr_TR';
 import { authApi } from './utils/api';
 import NotificationService, { setNotificationApi } from './utils/notification';
-import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx';
+import Login from './pages/Login/index.jsx';
+import Register from './pages/Register/index.jsx';
 import Navbar from './components/Navbar.jsx';
 import LogoutHandler from './components/LogoutHandler.jsx';
-import Dashboard from './pages/Dashboard.jsx';
+import Dashboard from './pages/Dashboard/index.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Pricelist from './pages/Pricelist/index.jsx';
-import PricelistDetail from './pages/PricelistDetail.jsx';
+import PricelistDetail from './pages/PricelistDetail/index.jsx';
 import Profile from './pages/Profile/index.jsx';
-import ImportExcel from './pages/ImportExcel.jsx';
-import UserManagement from './pages/UserManagement.jsx';
+import ImportExcel from './pages/ImportExcel/index.jsx';
+import UserManagement from './pages/UserManagement/index.jsx';
 import AllProducts from './pages/AllProducts/index.jsx';
-import Offers from './pages/Offers.jsx';
-import OfferTemplates from './pages/OfferTemplates.jsx';
+import Offers from './pages/Offers/index.jsx';
+import OfferTemplates from './pages/OfferTemplates/index.jsx';
 import Customers from './pages/Customers/index.jsx';
 import './App.css';
 
@@ -162,11 +162,12 @@ const AppContent = () => {
   const handleLogout = () => {
     // Logout bildirimini göster
     NotificationService.logoutSuccess();
-    
+
     // Bildirimin görünmesi için kısa bir gecikme ekle
     setTimeout(() => {
       setUser(null);
       localStorage.removeItem('user');
+      localStorage.removeItem('token');
       setShowRegister(false);
       // Logout sonrası login sayfasına yönlendir
       window.location.href = '/login';

@@ -3,6 +3,7 @@ async function authRoutes(fastify, options) {
   const fs = require('fs-extra');
   const crypto = require('crypto');
   const bcrypt = require('bcryptjs');
+  const jwt = require('jsonwebtoken');
   // Check if any users exist
   fastify.get('/check-users', async (request, reply) => {
     try {
@@ -82,14 +83,25 @@ async function authRoutes(fastify, options) {
       // Şifreyi doğrula
       const user = result.rows[0];
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      
+
       if (!isPasswordValid) {
         return { success: false, message: 'E-mail veya şifre hatalı' };
       }
 
+      // JWT token oluştur
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
       // Şifreyi response'dan çıkar
       delete user.password;
-      return { success: true, user };
+      return { success: true, user, token };
     } catch (err) {
       return { success: false, message: err.message };
     }
