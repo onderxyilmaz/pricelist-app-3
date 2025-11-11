@@ -3,6 +3,7 @@ import { Modal, Form, Input, Button, Row, Col, Select, InputNumber, Space } from
 import styles from '../AllProducts.module.css';
 
 const { Option } = Select;
+const { Compact } = Space;
 
 const EditProductModal = ({
   visible,
@@ -58,7 +59,7 @@ const EditProductModal = ({
         {/* Tek dil seçimi - hem ürün adı hem açıklama için */}
         <Form.Item label="Dil Seçimi">
           <div className={styles.formLanguageToggle}>
-            <Button.Group className={styles.formLanguageButtonGroup}>
+            <Compact className={styles.formLanguageButtonGroup}>
               <Button 
                 type={formLanguage === 'en' ? 'primary' : 'default'}
                 onClick={() => onLanguageChange('en')}
@@ -77,7 +78,7 @@ const EditProductModal = ({
               >
                 TR
               </Button>
-            </Button.Group>
+            </Compact>
           </div>
         </Form.Item>
 

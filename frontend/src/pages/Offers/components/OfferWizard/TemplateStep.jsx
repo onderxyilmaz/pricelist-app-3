@@ -6,7 +6,7 @@ import NotificationService from '../../../../utils/notification';
 import { offerTemplatesApi } from '../../../../utils/api';
 import styles from './OfferWizard.module.css';
 
-const { Search } = Input;
+const { Compact } = Space;
 
 const TemplateStep = ({ 
   offerData,
@@ -184,16 +184,25 @@ const TemplateStep = ({
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Search
-          placeholder="Template ara..."
-          allowClear
-          value={templateFilter}
-          onChange={(e) => setTemplateFilter(e.target.value)}
-          onSearch={(value) => setTemplateFilter(value)}
-          style={{ width: 300 }}
-          prefix={<SearchOutlined />}
-          autoFocus
-        />
+        <Compact style={{ width: 300 }}>
+          <Input
+            placeholder="Template ara..."
+            allowClear
+            value={templateFilter}
+            onChange={(e) => setTemplateFilter(e.target.value)}
+            onPressEnter={() => setTemplateFilter(templateFilter)}
+            prefix={<SearchOutlined />}
+            onClear={() => setTemplateFilter('')}
+            autoFocus
+          />
+          <Button 
+            type="primary" 
+            icon={<SearchOutlined />}
+            onClick={() => setTemplateFilter(templateFilter)}
+          >
+            Ara
+          </Button>
+        </Compact>
       </div>
 
       <Table

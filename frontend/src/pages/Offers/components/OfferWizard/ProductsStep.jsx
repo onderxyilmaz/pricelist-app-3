@@ -4,8 +4,7 @@ import { Collapse, Checkbox, Input, Button, Space } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { InputNumber as AntInputNumber } from 'antd';
 
-const { Panel } = Collapse;
-const { Search } = Input;
+const { Compact } = Space;
 
 const ProductsStep = ({
   offerData,
@@ -112,14 +111,24 @@ const ProductsStep = ({
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Search
-          placeholder="Ürün ara... (ürün adı, ID veya açıklama)"
-          allowClear
-          value={productFilter}
-          onChange={(e) => setProductFilter(e.target.value)}
-          style={{ width: '100%' }}
-          prefix={<SearchOutlined />}
-        />
+        <Compact style={{ width: '100%' }}>
+          <Input
+            placeholder="Ürün ara... (ürün adı, ID veya açıklama)"
+            allowClear
+            value={productFilter}
+            onChange={(e) => setProductFilter(e.target.value)}
+            onPressEnter={() => setProductFilter(productFilter)}
+            prefix={<SearchOutlined />}
+            onClear={() => setProductFilter('')}
+          />
+          <Button 
+            type="primary" 
+            icon={<SearchOutlined />}
+            onClick={() => setProductFilter(productFilter)}
+          >
+            Ara
+          </Button>
+        </Compact>
       </div>
 
       {/* Filtreleme sonucu kontrolü */}
@@ -138,105 +147,119 @@ const ProductsStep = ({
         </div>
       )}
 
-      <Collapse>
-        {pricelists.map(pricelist => {
-          const filteredItems = filterItems(pricelist.items || []);
-          if (filteredItems.length === 0 && productFilter.trim()) {
-            return null;
-          }
-          return (
-            <Panel 
-              header={`${pricelist.name} (${pricelist.currency}) - ${filteredItems.length}/${(pricelist.items || []).length} ürün${productFilter.trim() ? ' (filtrelenmiş)' : ''}`} 
-              key={pricelist.id}
-            >
-              {filteredItems.map(item => {
-                const selectedItem = selectedItems.find(selected => 
-                  selected.id === item.id || 
-                  (selected.product_id === item.product_id && selected.pricelist_id === pricelist.id)
-                );
-                const isSelected = !!selectedItem;
-                return (
-                  <div key={item.id} style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    padding: '8px 0',
-                    borderBottom: '1px solid #f0f0f0'
-                  }}>
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={(e) => handleItemSelection({...item, pricelist_id: pricelist.id, currency: pricelist.currency}, e.target.checked)}
-                    />
-                    <div style={{ flex: 1, marginLeft: 12 }}>
-                      <div><strong>{selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)}</strong> ({item.product_id})</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
-                        {(selectedLanguage === 'tr' ? (item.description_tr || item.description_en || item.description) : (item.description_en || item.description_tr || item.description)) || 'Açıklama yok'} | {item.price} {pricelist.currency} | 
-                        <span style={{ 
-                          color: item.stock <= 0 ? '#ff4d4f' : item.stock < 10 ? '#ff4d4f' : item.stock < 50 ? '#faad14' : '#52c41a',
-                          fontWeight: 'bold',
-                          marginLeft: 4
-                        }}>
-                          Stok: {item.stock} {item.unit}
-                        </span>
-                        {item.stock <= 0 && <span style={{ color: '#ff4d4f' }}> (Stok Yok!)</span>}
-                        {item.stock > 0 && item.stock < 10 && <span style={{ color: '#ff4d4f' }}> (Düşük Stok!)</span>}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <div style={{ marginLeft: 12, display: 'flex', alignItems: 'center' }}>
-                        <span style={{ marginRight: 8 }}>Adet:</span>
-                        <AntInputNumber
-                          min={0}
-                          max={item.stock <= 0 ? 0 : item.stock}
-                          value={selectedItem.quantity}
-                          onChange={(value) => handleQuantityChange(selectedItem.id, value)}
-                          disabled={item.stock <= 0}
-                          style={{ width: 80 }}
+      <Collapse
+        items={pricelists
+          .map(pricelist => {
+            const filteredItems = filterItems(pricelist.items || []);
+            if (filteredItems.length === 0 && productFilter.trim()) {
+              return null;
+            }
+            return {
+              key: pricelist.id,
+              label: `${pricelist.name} (${pricelist.currency}) - ${filteredItems.length}/${(pricelist.items || []).length} ürün${productFilter.trim() ? ' (filtrelenmiş)' : ''}`,
+              children: (
+                <>
+                  {filteredItems.map(item => {
+                    const selectedItem = selectedItems.find(selected => 
+                      selected.id === item.id || 
+                      (selected.product_id === item.product_id && selected.pricelist_id === pricelist.id)
+                    );
+                    const isSelected = !!selectedItem;
+                    return (
+                      <div key={item.id} style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '8px 0',
+                        borderBottom: '1px solid #f0f0f0'
+                      }}>
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={(e) => handleItemSelection({...item, pricelist_id: pricelist.id, currency: pricelist.currency}, e.target.checked)}
                         />
-                        <span style={{ marginLeft: 8, fontWeight: 'bold' }}>
-                          {selectedItem.total_price} {pricelist.currency}
-                        </span>
-                        {/* İndirim alanı */}
-                        <Input
-                          placeholder="Ürün İndirimi %"
-                          value={itemDiscounts[item.id] || ''}
-                          onChange={e => {
-                            const value = e.target.value;
-                            if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
-                              setItemDiscounts({ ...itemDiscounts, [item.id]: value });
-                            }
-                          }}
-                          style={{ width: 120, marginLeft: 8 }}
-                          addonAfter="%"
-                        />
-                        {/* İndirimli fiyat gösterimi */}
-                        {itemDiscounts[item.id] && parseFloat(itemDiscounts[item.id]) > 0 && (
-                          <span style={{ 
-                            marginLeft: 8, 
-                            fontWeight: 'bold',
-                            color: '#52c41a'
-                          }}>
-                            İndirimli: {formatCurrency(
-                              (parseFloat(selectedItem.total_price) * (1 - parseFloat(itemDiscounts[item.id]) / 100)),
-                              pricelist.currency
+                        <div style={{ flex: 1, marginLeft: 12 }}>
+                          <div><strong>{selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)}</strong> ({item.product_id})</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {(selectedLanguage === 'tr' ? (item.description_tr || item.description_en || item.description) : (item.description_en || item.description_tr || item.description)) || 'Açıklama yok'} | {item.price} {pricelist.currency} | 
+                            <span style={{ 
+                              color: item.stock <= 0 ? '#ff4d4f' : item.stock < 10 ? '#ff4d4f' : item.stock < 50 ? '#faad14' : '#52c41a',
+                              fontWeight: 'bold',
+                              marginLeft: 4
+                            }}>
+                              Stok: {item.stock} {item.unit}
+                            </span>
+                            {item.stock <= 0 && <span style={{ color: '#ff4d4f' }}> (Stok Yok!)</span>}
+                            {item.stock > 0 && item.stock < 10 && <span style={{ color: '#ff4d4f' }}> (Düşük Stok!)</span>}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div style={{ marginLeft: 12, display: 'flex', alignItems: 'center' }}>
+                            <span style={{ marginRight: 8 }}>Adet:</span>
+                            <AntInputNumber
+                              min={0}
+                              max={item.stock <= 0 ? 0 : item.stock}
+                              value={selectedItem.quantity}
+                              onChange={(value) => handleQuantityChange(selectedItem.id, value)}
+                              disabled={item.stock <= 0}
+                              style={{ width: 80 }}
+                            />
+                            <span style={{ marginLeft: 8, fontWeight: 'bold' }}>
+                              {selectedItem.total_price} {pricelist.currency}
+                            </span>
+                            {/* İndirim alanı */}
+                            <Compact style={{ marginLeft: 8 }}>
+                              <Input
+                                placeholder="Ürün İndirimi %"
+                                value={itemDiscounts[item.id] || ''}
+                                onChange={e => {
+                                  const value = e.target.value;
+                                  if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                    setItemDiscounts({ ...itemDiscounts, [item.id]: value });
+                                  }
+                                }}
+                                style={{ width: 100 }}
+                              />
+                              <span style={{ 
+                                padding: '4px 11px', 
+                                border: '1px solid #d9d9d9',
+                                borderLeft: 'none',
+                                backgroundColor: '#fafafa',
+                                borderRadius: '0 6px 6px 0',
+                                display: 'inline-block',
+                                fontSize: '14px'
+                              }}>%</span>
+                            </Compact>
+                            {/* İndirimli fiyat gösterimi */}
+                            {itemDiscounts[item.id] && parseFloat(itemDiscounts[item.id]) > 0 && (
+                              <span style={{ 
+                                marginLeft: 8, 
+                                fontWeight: 'bold',
+                                color: '#52c41a'
+                              }}>
+                                İndirimli: {formatCurrency(
+                                  (parseFloat(selectedItem.total_price) * (1 - parseFloat(itemDiscounts[item.id]) / 100)),
+                                  pricelist.currency
+                                )}
+                              </span>
                             )}
-                          </span>
+                            {/* Açıklama alanı */}
+                            <Input
+                              placeholder="Açıklama (opsiyonel)"
+                              value={itemNotes[item.id] || ''}
+                              onChange={e => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
+                              style={{ width: 180, marginLeft: 8 }}
+                            />
+                          </div>
                         )}
-                        {/* Açıklama alanı */}
-                        <Input
-                          placeholder="Açıklama (opsiyonel)"
-                          value={itemNotes[item.id] || ''}
-                          onChange={e => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
-                          style={{ width: 180, marginLeft: 8 }}
-                        />
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </Panel>
-          );
-        })}
-      </Collapse>
+                    );
+                  })}
+                </>
+              )
+            };
+          })
+          .filter(Boolean)
+        }
+      />
 
       <div style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 6 }}>
         {(() => {

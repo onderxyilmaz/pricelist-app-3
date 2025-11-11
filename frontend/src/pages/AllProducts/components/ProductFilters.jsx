@@ -1,11 +1,11 @@
 import React from 'react';
-import { Card, Input, Select, Button, Row, Col, Typography } from 'antd';
+import { Card, Input, Select, Button, Row, Col, Typography, Space } from 'antd';
 import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import styles from '../AllProducts.module.css';
 
-const { Search } = Input;
 const { Option } = Select;
 const { Text } = Typography;
+const { Compact } = Space;
 
 const ProductFilters = ({
   searchText,
@@ -22,17 +22,26 @@ const ProductFilters = ({
     <Card className={styles.filterCard}>
       <Row gutter={16} className={styles.filterRow}>
         <Col span={6}>
-          <Search
-            className={styles.searchInput}
-            placeholder="Ürün adı, ID veya açıklama ile ara..."
-            value={searchText}
-            onChange={(e) => onSearch(e.target.value)}
-            onSearch={onSearch}
-            prefix={<SearchOutlined />}
-            allowClear
-            autoComplete="off"
-            autoFocus
-          />
+          <Compact className={styles.searchInput}>
+            <Input
+              placeholder="Ürün adı, ID veya açıklama ile ara..."
+              value={searchText}
+              onChange={(e) => onSearch(e.target.value)}
+              onPressEnter={() => onSearch(searchText)}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={() => onSearch('')}
+              autoComplete="off"
+              autoFocus
+            />
+            <Button 
+              type="primary" 
+              icon={<SearchOutlined />}
+              onClick={() => onSearch(searchText)}
+            >
+              Ara
+            </Button>
+          </Compact>
         </Col>
         <Col span={5}>
           <Select
@@ -54,7 +63,7 @@ const ProductFilters = ({
         <Col span={3}>
           <div className={styles.languageToggle}>
             <Text strong className={styles.languageLabel}>Görünüm:</Text>
-            <Button.Group className={styles.languageButtonGroup}>
+            <Compact className={styles.languageButtonGroup}>
               <Button 
                 type={tableLanguage === 'en' ? 'primary' : 'default'}
                 onClick={() => onLanguageChange('en')}
@@ -75,7 +84,7 @@ const ProductFilters = ({
               >
                 TR
               </Button>
-            </Button.Group>
+            </Compact>
           </div>
         </Col>
         <Col span={3}>

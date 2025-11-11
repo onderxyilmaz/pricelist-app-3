@@ -1,6 +1,6 @@
 // OfferWizard component
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Button } from 'antd';
+import { Modal, Form, Button, Space } from 'antd';
 import DetailsStep from './DetailsStep';
 import TemplateStep from './TemplateStep';
 import ProductsStep from './ProductsStep';
@@ -375,7 +375,7 @@ const OfferWizard = ({
       width={1200}
       className={styles.wizardModal}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={(open) => {
         if (open && !editingOffer && currentStep === 0) {
           setTimeout(() => {
@@ -394,7 +394,7 @@ const OfferWizard = ({
         {/* Language Selection */}
         {showLanguageSelector() && (
           <div style={{ marginBottom: 16, textAlign: 'center' }}>
-            <Button.Group>
+            <Space.Compact>
               <Button
                 type={selectedLanguage === 'en' ? 'primary' : 'default'}
                 onClick={() => setSelectedLanguage('en')}
@@ -417,7 +417,7 @@ const OfferWizard = ({
               >
                 TR
               </Button>
-            </Button.Group>
+            </Space.Compact>
           </div>
         )}
         

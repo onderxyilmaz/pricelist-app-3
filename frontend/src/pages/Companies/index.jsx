@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form } from 'antd';
+import { Card } from 'antd';
 
 import CompanyHeader from './components/CompanyHeader';
 import CompanySearch from './components/CompanySearch';
@@ -15,7 +15,6 @@ const Companies = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
-  const [form] = Form.useForm();
 
   useEffect(() => {
     document.title = 'Price List App v3 - Companies';
@@ -56,15 +55,11 @@ const Companies = () => {
 
   const handleCreate = () => {
     setEditingCompany(null);
-    form.resetFields();
     setModalVisible(true);
   };
 
   const handleEdit = (company) => {
     setEditingCompany(company);
-    form.setFieldsValue({
-      company_name: company.company_name
-    });
     setModalVisible(true);
   };
 
@@ -73,26 +68,27 @@ const Companies = () => {
       if (editingCompany) {
         // Güncelleme
         const response = await companyApi.updateCompany(editingCompany.id, values);
-        if (response.data.success) {
+        if (response.data && response.data.id) {
           NotificationService.success('Başarılı', 'Firma güncellendi');
           fetchCompanies();
+          setModalVisible(false);
         } else {
-          NotificationService.error('Hata', response.data.message || 'Güncelleme başarısız');
+          NotificationService.error('Hata', response.data?.error || response.data?.message || 'Güncelleme başarısız');
         }
       } else {
         // Yeni oluşturma
         const response = await companyApi.createCompany(values);
-        if (response.data.success) {
+        if (response.data && response.data.id) {
           NotificationService.success('Başarılı', 'Firma oluşturuldu');
           fetchCompanies();
+          setModalVisible(false);
         } else {
-          NotificationService.error('Hata', response.data.message || 'Oluşturma başarısız');
+          NotificationService.error('Hata', response.data?.error || response.data?.message || 'Oluşturma başarısız');
         }
       }
-      setModalVisible(false);
     } catch (error) {
       console.error('Error saving company:', error);
-      const errorMessage = error.response?.data?.message || error.message || (editingCompany ? 'Güncelleme başarısız' : 'Oluşturma başarısız');
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || (editingCompany ? 'Güncelleme başarısız' : 'Oluşturma başarısız');
       NotificationService.error('Hata', errorMessage);
     }
   };
@@ -100,15 +96,15 @@ const Companies = () => {
   const handleDelete = async (id) => {
     try {
       const response = await companyApi.deleteCompany(id);
-      if (response.data.success) {
+      if (response.status === 200 || response.data?.message) {
         NotificationService.success('Başarılı', 'Firma silindi');
         fetchCompanies();
       } else {
-        NotificationService.error('Hata', response.data.message || 'Silme işlemi başarısız');
+        NotificationService.error('Hata', response.data?.error || response.data?.message || 'Silme işlemi başarısız');
       }
     } catch (error) {
       console.error('Error deleting company:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Silme işlemi başarısız';
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Silme işlemi başarısız';
       NotificationService.error('Hata', errorMessage);
     }
   };
@@ -138,7 +134,6 @@ const Companies = () => {
         onCancel={handleModalCancel}
         onSubmit={handleSubmit}
         editingCompany={editingCompany}
-        form={form}
       />
     </div>
   );

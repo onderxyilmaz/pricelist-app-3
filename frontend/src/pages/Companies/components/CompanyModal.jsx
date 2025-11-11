@@ -6,9 +6,9 @@ const CompanyModal = ({
   visible,
   onCancel,
   onSubmit,
-  editingCompany,
-  form
+  editingCompany
 }) => {
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const CompanyModal = ({
       onCancel={handleCancel}
       footer={null}
       width={500}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={(open) => {
         if (open) {
           setTimeout(() => {

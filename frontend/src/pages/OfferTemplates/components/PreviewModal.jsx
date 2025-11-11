@@ -11,7 +11,7 @@ import {
 import styles from '../OfferTemplates.module.css';
 
 const { Title } = Typography;
-const { Panel } = Collapse;
+const { Compact } = Space;
 
 const PreviewModal = ({ 
   visible,
@@ -143,7 +143,7 @@ const PreviewModal = ({
         >
           <Space className={styles.previewLanguageControls}>
             <span className={styles.previewLanguageLabel}>Dil:</span>
-            <Button.Group>
+            <Compact>
               <Button 
                 type={language === 'en' ? 'primary' : 'default'}
                 onClick={() => onLanguageChange('en')}
@@ -162,7 +162,7 @@ const PreviewModal = ({
               >
                 TR
               </Button>
-            </Button.Group>
+            </Compact>
           </Space>
           <Button onClick={onClose}>Kapat</Button>
         </Space>
@@ -188,29 +188,27 @@ const PreviewModal = ({
           <Collapse 
             defaultActiveKey={groupedEntries.map((_, index) => index.toString())}
             className={styles.pricelistCollapse}
-          >
-            {groupedEntries.map(([pricelistId, group], index) => {
+            items={groupedEntries.map(([pricelistId, group], index) => {
               const pricelistTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
               const groupCurrency = group.items.length > 0 ? group.items[0].currency : 'EUR';
               
-              return (
-                <Panel 
-                  key={index.toString()}
-                  header={
-                    <div className={styles.pricelistHeader}>
-                      <span className={styles.pricelistInfo}>
-                        <div 
-                          className={styles.pricelistColorDot}
-                          style={{ backgroundColor: group.pricelistColor }}
-                        />
-                        {group.pricelistName}
-                      </span>
-                      <Tag color="blue" className={styles.pricelistStats}>
-                        {group.items.length} ürün - {pricelistTotal.toFixed(2)} {groupCurrency}
-                      </Tag>
-                    </div>
-                  }
-                >
+              return {
+                key: index.toString(),
+                label: (
+                  <div className={styles.pricelistHeader}>
+                    <span className={styles.pricelistInfo}>
+                      <div 
+                        className={styles.pricelistColorDot}
+                        style={{ backgroundColor: group.pricelistColor }}
+                      />
+                      {group.pricelistName}
+                    </span>
+                    <Tag color="blue" className={styles.pricelistStats}>
+                      {group.items.length} ürün - {pricelistTotal.toFixed(2)} {groupCurrency}
+                    </Tag>
+                  </div>
+                ),
+                children: (
                   <Table
                     columns={getTableColumns()}
                     dataSource={group.items}
@@ -219,10 +217,10 @@ const PreviewModal = ({
                     size="small"
                     className={styles.previewTable}
                   />
-                </Panel>
-              );
+                )
+              };
             })}
-          </Collapse>
+          />
         )}
         
         {/* Genel Toplam */}

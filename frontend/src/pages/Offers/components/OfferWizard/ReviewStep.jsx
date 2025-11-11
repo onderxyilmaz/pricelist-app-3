@@ -3,7 +3,6 @@ import React from 'react';
 import { Table, Button, Space, Typography, Collapse } from 'antd';
 
 const { Title } = Typography;
-const { Panel } = Collapse;
 
 const ReviewStep = ({
   offerData,
@@ -142,26 +141,26 @@ const ReviewStep = ({
       )}
 
       {/* Ürünler - Fiyat Listelerine Göre */}
-      <Collapse defaultActiveKey={groupActiveItemsByPricelist().map((g, i) => i.toString())}>
-        {groupActiveItemsByPricelist().map((group, index) => {
+      <Collapse 
+        defaultActiveKey={groupActiveItemsByPricelist().map((g, i) => i.toString())}
+        items={groupActiveItemsByPricelist().map((group, index) => {
           const groupTotal = group.items.reduce((total, item) => {
             return total + (calculateItemFinalPrice(item, group.pricelist.id) * item.quantity);
           }, 0);
 
-          return (
-            <Panel 
-              key={index.toString()}
-              header={
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  <span>
-                    <strong>{group.pricelist.name}</strong> ({group.pricelist.currency})
-                  </span>
-                  <span style={{ fontWeight: 'bold', color: '#52c41a' }}>
-                    {formatCurrency(groupTotal, group.pricelist.currency)}
-                  </span>
-                </div>
-              }
-            >
+          return {
+            key: index.toString(),
+            label: (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span>
+                  <strong>{group.pricelist.name}</strong> ({group.pricelist.currency})
+                </span>
+                <span style={{ fontWeight: 'bold', color: '#52c41a' }}>
+                  {formatCurrency(groupTotal, group.pricelist.currency)}
+                </span>
+              </div>
+            ),
+            children: (
               <Table 
                 dataSource={group.items.map(item => ({
                   ...item,
@@ -246,10 +245,10 @@ const ReviewStep = ({
                   }
                 ]}
               />
-            </Panel>
-          );
+            )
+          };
         })}
-      </Collapse>
+      />
 
       {/* Genel Toplam */}
       <div style={{ 

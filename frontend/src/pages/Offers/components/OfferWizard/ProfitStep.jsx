@@ -4,6 +4,7 @@ import { Card, InputNumber, Input, Button, Space, Typography } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
+const { Compact } = Space;
 
 const ProfitStep = ({
   offerData,
@@ -173,15 +174,25 @@ const ProfitStep = ({
                 borderRadius: 4
               }}>
                 <span style={{ minWidth: '80px' }}>Kar {index + 1}:</span>
-                <InputNumber
-                  placeholder="Oran"
-                  min={0}
-                  max={1000}
-                  value={profit.rate}
-                  onChange={(value) => updateProfit(pricelistId, index, 'rate', value || 0)}
-                  style={{ width: 100, marginRight: 8 }}
-                  addonAfter="%"
-                />
+                <Compact style={{ marginRight: 8 }}>
+                  <InputNumber
+                    placeholder="Oran"
+                    min={0}
+                    max={1000}
+                    value={profit.rate}
+                    onChange={(value) => updateProfit(pricelistId, index, 'rate', value || 0)}
+                    style={{ width: 85 }}
+                  />
+                  <span style={{ 
+                    padding: '4px 11px', 
+                    border: '1px solid #d9d9d9',
+                    borderLeft: 'none',
+                    backgroundColor: '#fafafa',
+                    borderRadius: '0 6px 6px 0',
+                    display: 'inline-block',
+                    fontSize: '14px'
+                  }}>%</span>
+                </Compact>
                 <Input
                   placeholder="Açıklama (opsiyonel)"
                   value={profit.description}

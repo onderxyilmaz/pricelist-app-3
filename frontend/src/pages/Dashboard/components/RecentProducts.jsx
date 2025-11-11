@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Card, Row, Col, Table, Tag, Button, Space } from 'antd';
 import styles from '../Dashboard.module.css';
 
+const { Compact } = Space;
+
 const RecentProducts = ({ stats, loading }) => {
   const [tableLanguage, setTableLanguage] = useState('en');
 
@@ -73,38 +75,36 @@ const RecentProducts = ({ stats, loading }) => {
           title={tableLanguage === 'tr' ? 'Son Eklenen Ürünler' : 'Recently Added Products'}
           className={styles.recentProductsCard}
           extra={
-            <Space>
-              <Button.Group size="small" className={styles.languageToggle}>
-                <Button
-                  type={tableLanguage === 'en' ? 'primary' : 'default'}
-                  onClick={() => setTableLanguage('en')}
-                  className={`${styles.languageButton} ${
-                    tableLanguage === 'en' 
-                      ? styles.languageButtonActive 
-                      : styles.languageButtonInactive
-                  }`}
-                >
-                  EN
-                </Button>
-                <Button
-                  type={tableLanguage === 'tr' ? 'primary' : 'default'}
-                  onClick={() => setTableLanguage('tr')}
-                  className={`${styles.languageButton} ${
-                    tableLanguage === 'tr' 
-                      ? `${styles.languageButtonActive} ${styles.languageButtonTr}`
-                      : styles.languageButtonInactive
-                  }`}
-                >
-                  TR
-                </Button>
-              </Button.Group>
-            </Space>
+            <Compact size="small" className={styles.languageToggle}>
+              <Button
+                type={tableLanguage === 'en' ? 'primary' : 'default'}
+                onClick={() => setTableLanguage('en')}
+                className={`${styles.languageButton} ${
+                  tableLanguage === 'en' 
+                    ? styles.languageButtonActive 
+                    : styles.languageButtonInactive
+                }`}
+              >
+                EN
+              </Button>
+              <Button
+                type={tableLanguage === 'tr' ? 'primary' : 'default'}
+                onClick={() => setTableLanguage('tr')}
+                className={`${styles.languageButton} ${
+                  tableLanguage === 'tr' 
+                    ? `${styles.languageButtonActive} ${styles.languageButtonTr}`
+                    : styles.languageButtonInactive
+                }`}
+              >
+                TR
+              </Button>
+            </Compact>
           }
         >
           <Table
             columns={recentProductsColumns}
             dataSource={stats?.recentItems || []}
-            rowKey={(record, index) => index}
+            rowKey={(record) => `${record.name_tr || record.name_en || record.name || ''}-${record.created_at || ''}-${record.price || ''}`}
             loading={loading}
             pagination={false}
             size="small"

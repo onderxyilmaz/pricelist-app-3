@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Modal, Button, Space, Typography, Tag, Collapse, Table, Divider } from 'antd';
 
 const { Title } = Typography;
-const { Panel } = Collapse;
+const { Compact } = Space;
 
 const PreviewModal = ({
   visible,
@@ -41,7 +41,7 @@ const PreviewModal = ({
         <Space key="preview-actions" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
           <Space>
             <span style={{ fontWeight: 'bold', marginRight: 8 }}>Dil:</span>
-            <Button.Group>
+            <Compact>
               <Button 
                 type={language === 'en' ? 'primary' : 'default'}
                 onClick={() => setLanguage('en')}
@@ -64,7 +64,7 @@ const PreviewModal = ({
               >
                 TR
               </Button>
-            </Button.Group>
+            </Compact>
           </Space>
           <Button onClick={onClose}>Kapat</Button>
         </Space>
@@ -100,34 +100,34 @@ const PreviewModal = ({
         {groupedEntries.length === 0 ? (
           <p>Bu teklifte ürün bulunmuyor.</p>
         ) : (
-          <Collapse defaultActiveKey={groupedEntries.map((_, index) => index.toString())}>
-            {groupedEntries.map(([, group], index) => {
+          <Collapse 
+            defaultActiveKey={groupedEntries.map((_, index) => index.toString())}
+            items={groupedEntries.map(([, group], index) => {
               const pricelistTotal = group.items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
               const currency = group.items.length > 0 ? group.items[0].currency : 'EUR';
               
-              return (
-                <Panel 
-                  key={index.toString()}
-                  header={
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                      <span style={{ display: 'flex', alignItems: 'center' }}>
-                        <div 
-                          style={{ 
-                            width: 12, 
-                            height: 12, 
-                            backgroundColor: group.pricelistColor,
-                            borderRadius: '50%', 
-                            marginRight: 8 
-                          }} 
-                        />
-                        {group.pricelistName}
-                      </span>
-                      <Tag color="blue" style={{ margin: 0 }}>
-                        {group.items.length} ürün - {pricelistTotal.toFixed(2)} {currency}
-                      </Tag>
-                    </div>
-                  }
-                >
+              return {
+                key: index.toString(),
+                label: (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                      <div 
+                        style={{ 
+                          width: 12, 
+                          height: 12, 
+                          backgroundColor: group.pricelistColor,
+                          borderRadius: '50%', 
+                          marginRight: 8 
+                        }} 
+                      />
+                      {group.pricelistName}
+                    </span>
+                    <Tag color="blue" style={{ margin: 0 }}>
+                      {group.items.length} ürün - {pricelistTotal.toFixed(2)} {currency}
+                    </Tag>
+                  </div>
+                ),
+                children: (
                   <Table
                     columns={[
                       {
@@ -196,10 +196,10 @@ const PreviewModal = ({
                     size="small"
                     bordered
                   />
-                </Panel>
-              );
+                )
+              };
             })}
-          </Collapse>
+          />
         )}
         
         <Divider />

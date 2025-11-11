@@ -1,27 +1,48 @@
 import React from 'react';
-import { Card, Input } from 'antd';
+import { Card, Input, Button, Space } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import styles from '../OfferTemplates.module.css';
 
-const { Search } = Input;
+const { Compact } = Space;
 
 const TemplatesSearch = ({ 
   value, 
   onChange, 
   placeholder = "Template ara..."
 }) => {
+  const handleSearch = () => {
+    onChange(value);
+  };
+
+  const handleChange = (e) => {
+    onChange(e.target.value);
+  };
+
+  const handleClear = () => {
+    onChange('');
+  };
+
   return (
     <Card className={styles.searchCard}>
-      <Search
-        placeholder={placeholder}
-        allowClear
-        value={value}
-        onSearch={onChange}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ width: 300 }}
-        prefix={<SearchOutlined />}
-        autoFocus
-      />
+      <Compact style={{ width: 300 }}>
+        <Input
+          placeholder={placeholder}
+          allowClear
+          value={value}
+          onChange={handleChange}
+          onPressEnter={handleSearch}
+          prefix={<SearchOutlined />}
+          onClear={handleClear}
+          autoFocus
+        />
+        <Button 
+          type="primary" 
+          icon={<SearchOutlined />}
+          onClick={handleSearch}
+        >
+          Ara
+        </Button>
+      </Compact>
     </Card>
   );
 };
