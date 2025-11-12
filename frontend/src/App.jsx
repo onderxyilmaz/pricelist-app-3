@@ -46,11 +46,16 @@ const RouterApp = ({ user, onLogout, onUserUpdate }) => {
     }
     
     // Sadece yeni login/register yapıldığında dashboard'a yönlendir
-    // localStorage'da 'shouldNavigateToDashboard' flag'i varsa yönlendir
+    // localStorage'da 'shouldNavigateToDashboard' flag'i varsa ve dashboard'da değilsek yönlendir
     const shouldNavigate = localStorage.getItem('shouldNavigateToDashboard');
-    if (shouldNavigate === 'true' && location.pathname !== '/') {
+    if (shouldNavigate === 'true') {
+      // Flag'i hemen temizle (sadece bir kez kullanılacak)
       localStorage.removeItem('shouldNavigateToDashboard');
-      navigate('/', { replace: true });
+      
+      // Eğer dashboard'da değilsek dashboard'a yönlendir
+      if (location.pathname !== '/') {
+        navigate('/', { replace: true });
+      }
     }
   }, [navigate, location.pathname, user]);
 
@@ -153,22 +158,16 @@ const AppContent = () => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     // Login sonrası dashboard'a yönlendirmek için flag set et
+    // Flag sadece bir kez kullanılacak, RouterApp içindeki useEffect tarafından temizlenecek
     localStorage.setItem('shouldNavigateToDashboard', 'true');
-    // URL'i değiştir (sayfa yenilemeden)
-    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
-      window.history.replaceState(null, '', '/');
-    }
   };
 
   const handleRegister = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     // Register sonrası dashboard'a yönlendirmek için flag set et
+    // Flag sadece bir kez kullanılacak, RouterApp içindeki useEffect tarafından temizlenecek
     localStorage.setItem('shouldNavigateToDashboard', 'true');
-    // URL'i değiştir (sayfa yenilemeden)
-    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
-      window.history.replaceState(null, '', '/');
-    }
   };
 
   const handleUserUpdate = (updatedUser) => {

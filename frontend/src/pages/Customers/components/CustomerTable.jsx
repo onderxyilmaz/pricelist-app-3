@@ -20,7 +20,7 @@ const CustomerTable = ({
       title: 'Teklif Sayısı',
       dataIndex: 'offer_count',
       key: 'offer_count',
-      width: 120,
+      width: 150,
       sorter: (a, b) => parseInt(a.offer_count) - parseInt(b.offer_count),
       render: (count) => parseInt(count) || 0,
     },

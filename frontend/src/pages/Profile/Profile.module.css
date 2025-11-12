@@ -3,6 +3,7 @@
 /* Main Container */
 .container {
   padding: 24px;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 /* Title */
@@ -17,6 +18,7 @@
   overflow: hidden;
   background: transparent;
   border: none;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 /* Profile Content */
@@ -248,9 +250,11 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Layout, Menu } from 'antd';
 import {
   HomeOutlined,
@@ -10,11 +10,11 @@ import {
   AppstoreOutlined,
   FileTextOutlined,
   FormOutlined,
-  BankOutlined,
-  CodeOutlined
+  BankOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TypeAnimation } from 'react-type-animation';
+import AboutModal from './AboutModal';
 import './Sidebar.css';
 
 const { Sider } = Layout;
@@ -22,6 +22,7 @@ const { Sider } = Layout;
 const Sidebar = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
   const menuItems = [
     {
@@ -124,13 +125,24 @@ const Sidebar = ({ user }) => {
 
       {/* Developer Credit Section */}
       <div className="sidebar-footer">
-        <a
-          href="mailto:onderxyilmaz@gmail.com"
+        <div
           className="developer-credit"
-          style={{ textDecoration: 'none', color: 'inherit' }}
+          onClick={() => setAboutModalVisible(true)}
+          style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
         >
           <div className="credit-icon">
-            <CodeOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+            <img 
+              src="/pricelist-logo.png" 
+              alt="Pricelist App Logo" 
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '6px',
+                objectFit: 'contain',
+                background: 'white',
+                padding: '4px'
+              }}
+            />
           </div>
           <div className="credit-text">
             <div className="credit-label">Developed by</div>
@@ -150,8 +162,13 @@ const Sidebar = ({ user }) => {
               />
             </div>
           </div>
-        </a>
+        </div>
       </div>
+
+      <AboutModal
+        visible={aboutModalVisible}
+        onClose={() => setAboutModalVisible(false)}
+      />
     </Sider>
   );
 };

@@ -28,10 +28,15 @@
 
 /* Developer Credit Section */
 .sidebar-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 250px;
   background: linear-gradient(135deg, #141414 0%, #1f1f1f 100%);
   padding: 20px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
 }
 
 .developer-credit {
@@ -44,12 +49,10 @@
 }
 
 .developer-credit:hover {
-  transform: translateY(-2px);
   opacity: 0.9;
 }
 
-.developer-credit:hover .credit-icon {
-  transform: scale(1.1);
+.developer-credit:hover .credit-icon img {
   box-shadow: 0 4px 16px rgba(24, 144, 255, 0.5);
 }
 
@@ -59,9 +62,6 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -117,11 +117,9 @@
 @keyframes pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
   }
   50% {
     transform: scale(1.05);
-    box-shadow: 0 4px 16px rgba(24, 144, 255, 0.5);
   }
 }
 
