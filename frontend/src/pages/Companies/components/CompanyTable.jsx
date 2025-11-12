@@ -1,6 +1,7 @@
-import React from 'react';
-import { Table, Button, Space, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Table, Button, Space, Popconfirm, Image } from 'antd';
+import { EditOutlined, DeleteOutlined, PictureOutlined } from '@ant-design/icons';
+import { API_BASE_URL } from '../../../config/env';
 import styles from '../Companies.module.css';
 
 const CompanyTable = ({ 
@@ -9,7 +10,41 @@ const CompanyTable = ({
   onEdit, 
   onDelete 
 }) => {
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
   const columns = [
+    {
+      title: 'Logo',
+      dataIndex: 'logo_filename',
+      key: 'logo',
+      width: 100,
+      align: 'center',
+      render: (logoFilename) => {
+        if (logoFilename) {
+          const logoUrl = `${API_BASE_URL}/uploads/company_logos/${logoFilename}`;
+          return (
+            <div 
+              className={styles.companyLogo}
+              onClick={() => {
+                setPreviewImage(logoUrl);
+                setPreviewVisible(true);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              <img
+                src={logoUrl}
+                alt="Company Logo"
+              />
+            </div>
+          );
+        }
+        return (
+          <div className={styles.companyLogoPlaceholder}>
+            <PictureOutlined />
+          </div>
+        );
+      },
+    },
     {
       title: 'Firma Adı',
       dataIndex: 'company_name',
@@ -94,21 +129,39 @@ const CompanyTable = ({
   ];
 
   return (
-    <Table
-      className={styles.table}
-      columns={columns}
-      dataSource={companies}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        defaultPageSize: 10,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} kayıt`,
-        pageSizeOptions: ['5', '10', '20', '50'],
-      }}
-      scroll={{ x: 800 }}
-    />
+    <>
+      <Table
+        className={styles.table}
+        columns={columns}
+        dataSource={companies}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          defaultPageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} kayıt`,
+          pageSizeOptions: ['5', '10', '20', '50'],
+        }}
+        scroll={{ x: 800 }}
+      />
+      {previewImage && (
+        <Image
+          width={200}
+          style={{ display: 'none' }}
+          src={previewImage}
+          preview={{
+            visible: previewVisible,
+            onVisibleChange: (visible) => {
+              setPreviewVisible(visible);
+              if (!visible) {
+                setPreviewImage('');
+              }
+            },
+          }}
+        />
+      )}
+    </>
   );
 };
 

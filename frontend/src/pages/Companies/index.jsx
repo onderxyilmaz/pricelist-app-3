@@ -65,31 +65,31 @@ const Companies = () => {
 
   const handleSubmit = async (values) => {
     try {
+      let response;
       if (editingCompany) {
         // Güncelleme
-        const response = await companyApi.updateCompany(editingCompany.id, values);
+        response = await companyApi.updateCompany(editingCompany.id, values);
         if (response.data && response.data.id) {
-          NotificationService.success('Başarılı', 'Firma güncellendi');
-          fetchCompanies();
-          setModalVisible(false);
+          return response.data; // Return company data for logo upload
         } else {
           NotificationService.error('Hata', response.data?.error || response.data?.message || 'Güncelleme başarısız');
+          throw new Error(response.data?.error || response.data?.message || 'Güncelleme başarısız');
         }
       } else {
         // Yeni oluşturma
-        const response = await companyApi.createCompany(values);
+        response = await companyApi.createCompany(values);
         if (response.data && response.data.id) {
-          NotificationService.success('Başarılı', 'Firma oluşturuldu');
-          fetchCompanies();
-          setModalVisible(false);
+          return response.data; // Return company data for logo upload
         } else {
           NotificationService.error('Hata', response.data?.error || response.data?.message || 'Oluşturma başarısız');
+          throw new Error(response.data?.error || response.data?.message || 'Oluşturma başarısız');
         }
       }
     } catch (error) {
       console.error('Error saving company:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || (editingCompany ? 'Güncelleme başarısız' : 'Oluşturma başarısız');
       NotificationService.error('Hata', errorMessage);
+      throw error; // Re-throw for modal to handle
     }
   };
 
@@ -132,8 +132,21 @@ const Companies = () => {
       <CompanyModal
         visible={modalVisible}
         onCancel={handleModalCancel}
-        onSubmit={handleSubmit}
+        onSubmit={async (values) => {
+          try {
+            const companyData = await handleSubmit(values);
+            return companyData;
+          } catch (error) {
+            // Error already handled in handleSubmit
+            throw error;
+          }
+        }}
         editingCompany={editingCompany}
+        onComplete={() => {
+          // Refresh list after all operations (including logo) are complete
+          fetchCompanies();
+          setModalVisible(false);
+        }}
       />
     </div>
   );

@@ -208,10 +208,12 @@ fastify.get('/api/test-db', async (request, reply) => {
 const ensureDirectories = async () => {
   const uploadsDir = path.join(__dirname, 'uploads');
   const avatarsDir = path.join(__dirname, 'uploads', 'avatars');
+  const companyLogosDir = path.join(__dirname, 'uploads', 'company_logos');
   
   try {
     await fs.ensureDir(uploadsDir);
     await fs.ensureDir(avatarsDir);
+    await fs.ensureDir(companyLogosDir);
     fastify.log.info('Upload directories created/verified');
   } catch (err) {
     fastify.log.error('Failed to create upload directories:', err);

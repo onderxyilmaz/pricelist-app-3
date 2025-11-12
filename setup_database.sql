@@ -267,6 +267,7 @@ CREATE OR REPLACE TRIGGER update_offer_templates_modtime
 CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY,
     company_name VARCHAR(255) UNIQUE NOT NULL,
+    logo_filename VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

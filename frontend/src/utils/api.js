@@ -223,6 +223,12 @@ export const companyApi = {
   createCompany: (data) => api.post('/companies', data),
   updateCompany: (id, data) => api.put(`/companies/${id}`, data),
   deleteCompany: (id) => api.delete(`/companies/${id}`),
+  uploadLogo: (id, formData) => api.post(`/companies/upload-logo/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
+  deleteLogo: (id) => api.delete(`/companies/logo/${id}`),
 };
 
 export const offerTemplatesApi = {
