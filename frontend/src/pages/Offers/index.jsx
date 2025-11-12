@@ -970,6 +970,7 @@ const OffersTemp = () => {
       dataIndex: 'company_name',
       key: 'company_name',
       ellipsis: true,
+      render: (company_name) => company_name || '-',
     },
     {
       title: 'İşlemler',
