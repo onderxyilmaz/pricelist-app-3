@@ -23,7 +23,13 @@
 .ant-menu-dark .ant-menu-item-divider {
   background-color: rgba(255, 255, 255, 0.2) !important;
   height: 1px !important;
-  margin: 8px 0 !important;
+  margin: 4px 0 !important;
+}
+
+/* Divider'dan sonraki ilk menü öğesine negatif margin ekle */
+.ant-menu-dark .ant-menu-item-divider + .ant-menu-submenu {
+  margin-top: -2px !important;
+  margin-bottom: -2px !important;
 }
 
 /* Developer Credit Section */
