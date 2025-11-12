@@ -941,7 +941,7 @@ const OffersTemp = () => {
         return aResponse.localeCompare(bResponse, 'tr');
       },
       render: (response) => {
-        if (!response) {
+        if (!response || response === 'pending') {
           return <Tag icon={<QuestionCircleOutlined />} color="default">Bekliyor</Tag>;
         }
         if (response === 'accepted') {
