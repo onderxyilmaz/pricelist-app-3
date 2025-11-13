@@ -1,8 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, Button, Space, Popconfirm, Image } from 'antd';
 import { EditOutlined, DeleteOutlined, PictureOutlined } from '@ant-design/icons';
 import { API_BASE_URL } from '../../../config/env';
 import styles from '../Companies.module.css';
+
+// Get column widths from CSS variables
+const getColumnWidths = () => {
+  if (typeof window !== 'undefined') {
+    const root = document.documentElement;
+    return {
+      logo: parseInt(getComputedStyle(root).getPropertyValue('--company-table-logo-width')) || 100,
+      offerCount: parseInt(getComputedStyle(root).getPropertyValue('--company-table-offer-count-width')) || 150,
+      logoDimension: parseInt(getComputedStyle(root).getPropertyValue('--company-table-logo-dimension-width')) || 180,
+      date: parseInt(getComputedStyle(root).getPropertyValue('--company-table-date-width')) || 140,
+      actions: parseInt(getComputedStyle(root).getPropertyValue('--company-table-actions-width')) || 120,
+      scroll: parseInt(getComputedStyle(root).getPropertyValue('--company-table-scroll-width')) || 1160
+    };
+  }
+  // Fallback values for SSR
+  return {
+    logo: 100,
+    offerCount: 150,
+    logoDimension: 180,
+    date: 140,
+    actions: 120,
+    scroll: 1160
+  };
+};
 
 const CompanyTable = ({ 
   companies, 
@@ -12,12 +36,16 @@ const CompanyTable = ({
 }) => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
+  
+  // Get column widths from CSS
+  const COLUMN_WIDTHS = useMemo(() => getColumnWidths(), []);
+  
   const columns = [
     {
       title: 'Logo',
       dataIndex: 'logo_filename',
       key: 'logo',
-      width: 100,
+      width: COLUMN_WIDTHS.logo,
       align: 'center',
       render: (logoFilename) => {
         if (logoFilename) {
@@ -55,7 +83,7 @@ const CompanyTable = ({
       title: 'Teklif Sayısı',
       dataIndex: 'offer_count',
       key: 'offer_count',
-      width: 150,
+      width: COLUMN_WIDTHS.offerCount,
       sorter: (a, b) => parseInt(a.offer_count || 0) - parseInt(b.offer_count || 0),
       render: (count) => parseInt(count) || 0,
     },
@@ -63,7 +91,7 @@ const CompanyTable = ({
       title: 'Logo Genişliği (cm)',
       dataIndex: 'logo_width',
       key: 'logo_width',
-      width: 150,
+      width: COLUMN_WIDTHS.logoDimension,
       align: 'center',
       sorter: (a, b) => (a.logo_width || 0) - (b.logo_width || 0),
       render: (width) => width ? `${width} cm` : '-',
@@ -72,7 +100,7 @@ const CompanyTable = ({
       title: 'Logo Yüksekliği (cm)',
       dataIndex: 'logo_height',
       key: 'logo_height',
-      width: 150,
+      width: COLUMN_WIDTHS.logoDimension,
       align: 'center',
       sorter: (a, b) => (a.logo_height || 0) - (b.logo_height || 0),
       render: (height) => height ? `${height} cm` : '-',
@@ -81,7 +109,7 @@ const CompanyTable = ({
       title: 'Oluşturulma',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 140,
+      width: COLUMN_WIDTHS.date,
       sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
       render: (date) => {
         if (!date) return '-';
@@ -93,7 +121,7 @@ const CompanyTable = ({
       title: 'Güncellenme',
       dataIndex: 'updated_at',
       key: 'updated_at',
-      width: 140,
+      width: COLUMN_WIDTHS.date,
       sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
       render: (date) => {
         if (!date) return '-';
@@ -104,7 +132,7 @@ const CompanyTable = ({
     {
       title: 'İşlemler',
       key: 'actions',
-      width: 120,
+      width: COLUMN_WIDTHS.actions,
       render: (_, record) => (
         <Space className={styles.actionsContainer}>
           <Button
@@ -161,7 +189,7 @@ const CompanyTable = ({
           showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} kayıt`,
           pageSizeOptions: ['5', '10', '20', '50'],
         }}
-        scroll={{ x: 1100 }}
+        scroll={{ x: COLUMN_WIDTHS.scroll }}
       />
       {previewImage && (
         <Image

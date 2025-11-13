@@ -286,3 +286,13 @@
   color: #d9d9d9;
   font-size: 32px;
 }
+
+/* Table Column Widths */
+:root {
+  --company-table-logo-width: 100px;
+  --company-table-offer-count-width: 150px;
+  --company-table-logo-dimension-width: 180px;
+  --company-table-date-width: 140px;
+  --company-table-actions-width: 120px;
+  --company-table-scroll-width: 1160px;
+}
