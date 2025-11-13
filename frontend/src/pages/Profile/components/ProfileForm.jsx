@@ -1,5 +1,5 @@
 import React from 'react';
-import { Space, Input, Button } from 'antd';
+import { Space, Input, Button, Card } from 'antd';
 import styles from '../Profile.module.css';
 
 const ProfileForm = ({
@@ -10,7 +10,8 @@ const ProfileForm = ({
   onSave
 }) => {
   return (
-    <Space direction="vertical" className={styles.formContainer} size="large">
+    <Card className={styles.formCard}>
+      <Space direction="vertical" className={styles.formContainer} size="large">
       <div className={styles.formItem}>
         <label className={styles.formLabel}>
           Ad
@@ -92,7 +93,8 @@ const ProfileForm = ({
       >
         Değişiklikleri Kaydet
       </Button>
-    </Space>
+      </Space>
+    </Card>
   );
 };
 

@@ -26,6 +26,9 @@
   background: white;
   padding: 32px;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Avatar Section */
@@ -74,6 +77,26 @@
 }
 
 /* Form Styles */
+.formCard {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  padding: 24px;
+}
+
+.formCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Override Ant Design Card body padding */
+.formCard :global(.ant-card-body) {
+  padding: 0 !important;
+}
+
 .formContainer {
   width: 100%;
 }
@@ -169,6 +192,14 @@
     padding: 16px;
   }
   
+  .profileContent {
+    padding: 24px;
+  }
+  
+  .formCard {
+    max-width: 100%;
+  }
+  
   .avatarSection {
     margin-bottom: 24px;
   }
@@ -191,6 +222,14 @@
 @media (max-width: 576px) {
   .container {
     padding: 12px;
+  }
+  
+  .profileContent {
+    padding: 20px;
+  }
+  
+  .formCard {
+    max-width: 100%;
   }
   
   .title {
