@@ -60,6 +60,24 @@ const CompanyTable = ({
       render: (count) => parseInt(count) || 0,
     },
     {
+      title: 'Logo Genişliği (cm)',
+      dataIndex: 'logo_width',
+      key: 'logo_width',
+      width: 150,
+      align: 'center',
+      sorter: (a, b) => (a.logo_width || 0) - (b.logo_width || 0),
+      render: (width) => width ? `${width} cm` : '-',
+    },
+    {
+      title: 'Logo Yüksekliği (cm)',
+      dataIndex: 'logo_height',
+      key: 'logo_height',
+      width: 150,
+      align: 'center',
+      sorter: (a, b) => (a.logo_height || 0) - (b.logo_height || 0),
+      render: (height) => height ? `${height} cm` : '-',
+    },
+    {
       title: 'Oluşturulma',
       dataIndex: 'created_at',
       key: 'created_at',
@@ -143,7 +161,7 @@ const CompanyTable = ({
           showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} kayıt`,
           pageSizeOptions: ['5', '10', '20', '50'],
         }}
-        scroll={{ x: 800 }}
+        scroll={{ x: 1100 }}
       />
       {previewImage && (
         <Image

@@ -268,6 +268,8 @@ CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY,
     company_name VARCHAR(255) UNIQUE NOT NULL,
     logo_filename VARCHAR(255),
+    logo_width NUMERIC(10, 1) DEFAULT NULL,
+    logo_height NUMERIC(10, 1) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -279,6 +281,35 @@ CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(company_name);
 CREATE OR REPLACE TRIGGER update_companies_modtime 
     BEFORE UPDATE ON companies 
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- Ensure logo_width and logo_height are NUMERIC (not INTEGER) for decimal values
+-- This handles cases where columns might have been created as INTEGER
+DO $$
+BEGIN
+    -- Alter logo_width column if it exists and is INTEGER
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'companies' 
+        AND column_name = 'logo_width'
+        AND data_type = 'integer'
+    ) THEN
+        ALTER TABLE companies 
+        ALTER COLUMN logo_width TYPE NUMERIC(10, 1) USING logo_width::NUMERIC(10, 1);
+    END IF;
+
+    -- Alter logo_height column if it exists and is INTEGER
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'companies' 
+        AND column_name = 'logo_height'
+        AND data_type = 'integer'
+    ) THEN
+        ALTER TABLE companies 
+        ALTER COLUMN logo_height TYPE NUMERIC(10, 1) USING logo_height::NUMERIC(10, 1);
+    END IF;
+END $$;
 
 -- Add company_id to offers table
 ALTER TABLE offers 

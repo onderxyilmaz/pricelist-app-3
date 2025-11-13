@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Input, Button, Dropdown } from 'antd';
+import { Modal, Form, Input, Button, Dropdown, InputNumber } from 'antd';
 import { CameraOutlined, DeleteOutlined, EditOutlined, PictureOutlined } from '@ant-design/icons';
 import NotificationService from '../../../utils/notification';
 import { companyApi } from '../../../utils/api';
@@ -25,7 +25,9 @@ const CompanyModal = ({
       if (editingCompany) {
         // Editing existing company
         form.setFieldsValue({
-          company_name: editingCompany.company_name
+          company_name: editingCompany.company_name,
+          logo_width: editingCompany.logo_width,
+          logo_height: editingCompany.logo_height
         });
         // Set logo preview if exists
         if (editingCompany.logo_filename) {
@@ -79,6 +81,10 @@ const CompanyModal = ({
       setLogoPreview(e.target.result);
       setLogoFile(file);
       setLogoRemoved(false); // New file selected, logo not removed
+      // Validate logo dimensions when logo is uploaded
+      setTimeout(() => {
+        form.validateFields(['logo_width', 'logo_height']);
+      }, 100);
     };
     reader.readAsDataURL(file);
   };
@@ -87,6 +93,11 @@ const CompanyModal = ({
     setLogoPreview(null);
     setLogoFile(null);
     setLogoRemoved(true); // Mark logo as removed
+    // Clear logo dimensions when logo is removed
+    form.setFieldsValue({
+      logo_width: null,
+      logo_height: null
+    });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -276,6 +287,62 @@ const CompanyModal = ({
             accept="image/jpeg,image/jpg,image/png"
             style={{ display: 'none' }}
             onChange={handleFileChange}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Logo Genişliği (cm)"
+          name="logo_width"
+          tooltip="Excel export için logo genişliği (santimetre cinsinden)"
+          rules={[
+            {
+              validator: (_, value) => {
+                // Logo varsa ve silinmemişse zorunlu
+                const hasLogo = (logoPreview || editingCompany?.logo_filename) && !logoRemoved;
+                if (hasLogo && (!value || value <= 0)) {
+                  return Promise.reject(new Error('Logo genişliği gereklidir'));
+                }
+                return Promise.resolve();
+              }
+            }
+          ]}
+        >
+          <InputNumber
+            placeholder="Genişlik (cm)"
+            min={0.1}
+            max={100}
+            step={0.1}
+            precision={1}
+            style={{ width: '100%' }}
+            disabled={(!logoPreview && !editingCompany?.logo_filename) || logoRemoved}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Logo Yüksekliği (cm)"
+          name="logo_height"
+          tooltip="Excel export için logo yüksekliği (santimetre cinsinden)"
+          rules={[
+            {
+              validator: (_, value) => {
+                // Logo varsa ve silinmemişse zorunlu
+                const hasLogo = (logoPreview || editingCompany?.logo_filename) && !logoRemoved;
+                if (hasLogo && (!value || value <= 0)) {
+                  return Promise.reject(new Error('Logo yüksekliği gereklidir'));
+                }
+                return Promise.resolve();
+              }
+            }
+          ]}
+        >
+          <InputNumber
+            placeholder="Yükseklik (cm)"
+            min={0.1}
+            max={100}
+            step={0.1}
+            precision={1}
+            style={{ width: '100%' }}
+            disabled={(!logoPreview && !editingCompany?.logo_filename) || logoRemoved}
           />
         </Form.Item>
 

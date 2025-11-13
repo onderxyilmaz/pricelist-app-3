@@ -14,7 +14,7 @@ async function companyRoutes(fastify, options) {
           COUNT(o.id) as offer_count
         FROM companies c
         LEFT JOIN offers o ON c.id = o.company_id
-        GROUP BY c.id, c.company_name, c.logo_filename, c.created_at, c.updated_at
+        GROUP BY c.id, c.company_name, c.logo_filename, c.logo_width, c.logo_height, c.created_at, c.updated_at
         ORDER BY c.company_name ASC
       `);
       client.release();
@@ -36,7 +36,9 @@ async function companyRoutes(fastify, options) {
         type: 'object',
         required: ['company_name'],
         properties: {
-          company_name: { type: 'string', description: 'Company name' }
+          company_name: { type: 'string', description: 'Company name' },
+          logo_width: { type: 'integer', description: 'Logo width in pixels' },
+          logo_height: { type: 'integer', description: 'Logo height in pixels' }
         }
       },
       response: {
@@ -57,7 +59,7 @@ async function companyRoutes(fastify, options) {
     }
   }, async (request, reply) => {
     try {
-      const { company_name } = request.body;
+      const { company_name, logo_width, logo_height } = request.body;
       
       if (!company_name || company_name.trim() === '') {
         return reply.status(400).send({ error: 'Firma adı gereklidir' });
@@ -65,8 +67,8 @@ async function companyRoutes(fastify, options) {
 
       const client = await fastify.pg.connect();
       const result = await client.query(
-        'INSERT INTO companies (company_name, created_at, updated_at) VALUES ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *',
-        [company_name.trim()]
+        'INSERT INTO companies (company_name, logo_width, logo_height, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *',
+        [company_name.trim(), logo_width || null, logo_height || null]
       );
       client.release();
       
@@ -84,7 +86,7 @@ async function companyRoutes(fastify, options) {
   fastify.put('/companies/:id', { preHandler: authMiddleware }, async (request, reply) => {
     try {
       const { id } = request.params;
-      const { company_name } = request.body;
+      const { company_name, logo_width, logo_height } = request.body;
       
       if (!company_name || company_name.trim() === '') {
         return reply.status(400).send({ error: 'Firma adı gereklidir' });
@@ -92,8 +94,8 @@ async function companyRoutes(fastify, options) {
 
       const client = await fastify.pg.connect();
       const result = await client.query(
-        'UPDATE companies SET company_name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-        [company_name.trim(), id]
+        'UPDATE companies SET company_name = $1, logo_width = $2, logo_height = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
+        [company_name.trim(), logo_width || null, logo_height || null, id]
       );
       client.release();
       
@@ -245,7 +247,7 @@ async function companyRoutes(fastify, options) {
       
       // Get updated company info
       const updatedCompany = await client.query(
-        'SELECT id, company_name, logo_filename, created_at, updated_at FROM companies WHERE id = $1',
+        'SELECT id, company_name, logo_filename, logo_width, logo_height, created_at, updated_at FROM companies WHERE id = $1',
         [companyId]
       );
       
@@ -295,7 +297,7 @@ async function companyRoutes(fastify, options) {
       
       // Get updated company info
       const updatedCompany = await client.query(
-        'SELECT id, company_name, logo_filename, created_at, updated_at FROM companies WHERE id = $1',
+        'SELECT id, company_name, logo_filename, logo_width, logo_height, created_at, updated_at FROM companies WHERE id = $1',
         [companyId]
       );
       
