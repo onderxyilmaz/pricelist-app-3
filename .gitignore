@@ -8,6 +8,9 @@ build/
 .idea/
 .claude/
 
-# Avatar uploads - ignore all avatar files but keep the directory structure
+# Upload directories - ignore all uploaded files but keep the directory structure
 backend/uploads/avatars/*
 !backend/uploads/avatars/.gitkeep
+
+backend/uploads/company_logos/*
+!backend/uploads/company_logos/.gitkeep
