@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config/env';
+import { pricelistApi } from '../../utils/api';
 import NotificationService from '../../utils/notification';
 import PricelistDetailHeader from './components/PricelistDetailHeader';
 import PricelistStats from './components/PricelistStats';
@@ -39,7 +38,7 @@ const PricelistDetail = () => {
   const fetchPricelistDetail = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/pricelists/${id}`);
+      const response = await pricelistApi.getPricelistById(id);
       if (response.data.success) {
         setPricelist(response.data.data);
         setItems(response.data.data.items || []);
@@ -49,7 +48,8 @@ const PricelistDetail = () => {
         navigate('/pricelists');
       }
     } catch (error) {
-      NotificationService.error('Hata', 'Fiyat listesi yüklenirken hata oluştu');
+      console.error('Error fetching pricelist detail:', error);
+      NotificationService.error('Hata', error.response?.data?.message || 'Fiyat listesi yüklenirken hata oluştu');
       navigate('/pricelists');
     } finally {
       setLoading(false);
@@ -93,13 +93,13 @@ const PricelistDetail = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingItem) {
-        const response = await axios.put(`${API_BASE_URL}/api/items/${editingItem.id}`, values);
+        const response = await pricelistApi.updateItem(editingItem.id, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Ürün güncellendi');
           fetchPricelistDetail();
         }
       } else {
-        const response = await axios.post(`${API_BASE_URL}/api/pricelists/${id}/items`, values);
+        const response = await pricelistApi.addItem(id, values);
         if (response.data.success) {
           NotificationService.success('Başarılı', 'Ürün eklendi');
           fetchPricelistDetail();
@@ -107,19 +107,21 @@ const PricelistDetail = () => {
       }
       setModalVisible(false);
     } catch (error) {
-      NotificationService.error('Hata', editingItem ? 'Güncelleme başarısız' : 'Ekleme başarısız');
+      console.error('Error saving item:', error);
+      NotificationService.error('Hata', error.response?.data?.message || (editingItem ? 'Güncelleme başarısız' : 'Ekleme başarısız'));
     }
   };
 
   const handleDelete = async (itemId) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/api/items/${itemId}`);
+      const response = await pricelistApi.deleteItem(itemId);
       if (response.data.success) {
         NotificationService.success('Başarılı', 'Ürün silindi');
         fetchPricelistDetail();
       }
     } catch (error) {
-      NotificationService.error('Hata', 'Silme işlemi başarısız');
+      console.error('Error deleting item:', error);
+      NotificationService.error('Hata', error.response?.data?.message || 'Silme işlemi başarısız');
     }
   };
 
@@ -135,7 +137,7 @@ const PricelistDetail = () => {
   const handleBulkDelete = async () => {
     try {
       const deletePromises = selectedRowKeys.map(id => 
-        axios.delete(`${API_BASE_URL}/api/items/${id}`)
+        pricelistApi.deleteItem(id)
       );
       
       await Promise.all(deletePromises);
@@ -143,7 +145,8 @@ const PricelistDetail = () => {
       setSelectedRowKeys([]);
       fetchPricelistDetail();
     } catch (error) {
-      NotificationService.error('Hata', 'Toplu silme işlemi başarısız');
+      console.error('Error bulk deleting items:', error);
+      NotificationService.error('Hata', error.response?.data?.message || 'Toplu silme işlemi başarısız');
     }
   };
 
