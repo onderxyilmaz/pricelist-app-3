@@ -36,13 +36,13 @@ import {
   BranchesOutlined
 } from '@ant-design/icons';
 import ExcelJS from 'exceljs';
-import styles from './OffersTemp.module.css';
+import styles from './Offers.module.css';
 import NotificationService from '../../utils/notification';
-import OfferWizard from './components/OfferWizard';
-import OffersHeader from './components/OffersHeader';
-import OffersSearch from './components/OffersSearch';
-import PreviewModal from './components/PreviewModal';
-import OffersTable from './components/OffersTable';
+import OfferWizard from './components/OfferWizard/OfferWizard';
+import OffersHeader from './components/OffersHeader/OffersHeader';
+import OffersSearch from './components/OffersSearch/OffersSearch';
+import PreviewModal from './components/PreviewModal/PreviewModal';
+import OffersTable from './components/OffersTable/OffersTable';
 import { useWizard } from './hooks/useWizard';
 import { offersService } from './services/offersService';
 import { offersApi, offerTemplatesApi } from '../../utils/api';

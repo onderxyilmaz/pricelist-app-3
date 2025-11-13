@@ -1,4 +1,4 @@
-/* OffersTemp - Teklifler sayfası stilleri */
+/* Offers - Teklifler sayfası stilleri */
 
 /* Ana tablo kolon genişlikleri */
 .table :global(.ant-table-thead) > tr > th:nth-child(1) {
@@ -522,3 +522,4 @@
     transform: translateY(0);
   }
 }
+
