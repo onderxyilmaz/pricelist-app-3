@@ -1,6 +1,7 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm, Tag } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Popconfirm, Tag, Avatar } from 'antd';
+import { EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { API_BASE_URL } from '../../../config/env';
 import styles from '../UserManagement.module.css';
 
 const UserTable = ({ 
@@ -18,7 +19,43 @@ const UserTable = ({
     return currentUser?.id !== user.id;
   };
 
+  // Avatar renk belirleme fonksiyonu
+  const getAvatarStyle = (role) => {
+    if (role === 'super_admin') {
+      return { backgroundColor: '#ff7a00' }; // Turuncu
+    }
+    return { backgroundColor: '#1890ff' }; // Mavi (varsayılan)
+  };
+
   const columns = [
+    {
+      title: 'Avatar',
+      dataIndex: 'avatar_filename',
+      key: 'avatar',
+      width: 80,
+      align: 'center',
+      render: (avatarFilename, record) => {
+        // Eğer avatar resmi varsa göster
+        if (avatarFilename) {
+          return (
+            <Avatar
+              src={`${API_BASE_URL}/uploads/avatars/${avatarFilename}`}
+              size={40}
+              className={styles.userAvatar}
+            />
+          );
+        }
+        // Avatar yoksa role göre renkli avatar göster
+        return (
+          <Avatar 
+            icon={<UserOutlined />} 
+            size={40}
+            style={getAvatarStyle(record.role)}
+            className={styles.userAvatarPlaceholder}
+          />
+        );
+      },
+    },
     {
       title: 'Ad',
       dataIndex: 'first_name',
@@ -109,7 +146,7 @@ const UserTable = ({
         showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} kayıt`,
         pageSizeOptions: ['5', '10', '20', '50'],
       }}
-      scroll={{ x: 800 }}
+      scroll={{ x: 900 }}
     />
   );
 };

@@ -8,7 +8,7 @@ module.exports = async function (fastify, opts) {
     try {
       const client = await fastify.pg.connect();
       const result = await client.query(
-        'SELECT id, first_name, last_name, email, role, created_at FROM users ORDER BY created_at DESC'
+        'SELECT id, first_name, last_name, email, role, avatar_filename, created_at FROM users ORDER BY created_at DESC'
       );
       client.release();
       
