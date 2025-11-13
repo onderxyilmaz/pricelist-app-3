@@ -38,9 +38,12 @@ const RegisterForm = ({ onRegister }) => {
       const { confirmPassword, ...registerData } = values;
 
       const response = await authApi.register(registerData);
-      if (response.data.success && response.data.token) {
+      if (response.data.success && response.data.user && response.data.accessToken && response.data.refreshToken) {
+        // Store tokens in localStorage
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
         NotificationService.registerSuccess(response.data.user.first_name);
-        onRegister(response.data.user, response.data.token);
+        onRegister(response.data.user);
       } else {
         NotificationService.registerError(response.data.message);
       }

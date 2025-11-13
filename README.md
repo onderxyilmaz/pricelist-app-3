@@ -52,17 +52,20 @@ Modern bir fiyat listesi yönetim uygulaması. Dashboard, Excel import, kullanı
 git clone https://github.com/onderxyilmaz/pricelist-app-3.git
 cd pricelist-app-3
 
-# 2. Database kurulumu (TEK KOMUT!)
+# 2. Database kurulumu
 # PostgreSQL kullanıcısı belirtmek için -U parametresi kullanın
 createdb -U postgres pricelist_app_3
 psql -U postgres -d pricelist_app_3 -f setup_database.sql
 
-# 3. Backend kurulumu ve çalıştırma
+# 3. Migration'ları çalıştırın (refresh_tokens tablosu için)
+psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
+
+# 4. Backend kurulumu ve çalıştırma
 cd backend
 npm install
 npm run dev
 
-# 4. Frontend kurulumu ve çalıştırma (yeni terminal)
+# 5. Frontend kurulumu ve çalıştırma (yeni terminal)
 cd frontend
 npm install
 npm run dev
@@ -79,14 +82,21 @@ DB_PORT=5432
 DB_NAME=pricelist_app_3
 DB_USER=postgres
 DB_PASSWORD=your_postgres_password
+DATABASE_URL=postgresql://postgres:your_postgres_password@localhost:5432/pricelist_app_3
 
 # Server Configuration
 PORT=3001
 NODE_ENV=development
 
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
 # CORS Configuration
+CORS_ORIGIN=http://localhost:5173
 FRONTEND_URL=http://localhost:5173
 ```
+
+**Önemli:** Production ortamında `JWT_SECRET` için güçlü ve rastgele bir değer kullanın!
 
 **Not:** `.env.example` dosyasını kopyalayarak başlayabilirsiniz:
 ```bash
@@ -136,6 +146,12 @@ Uygulama ilk çalıştırıldığında:
 - ✅ Kullanıcı rolleri (Super Admin, Admin, User)
 - ✅ Profil yönetimi ve avatar upload
 - ✅ Güvenli authentication
+- ✅ Access Token + Refresh Token mekanizması
+  - Access Token: 30 dakika geçerlilik
+  - Refresh Token: 30 gün geçerlilik
+  - Otomatik token yenileme
+  - Token rotation (her refresh'te yeni token)
+  - Güvenli token saklama (bcrypt hash)
 
 ### 📋 Teklif Yönetimi
 - ✅ Akıllı teklif numaralandırma (YYYY-NNNN formatı)
@@ -161,6 +177,25 @@ Uygulama ilk çalıştırıldığında:
 - ✅ Gelişmiş form validasyonları
 
 ## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Yeni kullanıcı kaydı
+- `POST /api/auth/login` - Kullanıcı girişi (Access Token + Refresh Token döner)
+- `POST /api/auth/refresh` - Access token yenileme (Refresh Token ile)
+- `POST /api/auth/logout` - Kullanıcı çıkışı (Refresh Token'ı siler)
+- `GET /api/auth/check-users` - Kullanıcı var mı kontrolü
+- `GET /api/auth/user/:id` - Kullanıcı bilgilerini getir
+- `PUT /api/auth/user/:id` - Kullanıcı bilgilerini güncelle
+- `POST /api/auth/upload-avatar/:id` - Avatar yükle
+- `DELETE /api/auth/avatar/:id` - Avatar sil
+
+**Authentication Mekanizması:**
+- Login/Register sonrası hem `accessToken` hem de `refreshToken` döner
+- Access Token kısa süreli (30 dakika), API isteklerinde kullanılır
+- Refresh Token uzun süreli (30 gün), access token yenilemek için kullanılır
+- Access token expire olduğunda frontend otomatik olarak refresh token ile yeni access token alır
+- Her refresh işleminde yeni refresh token da döner (token rotation)
+- Refresh token'lar veritabanında bcrypt ile hash'lenerek saklanır
 
 ### Fiyat Listeleri
 - `GET /api/pricelists` - Tüm fiyat listelerini getir
@@ -191,7 +226,39 @@ Uygulama ilk çalıştırıldığında:
 - `DELETE /api/customers/:id` - Müşteri sil
 - `GET /api/customers/search` - Müşteri arama (autocomplete)
 
+## Güvenlik Özellikleri
+
+### 🔐 Authentication & Authorization
+- **JWT Token Sistemi:** Access Token + Refresh Token mekanizması
+- **Token Süreleri:**
+  - Access Token: 30 dakika (kısa süreli, güvenlik için)
+  - Refresh Token: 30 gün (uzun süreli, kullanıcı deneyimi için)
+- **Token Rotation:** Her refresh işleminde yeni refresh token oluşturulur (güvenlik)
+- **Güvenli Saklama:** Refresh token'lar bcrypt ile hash'lenerek veritabanında saklanır
+- **Otomatik Yenileme:** Access token expire olduğunda frontend otomatik olarak yeniler
+- **Otomatik Temizlik:** Süresi dolmuş refresh token'lar otomatik olarak temizlenir
+- **HTTPS Zorunluluğu:** Production ortamında HTTPS kullanılmalıdır
+
+### 🛡️ Diğer Güvenlik Özellikleri
+- Şifreler bcrypt ile hash'lenir (salt rounds: 12)
+- SQL injection koruması
+- CORS yapılandırması
+- Rate limiting (100 istek/dakika)
+
 ## Yeni Özellikler (v3.0)
+
+### 🔐 Access Token + Refresh Token Sistemi (v3.1)
+**Güvenlik İyileştirmeleri:**
+- Tek token yerine Access Token + Refresh Token mekanizması
+- Access token kısa süreli (30 dk), refresh token uzun süreli (30 gün)
+- Otomatik token yenileme ile kesintisiz kullanıcı deneyimi
+- Token rotation ile gelişmiş güvenlik
+- Refresh token'lar veritabanında güvenli şekilde saklanır
+
+**Kullanım:**
+- Login/Register sonrası iki token alınır ve localStorage'a kaydedilir
+- Access token expire olduğunda frontend otomatik olarak refresh token ile yeniler
+- Logout işleminde refresh token backend'den silinir
 
 ### 🎉 Teklif Sistemi
 **Akıllı Numaralandırma:**
@@ -244,11 +311,58 @@ dropdb -U postgres pricelist_app_3
 createdb -U postgres pricelist_app_3
 psql -U postgres -d pricelist_app_3 -f setup_database.sql
 
+# Migration'ları çalıştır
+psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
+
 # Backup al
 pg_dump -U postgres pricelist_app_3 > backup.sql
 
 # Backup'tan geri yükle
 psql -U postgres -d pricelist_app_3 -f backup.sql
+```
+
+### Migration'lar
+```bash
+# Refresh tokens tablosunu oluştur (yeni kurulumlar için)
+psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
+
+# Diğer migration'lar
+psql -U postgres -d pricelist_app_3 -f backend/migrations/add_logo_to_companies.sql
+```
+
+## Migration Rehberi (v3.0 → v3.1)
+
+Eğer mevcut bir kurulumunuz varsa ve Access Token + Refresh Token sistemine geçmek istiyorsanız:
+
+1. **Migration'ı çalıştırın:**
+   ```bash
+   psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
+   ```
+
+2. **Backend ve Frontend'i güncelleyin:**
+   - Backend ve frontend kodlarını en son versiyona güncelleyin
+   - `.env` dosyasına `JWT_SECRET` ekleyin
+
+3. **Kullanıcılar:**
+   - Mevcut kullanıcılar bir sonraki login'lerinde yeni token sistemini kullanacak
+   - Frontend otomatik olarak eski `token` formatını temizler
+
+## Production Deployment
+
+### Güvenlik Kontrol Listesi
+- [ ] `JWT_SECRET` için güçlü, rastgele bir değer kullanın
+- [ ] HTTPS kullanın (refresh token'lar hassas veri)
+- [ ] CORS ayarlarını production domain'ine göre yapılandırın
+- [ ] Rate limiting ayarlarını production trafiğine göre optimize edin
+- [ ] Database backup'larını düzenli olarak alın
+- [ ] Environment variables'ları güvenli şekilde saklayın (secrets management)
+
+### Environment Variables (Production)
+```env
+NODE_ENV=production
+JWT_SECRET=<güçlü-rastgele-değer>
+DATABASE_URL=<production-database-url>
+CORS_ORIGIN=https://yourdomain.com
 ```
 
 ## Katkıda Bulunma

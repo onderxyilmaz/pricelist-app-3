@@ -110,9 +110,19 @@ const AppContent = () => {
     const initializeApp = async () => {
     setLoading(true);
     try {
+      // Clean up old token format if exists (migration from single token to access/refresh tokens)
+      const oldToken = localStorage.getItem('token');
+      if (oldToken) {
+        localStorage.removeItem('token');
+        logger.debug('Removed old token format');
+      }
+
       // Check if user is already logged in
       const savedUser = localStorage.getItem('user');
-      if (savedUser) {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (savedUser && (accessToken || refreshToken)) {
         const userData = JSON.parse(savedUser);
         logger.debug('Found saved user:', { userId: userData.id, email: userData.email });
         
@@ -125,16 +135,27 @@ const AppContent = () => {
           } else {
             logger.warn('User validation failed:', userResponse.data.message);
             localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
             setUser(null);
           }
         } catch (error) {
           logger.warn('User validation error, clearing localStorage:', error);
           localStorage.removeItem('user');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
           setUser(null);
         }
         
         setLoading(false);
         return;
+      } else if (savedUser && !accessToken && !refreshToken) {
+        // User data exists but no tokens - clear everything
+        logger.warn('User data found but no tokens, clearing localStorage');
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        setUser(null);
       }
 
       // Check if any users exist in database
@@ -175,15 +196,29 @@ const AppContent = () => {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Logout bildirimini göster
     NotificationService.logoutSuccess();
+
+    // Get refresh token before clearing localStorage
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    // Call backend logout endpoint if refresh token exists
+    if (refreshToken) {
+      try {
+        await authApi.logout(refreshToken);
+      } catch (error) {
+        // Log error but continue with logout even if backend call fails
+        console.error('Logout API call failed:', error);
+      }
+    }
 
     // Bildirimin görünmesi için kısa bir gecikme ekle
     setTimeout(() => {
       setUser(null);
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       setShowRegister(false);
       // Logout sonrası login sayfasına yönlendir
       window.location.href = '/login';

@@ -25,6 +25,9 @@ async function authMiddleware(request, reply) {
     // Add user info to request object
     request.user = decoded;
 
+    // Continue to next handler
+    return;
+
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
       return reply.code(401).send({
@@ -66,6 +69,9 @@ function requireRole(allowedRoles) {
         message: 'Bu işlem için yetkiniz yok.'
       });
     }
+
+    // Continue to next handler
+    return;
   };
 }
 

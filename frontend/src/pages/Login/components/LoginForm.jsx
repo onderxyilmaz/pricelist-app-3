@@ -37,9 +37,10 @@ const LoginForm = ({ onLogin }) => {
         userName: response.data.user ? `${response.data.user.first_name} ${response.data.user.last_name}` : null
       });
       
-      if (response.data.success && response.data.user && response.data.token) {
-        // Store token in localStorage
-        localStorage.setItem('token', response.data.token);
+      if (response.data.success && response.data.user && response.data.accessToken && response.data.refreshToken) {
+        // Store tokens in localStorage
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
         NotificationService.loginSuccess(`${response.data.user.first_name} ${response.data.user.last_name}`);
         onLogin(response.data.user);
       } else {

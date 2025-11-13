@@ -16,12 +16,12 @@ api.interceptors.request.use(
     // Log API request (only method and URL, no sensitive data)
     logger.debug('API Request:', config.method.toUpperCase(), config.url);
 
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
+    // Get access token from localStorage
+    const accessToken = localStorage.getItem('accessToken');
 
-    // Add token to Authorization header if it exists
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Add access token to Authorization header if it exists
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;
@@ -39,7 +39,8 @@ api.interceptors.response.use(
         response.data.message === 'Kullanıcı bulunamadı') {
       logger.warn('User not found in database (success:false), clearing localStorage');
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
 
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
@@ -79,7 +80,8 @@ api.interceptors.response.use(
       if (originalRequest.url?.includes('/auth/refresh')) {
         console.warn('Token refresh failed, logging out');
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
 
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
@@ -91,7 +93,8 @@ api.interceptors.response.use(
       if (originalRequest._retry) {
         console.warn('Token refresh retry failed, logging out');
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
 
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
@@ -101,28 +104,29 @@ api.interceptors.response.use(
 
       // Try to refresh the token
       originalRequest._retry = true;
-      const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refreshToken');
 
-      if (token) {
+      if (refreshToken) {
         try {
           logger.debug('Attempting to refresh token...');
           const response = await axios.post(
             `${API_URL}/auth/refresh`,
-            {},
+            { refreshToken },
             {
               headers: {
-                Authorization: `Bearer ${token}`
+                'Content-Type': 'application/json'
               }
             }
           );
 
-          if (response.data.success && response.data.token) {
-            // Update stored token and user
-            localStorage.setItem('token', response.data.token);
+          if (response.data.success && response.data.accessToken && response.data.refreshToken) {
+            // Update stored tokens and user
+            localStorage.setItem('accessToken', response.data.accessToken);
+            localStorage.setItem('refreshToken', response.data.refreshToken);
             localStorage.setItem('user', JSON.stringify(response.data.user));
 
             // Update the Authorization header for the original request
-            originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+            originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
 
             // Retry the original request
             return api(originalRequest);
@@ -130,7 +134,8 @@ api.interceptors.response.use(
         } catch (refreshError) {
           logger.error('Token refresh failed:', refreshError);
           localStorage.removeItem('user');
-          localStorage.removeItem('token');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
 
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
@@ -139,9 +144,10 @@ api.interceptors.response.use(
         }
       }
 
-      // No token available, redirect to login
+      // No refresh token available, redirect to login
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
 
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
@@ -161,7 +167,8 @@ api.interceptors.response.use(
 
       console.warn('User not found in database (error), clearing localStorage');
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
 
       // Eğer login sayfasında değilsek login sayfasına yönlendir
       if (!window.location.pathname.includes('/login')) {
@@ -178,6 +185,8 @@ export const authApi = {
   checkUsers: () => api.get('/auth/check-users'),
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
+  refresh: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
+  logout: (refreshToken) => api.post('/auth/logout', { refreshToken }),
   getUser: (id) => api.get(`/auth/user/${id}`),
   updateUser: (id, data) => api.put(`/auth/user/${id}`, data),
   uploadAvatar: (id, formData) => api.post(`/auth/upload-avatar/${id}`, formData, {
