@@ -506,7 +506,26 @@ async function pricelistRoutes(fastify, options) {
         LIMIT 5
       `);
 
+      // Son 5 oluşturulan teklif
+      const recentOffersResult = await client.query(`
+        SELECT 
+          o.id, 
+          o.offer_no, 
+          COALESCE(cust.name, '') as customer, 
+          o.status, 
+          o.created_at, 
+          comp.company_name
+        FROM offers o
+        LEFT JOIN customers cust ON o.customer_id = cust.id
+        LEFT JOIN companies comp ON o.company_id = comp.id
+        ORDER BY o.created_at DESC
+        LIMIT 5
+      `);
+
       client.release();
+
+      console.log('Recent offers count:', recentOffersResult.rows.length);
+      console.log('Recent offers data:', recentOffersResult.rows);
 
       return {
         success: true,
@@ -518,10 +537,12 @@ async function pricelistRoutes(fastify, options) {
           totalValue: parseFloat(totalValueResult.rows[0].total_value || 0),
           pricelistDistribution: distributionResult.rows,
           currencyDistribution: currencyDistResult.rows,
-          recentItems: recentItemsResult.rows
+          recentItems: recentItemsResult.rows,
+          recentOffers: recentOffersResult.rows
         }
       };
     } catch (err) {
+      console.error('Dashboard stats error:', err);
       return { success: false, message: err.message };
     }
   });

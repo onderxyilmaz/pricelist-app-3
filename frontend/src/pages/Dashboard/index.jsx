@@ -5,6 +5,7 @@ import NotificationService from '../../utils/notification';
 import DashboardHeader from './components/DashboardHeader';
 import StatsCards from './components/StatsCards';
 import QuickActions from './components/QuickActions';
+import RecentOffers from './components/RecentOffers';
 import RecentProducts from './components/RecentProducts';
 import styles from './Dashboard.module.css';
 
@@ -26,13 +27,22 @@ const Dashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       const response = await api.get('/dashboard/stats');
-      if (response.data.success) {
+      console.log('Dashboard API Response:', response);
+      console.log('Dashboard API Response Data:', response.data);
+      
+      if (response.data && response.data.success) {
         setStats(response.data.stats);
         console.log('Dashboard stats:', response.data.stats);
-        console.log('Recent Items:', response.data.stats.recentItems);
+        console.log('Recent Items:', response.data.stats?.recentItems);
+        console.log('Recent Offers:', response.data.stats?.recentOffers);
+      } else {
+        console.error('Dashboard API response success is false:', response.data);
+        NotificationService.error('Hata', response.data?.message || 'Dashboard verileri yüklenemedi');
       }
     } catch (error) {
-      NotificationService.error('Hata', 'Dashboard verileri yüklenemedi');
+      console.error('Dashboard API Error:', error);
+      console.error('Dashboard API Error Response:', error.response);
+      NotificationService.error('Hata', error.response?.data?.message || 'Dashboard verileri yüklenemedi');
     } finally {
       setLoading(false);
     }
@@ -49,6 +59,10 @@ const Dashboard = () => {
         
         <Col span={24}>
           <QuickActions />
+        </Col>
+        
+        <Col span={24}>
+          <RecentOffers stats={stats} loading={loading} />
         </Col>
         
         <Col span={24}>

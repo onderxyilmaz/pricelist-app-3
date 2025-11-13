@@ -51,6 +51,16 @@
   transform: translateY(-1px);
 }
 
+/* Recent Offers Section */
+.recentOffersSection {
+  margin-bottom: 24px;
+}
+
+.recentOffersCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
 /* Recent Products Section */
 .recentProductsSection {
   margin-bottom: 24px;
@@ -142,6 +152,7 @@
   
   .statsSection,
   .quickActionsSection,
+  .recentOffersSection,
   .recentProductsSection {
     margin-bottom: 16px;
   }
