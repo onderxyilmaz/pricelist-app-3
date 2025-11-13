@@ -57,8 +57,7 @@ cd pricelist-app-3
 createdb -U postgres pricelist_app_3
 psql -U postgres -d pricelist_app_3 -f setup_database.sql
 
-# 3. Migration'ları çalıştırın (refresh_tokens tablosu için)
-psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
+# 3. Migration'lar artık setup_database.sql içinde, ayrıca çalıştırmaya gerek yok
 
 # 4. Backend kurulumu ve çalıştırma
 cd backend
@@ -116,7 +115,8 @@ Uygulama ilk çalıştırıldığında:
 
 ### 📊 Dashboard
 - ✅ İstatistik kartları (toplam liste, ürün, değer)
-- ✅ Son eklenen ürünler tablosu
+- ✅ Son oluşturulan teklifler tablosu (EN/TR dil desteği)
+- ✅ Son eklenen ürünler tablosu (EN/TR dil desteği)
 - ✅ Hızlı işlem butonları
 
 ### 📋 Fiyat Listesi Yönetimi
@@ -243,7 +243,7 @@ Uygulama ilk çalıştırıldığında:
 - Şifreler bcrypt ile hash'lenir (salt rounds: 12)
 - SQL injection koruması
 - CORS yapılandırması
-- Rate limiting (100 istek/dakika)
+- Rate limiting (100 istek/15 dakika)
 
 ## Yeni Özellikler (v3.0)
 
@@ -311,8 +311,7 @@ dropdb -U postgres pricelist_app_3
 createdb -U postgres pricelist_app_3
 psql -U postgres -d pricelist_app_3 -f setup_database.sql
 
-# Migration'ları çalıştır
-psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
+# Migration'lar artık setup_database.sql içinde, ayrıca çalıştırmaya gerek yok
 
 # Backup al
 pg_dump -U postgres pricelist_app_3 > backup.sql
@@ -322,26 +321,25 @@ psql -U postgres -d pricelist_app_3 -f backup.sql
 ```
 
 ### Migration'lar
-```bash
-# Refresh tokens tablosunu oluştur (yeni kurulumlar için)
-psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
-
-# Diğer migration'lar
-psql -U postgres -d pricelist_app_3 -f backend/migrations/add_logo_to_companies.sql
-```
+**Not:** Tüm migration'lar artık `setup_database.sql` dosyasına entegre edilmiştir. Yeni kurulumlar için sadece `setup_database.sql` dosyasını çalıştırmanız yeterlidir. Dosya otomatik olarak:
+- Tüm tabloları oluşturur
+- Refresh tokens tablosunu oluşturur
+- Logo boyutları için NUMERIC tipini ayarlar
+- Gerekli tüm migration'ları uygular
 
 ## Migration Rehberi (v3.0 → v3.1)
 
+**Not:** Yeni kurulumlar için tüm migration'lar `setup_database.sql` dosyasında mevcuttur.
+
 Eğer mevcut bir kurulumunuz varsa ve Access Token + Refresh Token sistemine geçmek istiyorsanız:
 
-1. **Migration'ı çalıştırın:**
-   ```bash
-   psql -U postgres -d pricelist_app_3 -f backend/migrations/create_refresh_tokens_table.sql
-   ```
-
-2. **Backend ve Frontend'i güncelleyin:**
+1. **Backend ve Frontend'i güncelleyin:**
    - Backend ve frontend kodlarını en son versiyona güncelleyin
    - `.env` dosyasına `JWT_SECRET` ekleyin
+
+2. **Veritabanı güncellemesi:**
+   - `setup_database.sql` dosyasındaki migration script'lerini çalıştırın
+   - Veya mevcut veritabanınızı yedekleyip `setup_database.sql` ile yeniden oluşturun
 
 3. **Kullanıcılar:**
    - Mevcut kullanıcılar bir sonraki login'lerinde yeni token sistemini kullanacak
