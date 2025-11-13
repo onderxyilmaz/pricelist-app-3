@@ -9,8 +9,12 @@ const fastify = require('fastify')({ logger: true });
 const fs = require('fs-extra');
 
 // CORS plugin
+const corsOrigin = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
 fastify.register(require('@fastify/cors'), {
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  origin: corsOrigin,
   credentials: true
 });
 
