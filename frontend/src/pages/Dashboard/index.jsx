@@ -61,11 +61,11 @@ const Dashboard = () => {
           <QuickActions />
         </Col>
         
-        <Col span={24}>
+        <Col xs={24} lg={12}>
           <RecentOffers stats={stats} loading={loading} />
         </Col>
         
-        <Col span={24}>
+        <Col xs={24} lg={12}>
           <RecentProducts stats={stats} loading={loading} />
         </Col>
       </Row>
