@@ -142,6 +142,130 @@ async function pricelistRoutes(fastify, options) {
     }
   });
 
+  // Bulk import items to pricelist (for Excel import)
+  fastify.post('/pricelists/:id/items/bulk', {
+    preHandler: authMiddleware,
+    schema: {
+      tags: ['Items'],
+      summary: 'Bulk import items to pricelist',
+      description: 'Import multiple items to a pricelist at once (for Excel import)',
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', description: 'Pricelist ID' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: {
+            type: 'array',
+            description: 'Array of items to import',
+            items: {
+              type: 'object',
+              required: ['product_id', 'name_tr', 'price'],
+              properties: {
+                product_id: { type: 'string', description: 'Product ID' },
+                name_tr: { type: 'string', description: 'Product name (Turkish)' },
+                name_en: { type: 'string', description: 'Product name (English)' },
+                description_tr: { type: 'string', description: 'Description (Turkish)' },
+                description_en: { type: 'string', description: 'Description (English)' },
+                price: { type: 'number', description: 'Product price' },
+                stock: { type: 'integer', default: 0, description: 'Stock quantity' },
+                unit: { type: 'string', default: 'adet', description: 'Unit of measurement' }
+              }
+            }
+          }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            imported: { type: 'integer' },
+            skipped: { type: 'integer' },
+            errors: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params;
+      const { items } = request.body;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Items array is required and must not be empty'
+        });
+      }
+
+      const client = await fastify.pg.connect();
+      let imported = 0;
+      let skipped = 0;
+      const errors = [];
+
+      // Transaction başlat
+      await client.query('BEGIN');
+
+      try {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet' } = item;
+
+          // Duplikasyon kontrolü
+          const duplicateCheck = await client.query(
+            'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE pi.product_id = $1',
+            [product_id]
+          );
+
+          if (duplicateCheck.rows.length > 0) {
+            skipped++;
+            errors.push({
+              index: i,
+              product_id,
+              reason: `Product already exists in "${duplicateCheck.rows[0].pricelist_name}"`
+            });
+            continue;
+          }
+
+          // Ürünü ekle
+          await client.query(
+            'INSERT INTO pricelist_items (pricelist_id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+            [id, product_id, name_tr, name_en || null, description_tr || null, description_en || null, price, stock, unit]
+          );
+          imported++;
+        }
+
+        // Transaction commit
+        await client.query('COMMIT');
+        client.release();
+
+        return {
+          success: true,
+          imported,
+          skipped,
+          errors: errors.length > 0 ? errors : undefined
+        };
+      } catch (err) {
+        // Hata durumunda rollback
+        await client.query('ROLLBACK');
+        client.release();
+        throw err;
+      }
+    } catch (err) {
+      fastify.log.error('Bulk import error:', err);
+      return reply.status(500).send({
+        success: false,
+        message: err.message
+      });
+    }
+  });
+
   // Add item to pricelist
   fastify.post('/pricelists/:id/items', {
     preHandler: authMiddleware,
@@ -291,6 +415,136 @@ async function pricelistRoutes(fastify, options) {
       return { success: true, data: result.rows[0] };
     } catch (err) {
       return { success: false, message: err.message };
+    }
+  });
+
+  // Bulk update items (for Excel import updates)
+  fastify.put('/items/bulk', {
+    preHandler: authMiddleware,
+    schema: {
+      tags: ['Items'],
+      summary: 'Bulk update pricelist items',
+      description: 'Update multiple items at once (for Excel import)',
+      body: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: {
+            type: 'array',
+            description: 'Array of items to update',
+            items: {
+              type: 'object',
+              required: ['id', 'product_id', 'name_tr', 'price'],
+              properties: {
+                id: { type: 'integer', description: 'Item ID' },
+                product_id: { type: 'string', description: 'Product ID' },
+                name_tr: { type: 'string', description: 'Product name (Turkish)' },
+                name_en: { type: 'string', description: 'Product name (English)' },
+                description_tr: { type: 'string', description: 'Description (Turkish)' },
+                description_en: { type: 'string', description: 'Description (English)' },
+                price: { type: 'number', description: 'Product price' },
+                stock: { type: 'integer', description: 'Stock quantity' },
+                unit: { type: 'string', description: 'Unit of measurement' }
+              }
+            }
+          }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            updated: { type: 'integer' },
+            skipped: { type: 'integer' },
+            errors: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { items } = request.body;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Items array is required and must not be empty'
+        });
+      }
+
+      const client = await fastify.pg.connect();
+      let updated = 0;
+      let skipped = 0;
+      const errors = [];
+
+      // Transaction başlat
+      await client.query('BEGIN');
+
+      try {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const { id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit } = item;
+
+          // Item'ın var olup olmadığını kontrol et
+          const itemCheck = await client.query('SELECT id FROM pricelist_items WHERE id = $1', [id]);
+          if (itemCheck.rows.length === 0) {
+            skipped++;
+            errors.push({
+              index: i,
+              id,
+              reason: 'Item not found'
+            });
+            continue;
+          }
+
+          // Duplikasyon kontrolü - diğer ürünlerle product_id kontrolü (kendi hariç)
+          const duplicateCheck = await client.query(
+            'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE pi.product_id = $1 AND pi.id != $2',
+            [product_id, id]
+          );
+
+          if (duplicateCheck.rows.length > 0) {
+            skipped++;
+            errors.push({
+              index: i,
+              id,
+              product_id,
+              reason: `Product already exists in "${duplicateCheck.rows[0].pricelist_name}"`
+            });
+            continue;
+          }
+
+          // Ürünü güncelle
+          await client.query(
+            'UPDATE pricelist_items SET product_id = $1, name_tr = $2, name_en = $3, description_tr = $4, description_en = $5, price = $6, stock = $7, unit = $8, updated_at = NOW() WHERE id = $9',
+            [product_id, name_tr, name_en || null, description_tr || null, description_en || null, price, stock, unit, id]
+          );
+          updated++;
+        }
+
+        // Transaction commit
+        await client.query('COMMIT');
+        client.release();
+
+        return {
+          success: true,
+          updated,
+          skipped,
+          errors: errors.length > 0 ? errors : undefined
+        };
+      } catch (err) {
+        // Hata durumunda rollback
+        await client.query('ROLLBACK');
+        client.release();
+        throw err;
+      }
+    } catch (err) {
+      fastify.log.error('Bulk update error:', err);
+      return reply.status(500).send({
+        success: false,
+        message: err.message
+      });
     }
   });
 
