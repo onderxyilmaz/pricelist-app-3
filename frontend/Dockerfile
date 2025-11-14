@@ -1,5 +1,5 @@
 # Frontend Dockerfile - Multi-stage build
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,13 +7,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy source files
 COPY . .
 
 # Build arguments for environment variables
-ARG VITE_API_BASE_URL=http://localhost:3001
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build application

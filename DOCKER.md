@@ -53,7 +53,7 @@ docker-compose ps
 ## Servisler
 
 ### PostgreSQL Database
-- **Port**: 5432 (varsayılan)
+- **Port**: 55432 (varsayılan)
 - **Container**: `pricelist-db`
 - **Volume**: `postgres_data` (kalıcı veri saklama)
 - **Initialization**: `setup_database.sql` otomatik çalıştırılır
@@ -75,13 +75,13 @@ docker-compose ps
 Varsayılan portlar:
 - **Frontend**: 80
 - **Backend**: 3001
-- **PostgreSQL**: 5432
+- **PostgreSQL**: 55432
 
 Portları değiştirmek için `.env` dosyasında:
 ```env
 FRONTEND_PORT=8080
 BACKEND_PORT=3001
-DB_PORT=5432
+DB_PORT=55432
 ```
 
 ## Veritabanı Yönetimi
@@ -163,7 +163,7 @@ Production için `.env` dosyası örneği:
 DB_NAME=pricelist_app_3
 DB_USER=postgres
 DB_PASSWORD=very-strong-password-here
-DB_PORT=5432
+DB_PORT=55432
 
 # Backend
 BACKEND_PORT=3001

@@ -1,16 +1,5 @@
 # Backend Dockerfile
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Production stage
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -23,9 +12,10 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy application files
-COPY . .
+COPY server.js ./
+COPY src ./src
 
-# Create uploads directories
+# Create uploads directories (will be mounted as volume)
 RUN mkdir -p uploads/avatars uploads/company_logos && \
     chown -R nodejs:nodejs /app
 
