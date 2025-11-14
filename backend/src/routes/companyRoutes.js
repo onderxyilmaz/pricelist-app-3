@@ -37,8 +37,8 @@ async function companyRoutes(fastify, options) {
         required: ['company_name'],
         properties: {
           company_name: { type: 'string', description: 'Company name' },
-          logo_width: { type: 'integer', description: 'Logo width in pixels' },
-          logo_height: { type: 'integer', description: 'Logo height in pixels' }
+          logo_width: { type: 'number', description: 'Logo width in cm' },
+          logo_height: { type: 'number', description: 'Logo height in cm' }
         }
       },
       response: {

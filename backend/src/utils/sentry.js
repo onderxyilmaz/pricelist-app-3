@@ -6,7 +6,6 @@
  */
 
 const Sentry = require('@sentry/node');
-const { nodeProfilingIntegration } = require('@sentry/profiling-node');
 
 /**
  * Initialize Sentry
@@ -24,6 +23,21 @@ function initSentry() {
   }
 
   try {
+    // Profiling modülünü sadece DSN varsa yükle (native binding gerektirir)
+    let nodeProfilingIntegration = null;
+    try {
+      const profilingModule = require('@sentry/profiling-node');
+      nodeProfilingIntegration = profilingModule.nodeProfilingIntegration;
+    } catch (profilingError) {
+      console.warn('⚠️  Sentry profiling module not available. Profiling disabled.');
+      console.warn('   This is normal if native bindings are not installed.');
+    }
+
+    const integrations = [];
+    if (nodeProfilingIntegration) {
+      integrations.push(nodeProfilingIntegration());
+    }
+
     Sentry.init({
       dsn: sentryDsn,
       environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
@@ -31,11 +45,11 @@ function initSentry() {
       // Performance Monitoring
       tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE) || 1.0,
 
-      // Profiling
-      profilesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE) || 1.0,
-      integrations: [
-        nodeProfilingIntegration(),
-      ],
+      // Profiling (sadece modül yüklenebildiyse)
+      ...(nodeProfilingIntegration && {
+        profilesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE) || 1.0,
+      }),
+      integrations,
 
       // Release tracking
       release: process.env.npm_package_version,

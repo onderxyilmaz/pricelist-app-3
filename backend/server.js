@@ -34,16 +34,21 @@ fastify.register(require('@fastify/static'), {
 });
 
 // Rate limiting plugin - Global rate limit
+// Yüksek limit (bulk operations ve authenticated kullanıcılar için)
 fastify.register(require('@fastify/rate-limit'), {
   global: true,
-  max: 100, // Maximum 100 requests
+  max: 2000, // Maximum 2000 requests per 15 minutes (increased for bulk operations)
   timeWindow: '15 minutes', // Per 15 minutes
   cache: 10000, // Cache up to 10,000 different client IPs
   // allowList: ['127.0.0.1'], // Remove for testing - in production, add trusted IPs here
   redis: null, // Can be configured with Redis for distributed systems
   skipOnError: true, // Skip rate limiting if there's an error
   keyGenerator: (request) => {
-    // Use IP address as key
+    // Authenticated kullanıcılar için user ID kullan (auth middleware'den sonra çalışır)
+    // Eğer user yoksa IP kullan
+    if (request.user && request.user.id) {
+      return `user:${request.user.id}`;
+    }
     return request.ip || request.headers['x-forwarded-for'] || request.socket.remoteAddress;
   },
   errorResponseBuilder: (request, context) => {
@@ -52,6 +57,11 @@ fastify.register(require('@fastify/rate-limit'), {
       error: 'Too Many Requests',
       message: `Rate limit exceeded. You have made ${context.max} requests in ${context.after}. Please try again later.`
     };
+  },
+  addHeaders: {
+    'x-ratelimit-limit': true,
+    'x-ratelimit-remaining': true,
+    'x-ratelimit-reset': true
   }
 });
 

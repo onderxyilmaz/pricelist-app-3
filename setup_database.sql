@@ -268,8 +268,8 @@ CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY,
     company_name VARCHAR(255) UNIQUE NOT NULL,
     logo_filename VARCHAR(255),
-    logo_width NUMERIC(10, 1) DEFAULT NULL,
-    logo_height NUMERIC(10, 1) DEFAULT NULL,
+    logo_width NUMERIC(10, 1) DEFAULT NULL, -- Logo width in cm (supports decimal values like 3.5, 2.5)
+    logo_height NUMERIC(10, 1) DEFAULT NULL, -- Logo height in cm (supports decimal values like 3.5, 2.5)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -284,6 +284,7 @@ CREATE OR REPLACE TRIGGER update_companies_modtime
 
 -- Ensure logo_width and logo_height are NUMERIC (not INTEGER) for decimal values
 -- This handles cases where columns might have been created as INTEGER
+-- NUMERIC(10, 1) allows decimal values like 3.5, 2.5, 10.0, etc.
 DO $$
 BEGIN
     -- Alter logo_width column if it exists and is INTEGER
