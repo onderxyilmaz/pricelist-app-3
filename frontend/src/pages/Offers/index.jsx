@@ -45,7 +45,8 @@ import PreviewModal from './components/PreviewModal/PreviewModal';
 import OffersTable from './components/OffersTable/OffersTable';
 import { useWizard } from './hooks/useWizard';
 import { offersService } from './services/offersService';
-import { offersApi, offerTemplatesApi } from '../../utils/api';
+import { offersApi, offerTemplatesApi, companyApi } from '../../utils/api';
+import ExcelExportModal from './components/ExcelExportModal/ExcelExportModal';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -72,6 +73,10 @@ const OffersTemp = () => {
   const [companies, setCompanies] = useState([]);
   const [pricelists, setPricelists] = useState([]);
   const wizardState = useWizard();
+  
+  // Excel export modal states
+  const [excelExportModalVisible, setExcelExportModalVisible] = useState(false);
+  const [selectedOfferForExport, setSelectedOfferForExport] = useState(null);
   
   const [filters, setFilters] = useState({
     offerNo: '',
@@ -254,8 +259,31 @@ const OffersTemp = () => {
     }
   };
 
-  // Excel'e Aktar fonksiyonu
-  const handleExportToExcel = async (offer) => {
+  // Excel'e Aktar fonksiyonu - Modal açar
+  const handleExportToExcel = (offer) => {
+    setSelectedOfferForExport(offer);
+    setExcelExportModalVisible(true);
+  };
+
+  // Logo'yu base64'e çevir
+  const imageToBase64 = async (imageUrl) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      return null;
+    }
+  };
+
+  // Excel'e Aktar fonksiyonu - Logo config ile
+  const performExcelExport = async (offer, logoConfig) => {
     try {
       // Teklif detaylarını fetch et
       const response = await offersApi.getOfferDetails(offer.id);
@@ -267,6 +295,10 @@ const OffersTemp = () => {
 
       const offerData = response.data.offer;
       const groupedItems = offerData.items;
+
+      // Firmaları fetch et
+      const companiesResponse = await companyApi.getCompanies();
+      const allCompanies = companiesResponse.data || [];
 
       // Excel workbook oluştur
       const workbook = new ExcelJS.Workbook();
@@ -485,6 +517,132 @@ const OffersTemp = () => {
         });
       });
 
+      // Logo ekleme işlemi
+      if (logoConfig) {
+        const { API_BASE_URL } = await import('../../config/env');
+        const baseUrl = API_BASE_URL || 'http://localhost:3001';
+
+        // Sol/Sağ logo için firma bilgisi
+        const offerCompany = allCompanies.find(c => c.id === logoConfig.offerCompany);
+        const teknogrupCompany = allCompanies.find(c => c.id === logoConfig.teknogrupCompany);
+        
+        // Logo boyutları (cm'den pixel'e çevir - 1 cm ≈ 37.8 pixel)
+        const cmToPixel = 37.8;
+        
+        // Helper function: Get image extension from filename
+        const getImageExtension = (filename) => {
+          if (!filename) return 'png';
+          const ext = filename.split('.').pop().toLowerCase();
+          return ['png', 'jpg', 'jpeg'].includes(ext) ? ext : 'png';
+        };
+        
+        // Sol logo (A1:C3 aralığı)
+        if (logoConfig.logoPosition === 'left' && offerCompany?.logo_filename) {
+          try {
+            const logoUrl = `${baseUrl}/uploads/company_logos/${offerCompany.logo_filename}`;
+            const base64Image = await imageToBase64(logoUrl);
+            if (base64Image) {
+              const extension = getImageExtension(offerCompany.logo_filename);
+              const imageId = workbook.addImage({
+                base64: base64Image.split(',')[1], // Remove data:image/png;base64, prefix
+                extension: extension,
+              });
+              
+              const logoWidth = (offerCompany.logo_width || 5) * cmToPixel;
+              const logoHeight = (offerCompany.logo_height || 3) * cmToPixel;
+              
+              worksheet.addImage(imageId, {
+                tl: { col: 0, row: 0 }, // A1
+                ext: { width: logoWidth, height: logoHeight }
+              });
+            }
+          } catch (error) {
+            console.error('Error adding left logo:', error);
+          }
+        }
+        
+        // Sağ logo (I1:K3 aralığı)
+        if (logoConfig.logoPosition === 'right' && offerCompany?.logo_filename) {
+          try {
+            const logoUrl = `${baseUrl}/uploads/company_logos/${offerCompany.logo_filename}`;
+            const base64Image = await imageToBase64(logoUrl);
+            if (base64Image) {
+              const extension = getImageExtension(offerCompany.logo_filename);
+              const imageId = workbook.addImage({
+                base64: base64Image.split(',')[1],
+                extension: extension,
+              });
+              
+              const logoWidth = (offerCompany.logo_width || 5) * cmToPixel;
+              const logoHeight = (offerCompany.logo_height || 3) * cmToPixel;
+              
+              worksheet.addImage(imageId, {
+                tl: { col: 8, row: 0 }, // I1
+                ext: { width: logoWidth, height: logoHeight }
+              });
+            }
+          } catch (error) {
+            console.error('Error adding right logo:', error);
+          }
+        }
+        
+        // Teknogrup logo (karşı tarafta)
+        if (teknogrupCompany?.logo_filename) {
+          try {
+            const logoUrl = `${baseUrl}/uploads/company_logos/${teknogrupCompany.logo_filename}`;
+            const base64Image = await imageToBase64(logoUrl);
+            if (base64Image) {
+              const extension = getImageExtension(teknogrupCompany.logo_filename);
+              const imageId = workbook.addImage({
+                base64: base64Image.split(',')[1],
+                extension: extension,
+              });
+              
+              const logoWidth = (teknogrupCompany.logo_width || 5) * cmToPixel;
+              const logoHeight = (teknogrupCompany.logo_height || 3) * cmToPixel;
+              
+              // Sol seçildiyse sağa, sağ seçildiyse sola ekle
+              const col = logoConfig.logoPosition === 'left' ? 8 : 0; // I1 veya A1
+              
+              worksheet.addImage(imageId, {
+                tl: { col: col, row: 0 },
+                ext: { width: logoWidth, height: logoHeight }
+              });
+            }
+          } catch (error) {
+            console.error('Error adding Teknogrup logo:', error);
+          }
+        }
+        
+        // Orta logo (E1:G3 aralığı)
+        if (logoConfig.centerCompanyId) {
+          const centerCompany = allCompanies.find(c => c.id === logoConfig.centerCompanyId);
+          if (centerCompany?.logo_filename) {
+            try {
+              const logoUrl = `${baseUrl}/uploads/company_logos/${centerCompany.logo_filename}`;
+              const base64Image = await imageToBase64(logoUrl);
+              if (base64Image) {
+                const extension = getImageExtension(centerCompany.logo_filename);
+                const imageId = workbook.addImage({
+                  base64: base64Image.split(',')[1],
+                  extension: extension,
+                });
+                
+                const logoWidth = (centerCompany.logo_width || 5) * cmToPixel;
+                const logoHeight = (centerCompany.logo_height || 3) * cmToPixel;
+                
+                worksheet.addImage(imageId, {
+                  tl: { col: 4, row: 0 }, // E1
+                  ext: { width: logoWidth, height: logoHeight }
+                });
+              }
+            } catch (error) {
+              console.error('Error adding center logo:', error);
+            }
+          }
+        }
+      }
+
       // Dosya adını oluştur
       const fileName = `Teklif_${offerData.offer_no || 'w'}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
@@ -499,6 +657,8 @@ const OffersTemp = () => {
       window.URL.revokeObjectURL(url);
 
       NotificationService.success('Başarılı', 'Excel dosyası indirildi');
+      setExcelExportModalVisible(false);
+      setSelectedOfferForExport(null);
 
     } catch (error) {
       console.error('Excel export error:', error);
@@ -1745,6 +1905,20 @@ const OffersTemp = () => {
       />
 
       {/* Offer Wizard Modal */}
+      <ExcelExportModal
+        visible={excelExportModalVisible}
+        onCancel={() => {
+          setExcelExportModalVisible(false);
+          setSelectedOfferForExport(null);
+        }}
+        onConfirm={(logoConfig) => {
+          if (selectedOfferForExport) {
+            performExcelExport(selectedOfferForExport, logoConfig);
+          }
+        }}
+        offer={selectedOfferForExport}
+      />
+
       <OfferWizard
         visible={wizardVisible}
         onCancel={handleWizardCancel}

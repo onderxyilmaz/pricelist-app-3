@@ -18,6 +18,7 @@ const CompanyModal = ({
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [logoRemoved, setLogoRemoved] = useState(false);
+  const [logoAspectRatio, setLogoAspectRatio] = useState(null); // width / height
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -31,9 +32,13 @@ const CompanyModal = ({
         });
         // Set logo preview if exists
         if (editingCompany.logo_filename) {
-          setLogoPreview(`${API_BASE_URL}/uploads/company_logos/${editingCompany.logo_filename}`);
+          const logoUrl = `${API_BASE_URL}/uploads/company_logos/${editingCompany.logo_filename}`;
+          setLogoPreview(logoUrl);
+          // Calculate aspect ratio from existing logo
+          calculateAspectRatio(logoUrl);
         } else {
           setLogoPreview(null);
+          setLogoAspectRatio(null);
         }
         setLogoFile(null);
         setLogoRemoved(false);
@@ -43,12 +48,14 @@ const CompanyModal = ({
         setLogoPreview(null);
         setLogoFile(null);
         setLogoRemoved(false);
+        setLogoAspectRatio(null);
       }
     } else {
       // Reset states when modal closes
       setLogoPreview(null);
       setLogoFile(null);
       setLogoRemoved(false);
+      setLogoAspectRatio(null);
     }
   }, [visible, editingCompany, form]);
 
@@ -59,6 +66,38 @@ const CompanyModal = ({
     setLogoRemoved(false);
     onCancel();
   };
+
+  // Calculate aspect ratio from image URL or data URL
+  const calculateAspectRatio = React.useCallback((imageUrl) => {
+    const img = new Image();
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      setLogoAspectRatio(aspectRatio);
+      
+      // If one dimension is already set, calculate the other
+      try {
+        const currentWidth = form.getFieldValue('logo_width');
+        const currentHeight = form.getFieldValue('logo_height');
+        
+        if (currentWidth && !currentHeight) {
+          // Width is set, calculate height
+          const calculatedHeight = currentWidth / aspectRatio;
+          form.setFieldsValue({ logo_height: parseFloat(calculatedHeight.toFixed(1)) });
+        } else if (currentHeight && !currentWidth) {
+          // Height is set, calculate width
+          const calculatedWidth = currentHeight * aspectRatio;
+          form.setFieldsValue({ logo_width: parseFloat(calculatedWidth.toFixed(1)) });
+        }
+      } catch (error) {
+        console.error('Error accessing form fields:', error);
+      }
+    };
+    img.onerror = () => {
+      console.error('Error loading image for aspect ratio calculation');
+      setLogoAspectRatio(null);
+    };
+    img.src = imageUrl;
+  }, [form]);
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -78,9 +117,14 @@ const CompanyModal = ({
     // Preview için dosyayı oku
     const reader = new FileReader();
     reader.onload = (e) => {
-      setLogoPreview(e.target.result);
+      const dataUrl = e.target.result;
+      setLogoPreview(dataUrl);
       setLogoFile(file);
       setLogoRemoved(false); // New file selected, logo not removed
+      
+      // Calculate aspect ratio from uploaded image
+      calculateAspectRatio(dataUrl);
+      
       // Validate logo dimensions when logo is uploaded
       setTimeout(() => {
         form.validateFields(['logo_width', 'logo_height']);
@@ -93,6 +137,7 @@ const CompanyModal = ({
     setLogoPreview(null);
     setLogoFile(null);
     setLogoRemoved(true); // Mark logo as removed
+    setLogoAspectRatio(null);
     // Clear logo dimensions when logo is removed
     form.setFieldsValue({
       logo_width: null,
@@ -100,6 +145,22 @@ const CompanyModal = ({
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle width change - calculate height based on aspect ratio
+  const handleWidthChange = (value) => {
+    if (logoAspectRatio && value && value > 0) {
+      const calculatedHeight = value / logoAspectRatio;
+      form.setFieldsValue({ logo_height: parseFloat(calculatedHeight.toFixed(1)) });
+    }
+  };
+
+  // Handle height change - calculate width based on aspect ratio
+  const handleHeightChange = (value) => {
+    if (logoAspectRatio && value && value > 0) {
+      const calculatedWidth = value * logoAspectRatio;
+      form.setFieldsValue({ logo_width: parseFloat(calculatedWidth.toFixed(1)) });
     }
   };
 
@@ -293,7 +354,7 @@ const CompanyModal = ({
         <Form.Item
           label="Logo Genişliği (cm)"
           name="logo_width"
-          tooltip="Excel export için logo genişliği (santimetre cinsinden)"
+          tooltip="Excel export için logo genişliği (santimetre cinsinden). Değer girildiğinde yükseklik otomatik hesaplanır."
           rules={[
             {
               validator: (_, value) => {
@@ -315,13 +376,14 @@ const CompanyModal = ({
             precision={1}
             style={{ width: '100%' }}
             disabled={(!logoPreview && !editingCompany?.logo_filename) || logoRemoved}
+            onChange={handleWidthChange}
           />
         </Form.Item>
 
         <Form.Item
           label="Logo Yüksekliği (cm)"
           name="logo_height"
-          tooltip="Excel export için logo yüksekliği (santimetre cinsinden)"
+          tooltip="Excel export için logo yüksekliği (santimetre cinsinden). Değer girildiğinde genişlik otomatik hesaplanır."
           rules={[
             {
               validator: (_, value) => {
@@ -343,6 +405,7 @@ const CompanyModal = ({
             precision={1}
             style={{ width: '100%' }}
             disabled={(!logoPreview && !editingCompany?.logo_filename) || logoRemoved}
+            onChange={handleHeightChange}
           />
         </Form.Item>
 
