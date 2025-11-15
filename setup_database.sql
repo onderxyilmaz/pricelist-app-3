@@ -319,13 +319,6 @@ ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id);
 -- Create index for company_id in offers
 CREATE INDEX IF NOT EXISTS idx_offers_company_id ON offers(company_id);
 
--- Insert some sample companies
-INSERT INTO companies (company_name) VALUES 
-('Firma 1'),
-('Firma 2'), 
-('Firma 3')
-ON CONFLICT (company_name) DO NOTHING;
-
 -- 11. REFRESH TOKENS TABLOSU (create_refresh_tokens_table.sql)
 -- ============================================================
 
