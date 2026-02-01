@@ -1,16 +1,16 @@
 // OffersTemp - Mevcut Teklifler sayfası görünümü
 import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import { 
-  Card, 
-  Typography, 
-  Button, 
-  Row, 
-  Col, 
-  Input, 
-  Select, 
-  Table, 
-  Space, 
+import {
+  Card,
+  Typography,
+  Button,
+  Row,
+  Col,
+  Input,
+  Select,
+  Table,
+  Space,
   Tag,
   DatePicker,
   message,
@@ -19,10 +19,10 @@ import {
   Collapse,
   Divider
 } from 'antd';
-import { 
-  PlusOutlined, 
-  SearchOutlined, 
-  FilterOutlined, 
+import {
+  PlusOutlined,
+  SearchOutlined,
+  FilterOutlined,
   ClearOutlined,
   EyeOutlined,
   EditOutlined,
@@ -61,23 +61,23 @@ const OffersTemp = () => {
   const [availableCustomers, setAvailableCustomers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [expandedRowKeys, setExpandedRowKeys] = useState([]); // Revizyon expand için
-  
+
   // Preview modal states
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewOffer, setPreviewOffer] = useState(null);
   const [previewItems, setPreviewItems] = useState([]);
-  
+
   // Wizard modal states
   const [wizardVisible, setWizardVisible] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [pricelists, setPricelists] = useState([]);
   const wizardState = useWizard();
-  
+
   // Excel export modal states
   const [excelExportModalVisible, setExcelExportModalVisible] = useState(false);
   const [selectedOfferForExport, setSelectedOfferForExport] = useState(null);
-  
+
   const [filters, setFilters] = useState({
     offerNo: '',
     status: 'all',
@@ -106,11 +106,11 @@ const OffersTemp = () => {
       const response = await offersApi.getOffers();
       if (response.data.success) {
         setOffers(response.data.offers);
-        
+
         // Filtreleme seçenekleri için unique değerleri topla
         const customers = [...new Set(response.data.offers.map(o => o.customer).filter(Boolean))].sort();
         const users = [...new Set(response.data.offers.map(o => o.created_by_name).filter(Boolean))].sort();
-        
+
         setAvailableCustomers(customers);
         setAvailableUsers(users);
       }
@@ -136,13 +136,13 @@ const OffersTemp = () => {
   const handlePreview = async (offer) => {
     try {
       setLoading(true);
-      
+
       // Teklif detayları ve fiyat listesi bilgilerini al
       const [offerResponse, pricelistsResponse] = await Promise.all([
         offersApi.getOfferDetails(offer.id),
         offerTemplatesApi.getPricelistsWithItems()
       ]);
-      
+
       if (offerResponse.data.success && pricelistsResponse.data.success) {
         // Fiyat listesi bilgilerini map'e çevir
         const pricelistsMap = {};
@@ -193,7 +193,7 @@ const OffersTemp = () => {
   const handleToggleStatus = async (offer) => {
     try {
       const newStatus = offer.status === 'sent' ? 'draft' : 'sent';
-      
+
       const response = await offersApi.updateOffer(offer.id, {
         offer_no: offer.offer_no,
         customer: offer.customer,
@@ -201,7 +201,7 @@ const OffersTemp = () => {
       });
 
       if (response.data.success) {
-        NotificationService.success('Başarılı', 
+        NotificationService.success('Başarılı',
           newStatus === 'sent' ? 'Teklif gönderildi olarak işaretlendi' : 'Teklif taslak olarak işaretlendi'
         );
         fetchOffers();
@@ -224,12 +224,12 @@ const OffersTemp = () => {
       });
 
       if (updateResponse.data.success) {
-        const responseText = response === 'accepted' ? 'kabul edildi' : 
-                           response === 'rejected' ? 'reddedildi' : 
-                           'yanıt sıfırlandı';
+        const responseText = response === 'accepted' ? 'kabul edildi' :
+          response === 'rejected' ? 'reddedildi' :
+            'yanıt sıfırlandı';
         NotificationService.success('Başarılı', `Teklif ${responseText} olarak işaretlendi`);
         fetchOffers();
-        
+
         // Popconfirm'ı kapat
         setTimeout(() => {
           document.body.click();
@@ -390,15 +390,26 @@ const OffersTemp = () => {
             item.product_code || '',
             description,
             item.quantity || 1,
-            parseFloat(item.unit_price || 0).toFixed(2),
-            parseFloat(item.total_price || 0).toFixed(2),
-            parseFloat(item.net_price || 0).toFixed(2),
-            parseFloat(item.net_total || item.total_price || 0).toFixed(2),
-            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            parseFloat(item.unit_price || 0), // D - Unit Price (sayı olarak)
+            parseFloat(item.total_price || 0), // E - Total Price (sayı olarak)
+            parseFloat(item.net_price || 0), // F - Net Price (sayı olarak)
+            parseFloat(item.net_total || item.total_price || 0), // G - Net Total (sayı olarak)
+            parseFloat(item.list_price || item.unit_price || 0), // H - List Price (sayı olarak)
             0.00, // Placeholder for additional columns
-            parseFloat(item.list_price || item.unit_price || 0).toFixed(2),
+            parseFloat(item.list_price || item.unit_price || 0), // J - List Price 2 (sayı olarak)
             ''
           ]);
+
+          // Para birimi formatı (Euro, 2 ondalık basamak) - Euro simgesi başta
+          const currencyFormat = '"€" #,##0.00';
+
+          // Fiyat sütunlarına para birimi formatı uygula
+          productRow.getCell(4).numFmt = currencyFormat; // D - Unit Price
+          productRow.getCell(5).numFmt = currencyFormat; // E - Total Price
+          productRow.getCell(6).numFmt = currencyFormat; // F - Net Price
+          productRow.getCell(7).numFmt = currencyFormat; // G - Net Total
+          productRow.getCell(8).numFmt = currencyFormat; // H - List Price
+          productRow.getCell(10).numFmt = currencyFormat; // J - List Price 2
 
           // Ürün satırlarına 9.5pt font boyutu uygula
           productRow.eachCell((cell) => {
@@ -416,18 +427,26 @@ const OffersTemp = () => {
         const groupTotal = items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
         const groupNetTotal = items.reduce((sum, item) => sum + parseFloat(item.net_total || item.total_price || 0), 0);
 
-        worksheet.addRow([
+        // Para birimi formatı (Euro, 2 ondalık basamak) - Euro simgesi başta
+        const currencyFormat = '"€" #,##0.00';
+
+        const groupTotalRow1 = worksheet.addRow([
           '',
           `${groupName} Orjinal Toplamı:`,
-          groupTotal.toFixed(2) + ' €',
+          groupTotal, // Sayı olarak ekle
           '', '', '', '', '', '', '', ''
         ]);
-        worksheet.addRow([
+        // C sütununa para birimi formatı uygula
+        groupTotalRow1.getCell(3).numFmt = currencyFormat;
+
+        const groupTotalRow2 = worksheet.addRow([
           '',
           `${groupName} Final Toplamı:`,
-          groupNetTotal.toFixed(2) + ' €',
+          groupNetTotal, // Sayı olarak ekle
           '', '', '', '', '', '', '', ''
         ]);
+        // C sütununa para birimi formatı uygula
+        groupTotalRow2.getCell(3).numFmt = currencyFormat;
         worksheet.addRow([]);
       });
 
@@ -435,7 +454,13 @@ const OffersTemp = () => {
       const totalAmount = Object.values(groupedItems).flat()
         .filter(item => !isDescriptionItem(item))
         .reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
-      worksheet.addRow(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount.toFixed(2) + ' €']);
+
+      // Para birimi formatı (Euro, 2 ondalık basamak) - Euro simgesi başta
+      const currencyFormat = '"€" #,##0.00';
+
+      const totalRow = worksheet.addRow(['', 'TOTAL AMOUNT', '', '', '', '', '', '', '', '', totalAmount]); // Sayı olarak ekle
+      // K sütununa para birimi formatı uygula
+      totalRow.getCell(11).numFmt = currencyFormat;
 
       // Sütun genişliklerini ayarla
       worksheet.columns = [
@@ -525,18 +550,23 @@ const OffersTemp = () => {
         // Sol/Sağ logo için firma bilgisi
         const offerCompany = allCompanies.find(c => c.id === logoConfig.offerCompany);
         const teknogrupCompany = allCompanies.find(c => c.id === logoConfig.teknogrupCompany);
-        
+
         // Logo boyutları (cm'den pixel'e çevir - 1 cm ≈ 37.8 pixel)
         const cmToPixel = 37.8;
-        
+        // Pixel'den point'e çevir (Excel satır yüksekliği point cinsinden - 1 pixel ≈ 0.75 point)
+        const pixelToPoint = 0.75;
+
+        // Seçilen logoların yüksekliklerini topla
+        const logoHeights = [];
+
         // Helper function: Get image extension from filename
         const getImageExtension = (filename) => {
           if (!filename) return 'png';
           const ext = filename.split('.').pop().toLowerCase();
           return ['png', 'jpg', 'jpeg'].includes(ext) ? ext : 'png';
         };
-        
-        // Sol logo (A1:C3 aralığı)
+
+        // Sol logo (A1-B3 aralığı - yazdırma alanı içinde)
         if (logoConfig.logoPosition === 'left' && offerCompany?.logo_filename) {
           try {
             const logoUrl = `${baseUrl}/uploads/company_logos/${offerCompany.logo_filename}`;
@@ -547,21 +577,25 @@ const OffersTemp = () => {
                 base64: base64Image.split(',')[1], // Remove data:image/png;base64, prefix
                 extension: extension,
               });
-              
+
               const logoWidth = (offerCompany.logo_width || 5) * cmToPixel;
               const logoHeight = (offerCompany.logo_height || 3) * cmToPixel;
-              
+
+              // Logo yüksekliğini array'e ekle
+              logoHeights.push(logoHeight);
+
               worksheet.addImage(imageId, {
-                tl: { col: 0, row: 0 }, // A1
-                ext: { width: logoWidth, height: logoHeight }
+                tl: { col: 0, row: 0 }, // A1 (yazdırma alanı içinde)
+                ext: { width: logoWidth, height: logoHeight },
+                editAs: 'absolute' // Hücrelerden bağımsız
               });
             }
           } catch (error) {
             console.error('Error adding left logo:', error);
           }
         }
-        
-        // Sağ logo (I1:K3 aralığı)
+
+        // Sağ logo (E1 sütunu - yazdırma alanı içinde)
         if (logoConfig.logoPosition === 'right' && offerCompany?.logo_filename) {
           try {
             const logoUrl = `${baseUrl}/uploads/company_logos/${offerCompany.logo_filename}`;
@@ -572,21 +606,25 @@ const OffersTemp = () => {
                 base64: base64Image.split(',')[1],
                 extension: extension,
               });
-              
+
               const logoWidth = (offerCompany.logo_width || 5) * cmToPixel;
               const logoHeight = (offerCompany.logo_height || 3) * cmToPixel;
-              
+
+              // Logo yüksekliğini array'e ekle
+              logoHeights.push(logoHeight);
+
               worksheet.addImage(imageId, {
-                tl: { col: 8, row: 0 }, // I1
-                ext: { width: logoWidth, height: logoHeight }
+                tl: { col: 4, row: 0 }, // E1 (yazdırma alanı içinde)
+                ext: { width: logoWidth, height: logoHeight },
+                editAs: 'absolute' // Hücrelerden bağımsız
               });
             }
           } catch (error) {
             console.error('Error adding right logo:', error);
           }
         }
-        
-        // Teknogrup logo (karşı tarafta)
+
+        // Teknogrup logo (karşı tarafta - yazdırma alanı içinde)
         if (teknogrupCompany?.logo_filename) {
           try {
             const logoUrl = `${baseUrl}/uploads/company_logos/${teknogrupCompany.logo_filename}`;
@@ -597,24 +635,28 @@ const OffersTemp = () => {
                 base64: base64Image.split(',')[1],
                 extension: extension,
               });
-              
+
               const logoWidth = (teknogrupCompany.logo_width || 5) * cmToPixel;
               const logoHeight = (teknogrupCompany.logo_height || 3) * cmToPixel;
-              
-              // Sol seçildiyse sağa, sağ seçildiyse sola ekle
-              const col = logoConfig.logoPosition === 'left' ? 8 : 0; // I1 veya A1
-              
+
+              // Logo yüksekliğini array'e ekle
+              logoHeights.push(logoHeight);
+
+              // Sol seçildiyse sağa (E1), sağ seçildiyse sola (A1) ekle - yazdırma alanı içinde
+              const col = logoConfig.logoPosition === 'left' ? 4 : 0; // E1 veya A1
+
               worksheet.addImage(imageId, {
                 tl: { col: col, row: 0 },
-                ext: { width: logoWidth, height: logoHeight }
+                ext: { width: logoWidth, height: logoHeight },
+                editAs: 'absolute' // Hücrelerden bağımsız
               });
             }
           } catch (error) {
             console.error('Error adding Teknogrup logo:', error);
           }
         }
-        
-        // Orta logo (E1:G3 aralığı)
+
+        // Orta logo (A ve E sütunlarının tam ortasında - yazdırma alanı içinde)
         if (logoConfig.centerCompanyId) {
           const centerCompany = allCompanies.find(c => c.id === logoConfig.centerCompanyId);
           if (centerCompany?.logo_filename) {
@@ -627,13 +669,21 @@ const OffersTemp = () => {
                   base64: base64Image.split(',')[1],
                   extension: extension,
                 });
-                
+
                 const logoWidth = (centerCompany.logo_width || 5) * cmToPixel;
                 const logoHeight = (centerCompany.logo_height || 3) * cmToPixel;
-                
+
+                // Logo yüksekliğini array'e ekle
+                logoHeights.push(logoHeight);
+
+                // Orta logo: A (col: 0) ve E (col: 4) sütunlarının ortasında konumlandır
+                // A ve E'nin ortası yaklaşık C sütunu (col: 2) civarında
+                // Tam ortada olması için C sütununa yerleştir
+                // ExcelJS'de mutlak konumlandırma ile hücrelerden bağımsız olarak ortada görünecek
                 worksheet.addImage(imageId, {
-                  tl: { col: 4, row: 0 }, // E1
-                  ext: { width: logoWidth, height: logoHeight }
+                  tl: { col: 2, row: 0 }, // C1 (A ve E'nin ortası)
+                  ext: { width: logoWidth, height: logoHeight },
+                  editAs: 'absolute' // Hücrelerden bağımsız - tam ortada konumlandırılacak
                 });
               }
             } catch (error) {
@@ -641,7 +691,41 @@ const OffersTemp = () => {
             }
           }
         }
+
+        // En yüksek logo yüksekliğini bul ve 1. satırın yüksekliğini ayarla
+        if (logoHeights.length > 0) {
+          const maxLogoHeight = Math.max(...logoHeights);
+          // Pixel'den point'e çevir (Excel satır yüksekliği point cinsinden)
+          // Logolar 3 satırı kapsıyor (row 0, 1, 2), bu yüzden her satırın yüksekliği maxLogoHeight / 3 olmalı
+          const rowHeightInPoints = (maxLogoHeight * pixelToPoint) / 3;
+
+          // 1., 2. ve 3. satırların yüksekliğini ayarla
+          worksheet.getRow(1).height = rowHeightInPoints;
+          worksheet.getRow(2).height = rowHeightInPoints;
+          worksheet.getRow(3).height = rowHeightInPoints;
+        }
       }
+
+      // Yazdırma alanını ayarla: A sütunundan E sütununa kadar, en son satıra kadar
+      const lastRow = worksheet.rowCount;
+      worksheet.pageSetup.printArea = `A1:E${lastRow}`;
+
+      // Sayfa düzeni ayarları - Tek sayfaya sığdır
+      worksheet.pageSetup.fitToPage = true;
+      worksheet.pageSetup.fitToWidth = 1; // 1 sayfa genişliğine sığdır
+      worksheet.pageSetup.fitToHeight = 1; // 1 sayfa yüksekliğine sığdır
+      worksheet.pageSetup.orientation = 'landscape'; // Yatay yönlendirme (daha fazla genişlik)
+      worksheet.pageSetup.paperSize = 9; // A4 kağıt boyutu
+
+      // Kenar boşluklarını optimize et (cm cinsinden)
+      worksheet.pageSetup.margins = {
+        left: 0.7,   // 0.7 cm
+        right: 0.7,  // 0.7 cm
+        top: 0.75,   // 0.75 cm
+        bottom: 0.75, // 0.75 cm
+        header: 0.3, // 0.3 cm
+        footer: 0.3  // 0.3 cm
+      };
 
       // Dosya adını oluştur
       const fileName = `Teklif_${offerData.offer_no || 'w'}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -689,15 +773,15 @@ const OffersTemp = () => {
     // Teklif No filtresi - hem ana tekliflerde hem revizyonlarda ara (orijinal mantık)
     if (filters.offerNo.trim()) {
       const searchTerm = filters.offerNo.toLowerCase();
-      
+
       // Arama terimiyle eşleşen tüm teklifleri bul (ana + revizyon)
-      const matchingOffers = offers.filter(offer => 
+      const matchingOffers = offers.filter(offer =>
         offer.offer_no.toLowerCase().includes(searchTerm)
       );
-      
+
       // Eşleşen tekliflerin parent_offer_id'lerini topla
       const matchingParentIds = new Set();
-      
+
       matchingOffers.forEach(offer => {
         if (offer.parent_offer_id) {
           // Bu bir revizyon, parent_id'sini ekle
@@ -707,19 +791,19 @@ const OffersTemp = () => {
           matchingParentIds.add(offer.id);
         }
       });
-      
+
       // Ana teklifleri ve ilgili revizyonları filtrele
       filtered = filtered.filter(offer => {
         // Eğer bu teklif arama sonuçlarında varsa dahil et
         if (matchingOffers.some(m => m.id === offer.id)) {
           return true;
         }
-        
+
         // Eğer bu ana teklifin revizyonlarından biri eşleşiyorsa ana teklifi de dahil et
         if (!offer.parent_offer_id && matchingParentIds.has(offer.id)) {
           return true;
         }
-        
+
         return false;
       });
     }
@@ -748,7 +832,7 @@ const OffersTemp = () => {
   // Expandable row render fonksiyonu - orijinal Offers.jsx'ten alındı
   const expandedRowRender = (record) => {
     const revisions = getRevisions(record.id);
-    
+
     if (revisions.length === 0) {
       return <div className={styles.noRevisionMessage}>Bu teklif için revizyon bulunmuyor</div>;
     }
@@ -865,11 +949,11 @@ const OffersTemp = () => {
                     icon={<EditOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-              handleEdit(revRecord);
+                      handleEdit(revRecord);
                     }}
                     title="Düzenle"
                   />
-                  
+
                   {/* 3. Revizyon Oluştur */}
                   <Button
                     type="default"
@@ -877,11 +961,11 @@ const OffersTemp = () => {
                     icon={<BranchesOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
-              handleCreateRevision(revRecord);
+                      handleCreateRevision(revRecord);
                     }}
                     title="Revizyon Oluştur"
                   />
-                  
+
                   {/* 4. Gönderildi İşaretle */}
                   <Button
                     type="default"
@@ -894,7 +978,7 @@ const OffersTemp = () => {
                     title={revRecord.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
                     className={revRecord.status === 'sent' ? styles.buttonSent : styles.buttonDraft}
                   />
-                  
+
                   {/* 5. Müşteri Yanıtı */}
                   <Popconfirm
                     title={revRecord.status === 'sent' ? "Müşteri yanıtını seçin:" : "Bu teklif henüz gönderilmemiş"}
@@ -956,29 +1040,29 @@ const OffersTemp = () => {
                       size="small"
                       icon={
                         revRecord.customer_response === 'accepted' ? <CheckOutlined /> :
-                        revRecord.customer_response === 'rejected' ? <CloseOutlined /> :
-                        <QuestionCircleOutlined />
+                          revRecord.customer_response === 'rejected' ? <CloseOutlined /> :
+                            <QuestionCircleOutlined />
                       }
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
                       title="Müşteri Yanıtı"
                       disabled={revRecord.status !== 'sent'}
-                      style={{ 
-                        color: revRecord.status !== 'sent' ? '#d9d9d9' : 
-                               revRecord.customer_response === 'accepted' ? '#52c41a' : 
-                               revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
-                        borderColor: revRecord.status !== 'sent' ? '#d9d9d9' : 
-                                    revRecord.customer_response === 'accepted' ? '#52c41a' : 
-                                    revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                      style={{
+                        color: revRecord.status !== 'sent' ? '#d9d9d9' :
+                          revRecord.customer_response === 'accepted' ? '#52c41a' :
+                            revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                        borderColor: revRecord.status !== 'sent' ? '#d9d9d9' :
+                          revRecord.customer_response === 'accepted' ? '#52c41a' :
+                            revRecord.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
                         backgroundColor: revRecord.status !== 'sent' ? '#fafafa' :
-                                        revRecord.customer_response === 'accepted' ? '#f6ffed' : 
-                                        revRecord.customer_response === 'rejected' ? '#fff2f0' : 'transparent',
+                          revRecord.customer_response === 'accepted' ? '#f6ffed' :
+                            revRecord.customer_response === 'rejected' ? '#fff2f0' : 'transparent',
                         cursor: revRecord.status !== 'sent' ? 'not-allowed' : 'pointer'
                       }}
                     />
                   </Popconfirm>
-                  
+
                   {/* 6. Excel'e Aktar */}
                   <Button
                     type="default"
@@ -991,7 +1075,7 @@ const OffersTemp = () => {
                     title="Excel'e Aktar"
                     className={styles.buttonExcel}
                   />
-                  
+
                   {/* 7. PDF'e Aktar */}
                   <Button
                     type="default"
@@ -1004,7 +1088,7 @@ const OffersTemp = () => {
                     title="PDF'e Aktar"
                     className={styles.buttonPdf}
                   />
-                  
+
                   {/* 8. Sil */}
                   <Popconfirm
                     title="Revizyonu silmek istediğinizden emin misiniz?"
@@ -1162,7 +1246,7 @@ const OffersTemp = () => {
             }}
             title="Düzenle"
           />
-          
+
           {/* 3. Revizyon Oluştur */}
           <Button
             type="default"
@@ -1174,7 +1258,7 @@ const OffersTemp = () => {
             }}
             title="Revizyon Oluştur"
           />
-          
+
           {/* 4. Gönderildi İşaretle */}
           <Button
             type="default"
@@ -1187,7 +1271,7 @@ const OffersTemp = () => {
             title={record.status === 'sent' ? 'Taslak Yap' : 'Gönderildi İşaretle'}
             className={record.status === 'sent' ? styles.buttonSent : styles.buttonDraft}
           />
-          
+
           {/* 5. Müşteri Yanıtı */}
           <Popconfirm
             title={record.status === 'sent' ? "Müşteri yanıtını seçin:" : "Bu teklif henüz gönderilmemiş"}
@@ -1202,7 +1286,7 @@ const OffersTemp = () => {
                       handleCustomerResponse(record, 'accepted');
                     }}
                     disabled={record.customer_response === 'accepted'}
-                    style={{ 
+                    style={{
                       marginRight: 8,
                       color: record.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
                       borderColor: record.customer_response === 'accepted' ? '#52c41a' : '#1890ff',
@@ -1219,7 +1303,7 @@ const OffersTemp = () => {
                       handleCustomerResponse(record, 'rejected');
                     }}
                     disabled={record.customer_response === 'rejected'}
-                    style={{ 
+                    style={{
                       marginRight: 8,
                       color: record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
                       borderColor: record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
@@ -1236,7 +1320,7 @@ const OffersTemp = () => {
                         e.stopPropagation();
                         handleCustomerResponse(record, null);
                       }}
-                      style={{ 
+                      style={{
                         color: '#faad14',
                         borderColor: '#faad14'
                       }}
@@ -1262,29 +1346,29 @@ const OffersTemp = () => {
               size="small"
               icon={
                 record.customer_response === 'accepted' ? <CheckOutlined /> :
-                record.customer_response === 'rejected' ? <CloseOutlined /> :
-                <QuestionCircleOutlined />
+                  record.customer_response === 'rejected' ? <CloseOutlined /> :
+                    <QuestionCircleOutlined />
               }
               onClick={(e) => {
                 e.stopPropagation();
               }}
               title="Müşteri Yanıtı"
               disabled={record.status !== 'sent'}
-              style={{ 
-                color: record.status !== 'sent' ? '#d9d9d9' : 
-                       record.customer_response === 'accepted' ? '#52c41a' : 
-                       record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
-                borderColor: record.status !== 'sent' ? '#d9d9d9' : 
-                            record.customer_response === 'accepted' ? '#52c41a' : 
-                            record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+              style={{
+                color: record.status !== 'sent' ? '#d9d9d9' :
+                  record.customer_response === 'accepted' ? '#52c41a' :
+                    record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
+                borderColor: record.status !== 'sent' ? '#d9d9d9' :
+                  record.customer_response === 'accepted' ? '#52c41a' :
+                    record.customer_response === 'rejected' ? '#ff4d4f' : '#1890ff',
                 backgroundColor: record.status !== 'sent' ? '#fafafa' :
-                                record.customer_response === 'accepted' ? '#f6ffed' : 
-                                record.customer_response === 'rejected' ? '#fff2f0' : 'transparent',
+                  record.customer_response === 'accepted' ? '#f6ffed' :
+                    record.customer_response === 'rejected' ? '#fff2f0' : 'transparent',
                 cursor: record.status !== 'sent' ? 'not-allowed' : 'pointer'
               }}
             />
           </Popconfirm>
-          
+
           {/* 6. Excel'e Aktar */}
           <Button
             type="default"
@@ -1297,7 +1381,7 @@ const OffersTemp = () => {
             title="Excel'e Aktar"
             className={styles.buttonExcel}
           />
-          
+
           {/* 7. PDF'e Aktar */}
           <Button
             type="default"
@@ -1310,7 +1394,7 @@ const OffersTemp = () => {
             title="PDF'e Aktar"
             className={styles.buttonPdf}
           />
-          
+
           {/* 8. Sil */}
           <Popconfirm
             title="Teklifi silmek istediğinizden emin misiniz?"
@@ -1363,23 +1447,23 @@ const OffersTemp = () => {
   const handleCreateOffer = async (templateMode = false) => {
     try {
       setLoading(true);
-      
+
       // Wizard state'ini sıfırla
       wizardState.resetWizard();
       wizardState.setIsTemplateMode(templateMode);
-      
+
       // Firmaları ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
         offerTemplatesApi.getPricelistsWithItems()
       ]);
-      
+
       setCompanies(companiesData);
-      
+
       if (pricelistsData.data.success) {
         setPricelists(pricelistsData.data.pricelists || []);
       }
-      
+
       setEditingOffer(null);
       setWizardVisible(true);
     } catch (error) {
@@ -1402,19 +1486,19 @@ const OffersTemp = () => {
     try {
       setLoading(true);
       setEditingOffer(offer);
-      
+
       // Firmalar ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
         offerTemplatesApi.getPricelistsWithItems()
       ]);
-      
+
       setCompanies(companiesData);
-      
+
       if (pricelistsData.data.success) {
         setPricelists(pricelistsData.data.pricelists || []);
       }
-      
+
       // Teklif detaylarını yükle
       const response = await offersService.getOfferById(offer.id);
       if (!response.success) {
@@ -1423,7 +1507,7 @@ const OffersTemp = () => {
       }
 
       const offerData = response.offer;
-      
+
       // Wizard state'ini sıfırla ve doldur
       wizardState.resetWizard();
       wizardState.updateOfferData({
@@ -1440,7 +1524,7 @@ const OffersTemp = () => {
           const originalItem = pricelistsData.data.pricelists
             .flatMap(p => p.items)
             .find(pi => pi.id === item.pricelist_item_id);
-          
+
           return {
             id: item.pricelist_item_id,
             product_id: item.product_id,
@@ -1459,9 +1543,9 @@ const OffersTemp = () => {
             stock: originalItem?.stock || 0
           };
         });
-        
+
         wizardState.setSelectedItems(mappedItems);
-        
+
         // Ürün bazında indirimleri geri yükle
         const itemDiscountsMap = {};
         offerData.items.forEach(item => {
@@ -1470,7 +1554,7 @@ const OffersTemp = () => {
           }
         });
         wizardState.setItemDiscounts(itemDiscountsMap);
-        
+
         // Ürün notlarını geri yükle
         const itemNotesMap = {};
         offerData.items.forEach(item => {
@@ -1479,17 +1563,17 @@ const OffersTemp = () => {
           }
         });
         wizardState.setItemNotes(itemNotesMap);
-        
+
         // Liste bazında indirim ve kar oranlarını geri yükle
         const discountsMap = {};
         const profitsMap = {};
-        
+
         offerData.items.forEach(item => {
           // Liste bazında indirimler
           if (item.list_discounts) {
             try {
-              const discounts = typeof item.list_discounts === 'string' 
-                ? JSON.parse(item.list_discounts) 
+              const discounts = typeof item.list_discounts === 'string'
+                ? JSON.parse(item.list_discounts)
                 : item.list_discounts;
               if (Array.isArray(discounts) && discounts.length > 0) {
                 discountsMap[item.pricelist_id] = discounts;
@@ -1498,12 +1582,12 @@ const OffersTemp = () => {
               console.error('Parse list_discounts error:', e);
             }
           }
-          
+
           // Liste bazında kar oranları
           if (item.list_profits) {
             try {
-              const profits = typeof item.list_profits === 'string' 
-                ? JSON.parse(item.list_profits) 
+              const profits = typeof item.list_profits === 'string'
+                ? JSON.parse(item.list_profits)
                 : item.list_profits;
               if (Array.isArray(profits) && profits.length > 0) {
                 profitsMap[item.pricelist_id] = profits;
@@ -1513,10 +1597,10 @@ const OffersTemp = () => {
             }
           }
         });
-        
+
         wizardState.setDiscountData(discountsMap);
         wizardState.setProfitData(profitsMap);
-        
+
         // Manuel fiyatları geri yükle
         const manualPricesMap = {};
         offerData.items.forEach(item => {
@@ -1553,7 +1637,7 @@ const OffersTemp = () => {
   const handleCreateRevision = async (offer) => {
     try {
       setLoading(true);
-      
+
       // Mevcut teklif verilerini yükle
       const response = await offersService.getOfferById(offer.id);
       if (!response.success) {
@@ -1562,44 +1646,44 @@ const OffersTemp = () => {
       }
 
       const sourceOffer = response.offer;
-      
+
       // Ana teklifi bul (parent_offer_id null olan)
       const parentOfferId = sourceOffer.parent_offer_id || offer.id;
-      
+
       // Ana teklifin tüm revizyonlarını getir ve en yüksek revizyon numarasını bul
       const allOffersResponse = await offersService.getAllOffers();
       if (!allOffersResponse.success) {
         NotificationService.error('Hata', 'Teklifler yüklenemedi');
         return;
       }
-      
+
       const allOffers = allOffersResponse.offers;
-      const relatedOffers = allOffers.filter(o => 
+      const relatedOffers = allOffers.filter(o =>
         o.id === parentOfferId || o.parent_offer_id === parentOfferId
       );
-      
+
       const maxRevisionNo = Math.max(...relatedOffers.map(o => o.revision_no || 0));
       const newRevisionNo = maxRevisionNo + 1;
-      
+
       // Ana teklifin offer_no'sunu bul
       const parentOffer = allOffers.find(o => o.id === parentOfferId);
       const baseOfferNo = parentOffer ? parentOffer.offer_no : sourceOffer.offer_no.split('-R')[0];
-      
+
       // Yeni teklif no
       const newOfferNo = `${baseOfferNo}-R${newRevisionNo}`;
-      
+
       // Firmalar ve fiyat listelerini yükle
       const [companiesData, pricelistsData] = await Promise.all([
         offersService.fetchCompanies(),
         offerTemplatesApi.getPricelistsWithItems()
       ]);
-      
+
       setCompanies(companiesData);
-      
+
       if (pricelistsData.data.success) {
         setPricelists(pricelistsData.data.pricelists || []);
       }
-      
+
       // Wizard state'ini sıfırla ve doldur
       wizardState.resetWizard();
       wizardState.updateOfferData({
@@ -1618,7 +1702,7 @@ const OffersTemp = () => {
           const originalItem = pricelistsData.data.pricelists
             .flatMap(p => p.items)
             .find(pi => pi.id === item.pricelist_item_id);
-          
+
           return {
             id: item.pricelist_item_id,
             product_id: item.product_id,
@@ -1637,9 +1721,9 @@ const OffersTemp = () => {
             stock: originalItem?.stock || 0
           };
         });
-        
+
         wizardState.setSelectedItems(mappedItems);
-        
+
         // Ürün bazında indirimleri geri yükle
         const itemDiscountsMap = {};
         sourceOffer.items.forEach(item => {
@@ -1648,7 +1732,7 @@ const OffersTemp = () => {
           }
         });
         wizardState.setItemDiscounts(itemDiscountsMap);
-        
+
         // Ürün notlarını geri yükle
         const itemNotesMap = {};
         sourceOffer.items.forEach(item => {
@@ -1657,17 +1741,17 @@ const OffersTemp = () => {
           }
         });
         wizardState.setItemNotes(itemNotesMap);
-        
+
         // Liste bazında indirim ve kar oranlarını geri yükle
         const discountsMap = {};
         const profitsMap = {};
-        
+
         sourceOffer.items.forEach(item => {
           // Liste bazında indirimler
           if (item.list_discounts) {
             try {
-              const discounts = typeof item.list_discounts === 'string' 
-                ? JSON.parse(item.list_discounts) 
+              const discounts = typeof item.list_discounts === 'string'
+                ? JSON.parse(item.list_discounts)
                 : item.list_discounts;
               if (Array.isArray(discounts) && discounts.length > 0) {
                 discountsMap[item.pricelist_id] = discounts;
@@ -1676,12 +1760,12 @@ const OffersTemp = () => {
               console.error('Parse list_discounts error:', e);
             }
           }
-          
+
           // Liste bazında kar oranları
           if (item.list_profits) {
             try {
-              const profits = typeof item.list_profits === 'string' 
-                ? JSON.parse(item.list_profits) 
+              const profits = typeof item.list_profits === 'string'
+                ? JSON.parse(item.list_profits)
                 : item.list_profits;
               if (Array.isArray(profits) && profits.length > 0) {
                 profitsMap[item.pricelist_id] = profits;
@@ -1691,10 +1775,10 @@ const OffersTemp = () => {
             }
           }
         });
-        
+
         wizardState.setDiscountData(discountsMap);
         wizardState.setProfitData(profitsMap);
-        
+
         // Manuel fiyatları geri yükle
         const manualPricesMap = {};
         sourceOffer.items.forEach(item => {
@@ -1717,10 +1801,10 @@ const OffersTemp = () => {
         });
         wizardState.setManualPrices(manualPricesMap);
       }
-      
+
       setEditingOffer(null); // Revizyon için editingOffer null olmalı (yeni teklif gibi davranır)
       setWizardVisible(true);
-      
+
       NotificationService.info('Bilgi', `Revizyon ${newRevisionNo} oluşturuluyor...`);
     } catch (error) {
       console.error('Create revision error:', error);
@@ -1734,19 +1818,19 @@ const OffersTemp = () => {
   const handleSaveOffer = async (wizardData) => {
     try {
       const { offerData, selectedItems, itemNotes, itemDiscounts, discountData, profitData, manualPrices } = wizardData;
-      
+
       // Kullanıcı bilgisini al
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      
+
       if (!user || !user.id) {
         NotificationService.error('Hata', 'Kullanıcı bilgisi bulunamadı');
         return;
       }
-      
+
       let offerId;
       const isEditing = editingOffer !== null;
-      
+
       if (isEditing) {
         // Güncelleme modu
         const updatePayload = {
@@ -1756,14 +1840,14 @@ const OffersTemp = () => {
           status: editingOffer.status || 'draft',
           customer_response: editingOffer.customer_response || 'pending'
         };
-        
+
         const offerResponse = await offersService.updateOffer(editingOffer.id, updatePayload);
-        
+
         if (!offerResponse.success) {
           NotificationService.error('Hata', 'Teklif güncellenemedi');
           return;
         }
-        
+
         offerId = editingOffer.id;
       } else {
         // Yeni teklif oluşturma modu
@@ -1787,65 +1871,65 @@ const OffersTemp = () => {
 
         offerId = offerResponse.offer.id;
       }
-        
-        // Offer items'ı hazırla - Backend'in beklediği formatta
-        const offerItems = selectedItems.map(item => {
-          const itemDiscount = itemDiscounts[item.id] || 0;
-          const manualPrice = manualPrices[item.id];
-          const note = itemNotes[item.id] || null;
-          
-          // Birim fiyat hesapla (sales_price - final birim fiyat)
-          let salesPrice = parseFloat(item.price);
-          
-          // Manuel fiyat varsa onu kullan
-          if (manualPrice && manualPrice.enabled && manualPrice.price > 0) {
-            salesPrice = manualPrice.price;
-          } else {
-            // Ürün indirimi
-            if (itemDiscount > 0) {
-              salesPrice = salesPrice * (1 - itemDiscount / 100);
-            }
-            
-            // Liste bazında indirimler
-            const discounts = discountData[item.pricelist_id] || [];
-            discounts.forEach(discount => {
-              if (discount.rate > 0) {
-                salesPrice = salesPrice * (1 - discount.rate / 100);
-              }
-            });
-            
-            // Kar oranları
-            const profits = profitData[item.pricelist_id] || [];
-            profits.forEach(profit => {
-              if (profit.rate > 0) {
-                salesPrice = salesPrice * (1 + profit.rate / 100);
-              }
-            });
+
+      // Offer items'ı hazırla - Backend'in beklediği formatta
+      const offerItems = selectedItems.map(item => {
+        const itemDiscount = itemDiscounts[item.id] || 0;
+        const manualPrice = manualPrices[item.id];
+        const note = itemNotes[item.id] || null;
+
+        // Birim fiyat hesapla (sales_price - final birim fiyat)
+        let salesPrice = parseFloat(item.price);
+
+        // Manuel fiyat varsa onu kullan
+        if (manualPrice && manualPrice.enabled && manualPrice.price > 0) {
+          salesPrice = manualPrice.price;
+        } else {
+          // Ürün indirimi
+          if (itemDiscount > 0) {
+            salesPrice = salesPrice * (1 - itemDiscount / 100);
           }
-          
-          // Backend'in beklediği format
-          return {
-            pricelist_item_id: item.id,
-            quantity: item.quantity,
-            price: salesPrice, // Birim satış fiyatı (final)
-            total_price: salesPrice * item.quantity, // Toplam fiyat
-            product_id: item.product_id,
-            product_name_tr: item.name_tr || item.name,
-            product_name_en: item.name_en || item.name,
-            description: note || (item.description_tr || item.description_en || item.description || ''),
-            unit: item.unit || 'adet',
-            currency: item.currency,
-            pricelist_id: item.pricelist_id,
-            // Yeni alanlar - indirim ve kar bilgileri
-            original_price: parseFloat(item.price), // Orijinal liste fiyatı
-            item_discount_rate: itemDiscount, // Ürün bazında indirim %
-            item_note: note, // Ürün notu
-            list_discounts: discountData[item.pricelist_id] || [], // Liste bazında indirimler
-            list_profits: profitData[item.pricelist_id] || [], // Liste bazında kar oranları
-            manual_price: manualPrice || null // Manuel fiyat bilgisi
-          };
-        });
-        
+
+          // Liste bazında indirimler
+          const discounts = discountData[item.pricelist_id] || [];
+          discounts.forEach(discount => {
+            if (discount.rate > 0) {
+              salesPrice = salesPrice * (1 - discount.rate / 100);
+            }
+          });
+
+          // Kar oranları
+          const profits = profitData[item.pricelist_id] || [];
+          profits.forEach(profit => {
+            if (profit.rate > 0) {
+              salesPrice = salesPrice * (1 + profit.rate / 100);
+            }
+          });
+        }
+
+        // Backend'in beklediği format
+        return {
+          pricelist_item_id: item.id,
+          quantity: item.quantity,
+          price: salesPrice, // Birim satış fiyatı (final)
+          total_price: salesPrice * item.quantity, // Toplam fiyat
+          product_id: item.product_id,
+          product_name_tr: item.name_tr || item.name,
+          product_name_en: item.name_en || item.name,
+          description: note || (item.description_tr || item.description_en || item.description || ''),
+          unit: item.unit || 'adet',
+          currency: item.currency,
+          pricelist_id: item.pricelist_id,
+          // Yeni alanlar - indirim ve kar bilgileri
+          original_price: parseFloat(item.price), // Orijinal liste fiyatı
+          item_discount_rate: itemDiscount, // Ürün bazında indirim %
+          item_note: note, // Ürün notu
+          list_discounts: discountData[item.pricelist_id] || [], // Liste bazında indirimler
+          list_profits: profitData[item.pricelist_id] || [], // Liste bazında kar oranları
+          manual_price: manualPrice || null // Manuel fiyat bilgisi
+        };
+      });
+
       // Offer items'ı kaydet
       const saveItemsResponse = await offersService.saveOfferItems(offerId, offerItems);
 
@@ -1855,7 +1939,7 @@ const OffersTemp = () => {
       }
 
       NotificationService.success('Başarılı', isEditing ? 'Teklif başarıyla güncellendi' : 'Teklif başarıyla kaydedildi');
-      
+
       // Modal'ı kapat ve listeyi yenile
       handleWizardCancel();
       fetchOffers();
@@ -1869,7 +1953,7 @@ const OffersTemp = () => {
   return (
     <div className={styles.mainContainer}>
       {/* Header Component */}
-      <OffersHeader 
+      <OffersHeader
         onCreateOffer={() => handleCreateOffer(true)}
         loading={loading}
       />
