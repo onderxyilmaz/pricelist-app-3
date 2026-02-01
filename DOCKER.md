@@ -1,311 +1,87 @@
-# Docker Deployment Guide
+# Docker ile Production Çalıştırma (Karadağ Elektronik)
 
-Bu dosya, uygulamayı Docker ile production ortamında çalıştırmak için gereken bilgileri içerir.
+Uygulama **backend + frontend + PostgreSQL** tek compose ile production olarak çalıştırılabilir.
+
+## Gereksinimler
+
+- Docker ve Docker Compose
+- (İsteğe bağlı) Domain veya sunucu IP’si
 
 ## Hızlı Başlangıç
 
-### 1. Environment Variables Ayarlama
-
-`.env.example` dosyasını kopyalayın ve `.env` olarak kaydedin:
-
 ```bash
+# 1. Proje kökünde .env oluştur
 cp .env.example .env
-```
 
-`.env` dosyasını düzenleyin ve özellikle şu değerleri değiştirin:
-- `DB_PASSWORD`: Güçlü bir PostgreSQL şifresi
-- `JWT_SECRET`: En az 32 karakterlik güçlü bir secret key
-- `CORS_ORIGIN`: Frontend URL'iniz (örn: `https://yourdomain.com`)
-- `FRONTEND_URL`: Frontend URL'iniz
-- `VITE_API_BASE_URL`: Backend API URL'iniz
+# 2. .env içinde mutlaka değiştirin:
+#    - DB_PASSWORD: güçlü bir şifre
+#    - JWT_SECRET: en az 32 karakter rastgele string
+#    (Firma domain kullanıyorsanız CORS_ORIGIN ve FRONTEND_URL’i güncelleyin)
 
-### 2. Docker Compose ile Çalıştırma
+# 3. Build ve çalıştır
+docker compose up -d --build
 
-```bash
-# Tüm servisleri build et ve çalıştır
-docker-compose up -d --build
-
-# Logları görüntüle
-docker-compose logs -f
-
-# Servisleri durdur
-docker-compose down
-
-# Servisleri durdur ve volume'ları sil (DİKKAT: Veritabanı verileri silinir!)
-docker-compose down -v
-```
-
-### 3. Servis Durumunu Kontrol Etme
-
-```bash
-# Tüm servislerin durumunu kontrol et
-docker-compose ps
-
-# Belirli bir servisin loglarını görüntüle
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f postgres
-
-# Health check durumunu kontrol et
-docker-compose ps
+# 4. Uygulama:
+#    - Tarayıcı: http://localhost (veya sunucu IP / domain)
+#    - Backend API (opsiyonel): http://localhost:3001
 ```
 
 ## Servisler
 
-### PostgreSQL Database
-- **Port**: 55432 (varsayılan)
-- **Container**: `pricelist-db`
-- **Volume**: `postgres_data` (kalıcı veri saklama)
-- **Initialization**: `setup_database.sql` otomatik çalıştırılır
+| Servis    | Port (varsayılan) | Açıklama                          |
+|-----------|-------------------|-----------------------------------|
+| Frontend  | 80                | Nginx, SPA + /api ve /uploads proxy |
+| Backend   | 3001              | Fastify API                       |
+| PostgreSQL| 55432             | Veritabanı (host üzerinden erişim) |
 
-### Backend API
-- **Port**: 3001 (varsayılan)
-- **Container**: `pricelist-backend`
-- **Health Check**: `/health` endpoint
-- **Uploads**: `backend/uploads` klasörü volume olarak mount edilir
+**Not:** Kullanıcılar sadece **80** portuna bağlanır. Nginx, `/api` ve `/uploads` isteklerini backend’e yönlendirir; ayrıca backend portunu dışarı açmak zorunlu değildir.
 
-### Frontend
-- **Port**: 80 (varsayılan)
-- **Container**: `pricelist-frontend`
-- **Web Server**: Nginx
-- **Build**: Production build (Vite)
+## Ortam Değişkenleri (.env)
 
-## Port Yapılandırması
+| Değişken           | Açıklama |
+|--------------------|----------|
+| `DB_PASSWORD`      | PostgreSQL şifresi (mutlaka değiştirin) |
+| `JWT_SECRET`       | JWT imzası için en az 32 karakter (mutlaka değiştirin) |
+| `CORS_ORIGIN`      | İzin verilen origin’ler (virgülle ayrılmış). Firma adresi: `https://pricelist.sirketadi.com` |
+| `FRONTEND_URL`     | Frontend adresi (e-posta linkleri vb. için). Firma: `https://pricelist.sirketadi.com` |
+| `VITE_API_BASE_URL` | Production’da **boş** bırakın (Nginx proxy kullanılır). Sadece ayrı test için `http://localhost:3001` kullanın. |
 
-Varsayılan portlar:
-- **Frontend**: 80
-- **Backend**: 3001
-- **PostgreSQL**: 55432
+## Kalıcı Veri
 
-Portları değiştirmek için `.env` dosyasında:
-```env
-FRONTEND_PORT=8080
-BACKEND_PORT=3001
-DB_PORT=55432
-```
+- **PostgreSQL:** `postgres_data` volume (veritabanı kalıcı).
+- **Backend uploads:** `backend_uploads` volume (avatar ve firma logoları kalıcı).
 
-## Veritabanı Yönetimi
+Container silinse bile bu volume’lar durur; `docker compose down` ile volume’lar silinmez.
 
-### Backup Alma
+## İlk Kurulum Sonrası
+
+- Uygulama ilk açıldığında **kayıt** sayfası gelir; ilk kayıt olan kullanıcı **Super Admin** olur.
+- Veritabanı şeması `setup_database.sql` ile container ilk ayağa kalktığında otomatik uygulanır.
+
+## Yararlı Komutlar
 
 ```bash
-# Veritabanı backup'ı al
-docker-compose exec postgres pg_dump -U postgres pricelist_app_3 > backup.sql
+# Logları izle
+docker compose logs -f
 
-# Veya volume'dan direkt backup
-docker run --rm -v pricelist-app-3_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz /data
+# Sadece backend log
+docker compose logs -f backend
+
+# Yeniden build (kod değişikliği sonrası)
+docker compose up -d --build
+
+# Durdur
+docker compose down
+
+# Volume’lar dahil tamamen silmek (dikkat: veritabanı ve uploads gider)
+docker compose down -v
 ```
 
-### Backup'tan Geri Yükleme
+## Güvenlik Özeti
 
-```bash
-# SQL dosyasından geri yükle
-docker-compose exec -T postgres psql -U postgres pricelist_app_3 < backup.sql
-```
+1. **DB_PASSWORD** ve **JWT_SECRET** production’da mutlaka güçlü ve benzersiz olsun.
+2. Mümkünse **HTTPS** kullanın (ters proxy: Nginx/Traefik sunucuda, compose’daki frontend portu 80 veya 443’e bağlanabilir).
+3. Production’da **CORS_ORIGIN** ve **FRONTEND_URL**’i gerçek domain ile sınırlayın.
+4. İsterseniz sadece 80’i açıp 3001’i dışarıya kapatın (Nginx zaten proxy yapıyor).
 
-### Veritabanını Sıfırlama
-
-```bash
-# Servisleri durdur ve volume'ları sil
-docker-compose down -v
-
-# Tekrar başlat (setup_database.sql otomatik çalışır)
-docker-compose up -d
-```
-
-## Production Deployment
-
-### 1. Güvenlik Kontrol Listesi
-
-- [ ] `.env` dosyasında güçlü şifreler kullanın
-- [ ] `JWT_SECRET` için en az 32 karakterlik rastgele bir değer kullanın
-- [ ] `CORS_ORIGIN` ve `FRONTEND_URL` değerlerini production domain'inize göre ayarlayın
-- [ ] HTTPS kullanın (reverse proxy ile Nginx/Traefik)
-- [ ] Firewall kurallarını yapılandırın
-- [ ] Düzenli backup alın
-
-### 2. Reverse Proxy ile HTTPS
-
-Nginx reverse proxy örneği:
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name yourdomain.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    location / {
-        proxy_pass http://localhost:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location /api {
-        proxy_pass http://localhost:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-### 3. Environment Variables (Production)
-
-Production için `.env` dosyası örneği:
-
-```env
-# Database
-DB_NAME=pricelist_app_3
-DB_USER=postgres
-DB_PASSWORD=very-strong-password-here
-DB_PORT=55432
-
-# Backend
-BACKEND_PORT=3001
-JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-change-this
-CORS_ORIGIN=https://yourdomain.com
-FRONTEND_URL=https://yourdomain.com
-
-# Frontend
-FRONTEND_PORT=80
-VITE_API_BASE_URL=https://yourdomain.com
-
-# Production
-NODE_ENV=production
-```
-
-## Troubleshooting
-
-### Backend başlamıyor
-
-```bash
-# Backend loglarını kontrol et
-docker-compose logs backend
-
-# Backend container'ına gir
-docker-compose exec backend sh
-
-# Health check'i manuel test et
-curl http://localhost:3001/health
-```
-
-### Frontend build hatası
-
-```bash
-# Frontend build loglarını kontrol et
-docker-compose logs frontend
-
-# Frontend container'ını yeniden build et
-docker-compose build --no-cache frontend
-```
-
-### Veritabanı bağlantı hatası
-
-```bash
-# PostgreSQL loglarını kontrol et
-docker-compose logs postgres
-
-# PostgreSQL container'ına gir
-docker-compose exec postgres psql -U postgres -d pricelist_app_3
-
-# Veritabanı durumunu kontrol et
-docker-compose exec postgres pg_isready -U postgres
-```
-
-### Port çakışması
-
-Eğer portlar kullanılıyorsa, `.env` dosyasında portları değiştirin:
-
-```env
-FRONTEND_PORT=8080
-BACKEND_PORT=3002
-DB_PORT=5433
-```
-
-## Güncelleme
-
-### Uygulamayı Güncelleme
-
-```bash
-# En son kodu çek
-git pull
-
-# Servisleri durdur
-docker-compose down
-
-# Yeni image'ları build et
-docker-compose build --no-cache
-
-# Servisleri başlat
-docker-compose up -d
-
-# Logları kontrol et
-docker-compose logs -f
-```
-
-### Sadece Kod Güncellemesi (Image'ları yeniden build etmeden)
-
-```bash
-# Servisleri restart et
-docker-compose restart
-```
-
-## Monitoring
-
-### Resource Kullanımı
-
-```bash
-# Container resource kullanımını görüntüle
-docker stats
-
-# Belirli container'ları izle
-docker stats pricelist-backend pricelist-frontend pricelist-db
-```
-
-### Log Yönetimi
-
-```bash
-# Tüm logları görüntüle
-docker-compose logs
-
-# Son 100 satırı görüntüle
-docker-compose logs --tail=100
-
-# Belirli bir servisin loglarını filtrele
-docker-compose logs backend | grep ERROR
-```
-
-## Cleanup
-
-### Kullanılmayan Image'ları Temizleme
-
-```bash
-# Kullanılmayan image'ları sil
-docker image prune -a
-
-# Kullanılmayan volume'ları sil
-docker volume prune
-```
-
-### Tam Temizlik (DİKKAT: Tüm veriler silinir!)
-
-```bash
-# Servisleri durdur ve volume'ları sil
-docker-compose down -v
-
-# Kullanılmayan tüm Docker kaynaklarını temizle
-docker system prune -a --volumes
-```
-
-## Notlar
-
-- **Volume'lar**: PostgreSQL verileri `postgres_data` volume'unda saklanır. Bu volume silinirse tüm veriler kaybolur!
-- **Uploads**: Backend uploads klasörü host'ta `backend/uploads` olarak mount edilir
-- **Health Checks**: Tüm servislerde health check mekanizması vardır
-- **Network**: Tüm servisler `pricelist-network` adlı bridge network'ünde çalışır
-
+Bu ayarlarla uygulama firmada (Karadağ Elektronik) Docker üzerinde production olarak çalıştırılmaya hazırdır.

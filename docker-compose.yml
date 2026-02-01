@@ -40,6 +40,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production-minimum-32-characters}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:80,http://127.0.0.1,http://127.0.0.1:80}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:80}
+    volumes:
+      - backend_uploads:/app/uploads
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
@@ -73,6 +75,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  backend_uploads:
     driver: local
 
 networks:
