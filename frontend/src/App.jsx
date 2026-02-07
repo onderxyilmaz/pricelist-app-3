@@ -159,14 +159,28 @@ const AppContent = () => {
       }
 
       // Check if any users exist in database
-      const response = await authApi.checkUsers();
-      
-      if (response.data.success) {
-        setHasUsers(response.data.hasUsers);
-        setShowRegister(!response.data.hasUsers); // Show register if no users exist
+      try {
+        const response = await authApi.checkUsers();
+        
+        if (response.data.success) {
+          setHasUsers(response.data.hasUsers);
+          setShowRegister(!response.data.hasUsers); // Show register if no users exist
+        } else {
+          // If API call succeeded but returned success: false, default to register page
+          logger.warn('checkUsers API returned success: false, defaulting to register page');
+          setShowRegister(true);
+        }
+      } catch (error) {
+        // If API call fails (network error, backend not ready, etc.), 
+        // default to register page for first-time setup
+        logger.error('Failed to check users, defaulting to register page:', error);
+        setShowRegister(true);
+        setHasUsers(false);
       }
     } catch (error) {
       console.error('App initialization error:', error);
+      // On any other error, default to register page
+      setShowRegister(true);
     } finally {
       setLoading(false);
     }
