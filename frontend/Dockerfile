@@ -22,6 +22,9 @@ RUN npm run build
 # Production stage with Nginx
 FROM nginx:alpine
 
+# Sağlık kontrolü (resmi imajda wget olmayabiliyor)
+RUN apk add --no-cache curl
+
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
@@ -33,7 +36,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:80 || exit 1
+  CMD curl -fsS -o /dev/null http://127.0.0.1/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
