@@ -72,8 +72,8 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     container_name: pricelist-frontend
     ports:
-      # 80 sunucuda sık dolu (sistem nginx); .env ile 80 istenirse FRONTEND_PORT=80
-      - "${FRONTEND_PORT:-8081}:80"
+      # Host’ta açılan port (FRONTEND_PORT kullanma: .env.example eskiden 80 set ediyordu ve çakıştırıyordu)
+      - "${HOST_HTTP_PORT:-8081}:80"
     depends_on:
       - backend
     networks:
