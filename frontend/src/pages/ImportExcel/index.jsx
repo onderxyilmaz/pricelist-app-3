@@ -595,9 +595,13 @@ const ImportExcel = () => {
         await Promise.all(
           batch.map(async ({ pricelistId, item }) => {
             try {
-              await pricelistApi.addItem(pricelistId, item);
-              newItemsAdded++;
-              setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
+              const res = await pricelistApi.addItem(pricelistId, item);
+              if (res.data?.success) {
+                newItemsAdded++;
+                setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
+              } else {
+                console.error('Import rejected:', res.data?.message || res.data);
+              }
             } catch (error) {
               console.error('Import error:', error);
             }
@@ -628,9 +632,13 @@ const ImportExcel = () => {
                 section_l2_en: item.section_l2_en || existingItem.section_l2_en
               };
               
-              await pricelistApi.updateItem(existingItem.id, updatedItem);
-              existingItemsUpdated++;
-              setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
+              const res = await pricelistApi.updateItem(existingItem.id, updatedItem);
+              if (res.data?.success) {
+                existingItemsUpdated++;
+                setImportProgress(((newItemsAdded + existingItemsUpdated) / totalOperations) * 100);
+              } else {
+                console.error('Update rejected:', res.data?.message || res.data);
+              }
             } catch (error) {
               console.error('Update error:', error);
             }

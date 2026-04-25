@@ -316,13 +316,13 @@ async function pricelistRoutes(fastify, options) {
       }
     }
   }, async (request, reply) => {
+    const client = await fastify.pg.connect();
     try {
       const { id } = request.params;
       const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet',
         section_l1_tr, section_l1_en, section_l2_tr, section_l2_en
       } = request.body;
-      const client = await fastify.pg.connect();
-      
+
       // Duplikasyon kontrolü - tüm fiyat listelerinde product_id kontrolü
       const duplicateCheck = await client.query(
         'SELECT pi.*, p.name as pricelist_name FROM pricelist_items pi JOIN pricelists p ON pi.pricelist_id = p.id WHERE pi.product_id = $1',
@@ -331,7 +331,6 @@ async function pricelistRoutes(fastify, options) {
       
       if (duplicateCheck.rows.length > 0) {
         const existingItem = duplicateCheck.rows[0];
-        client.release();
         return reply.status(400).send({
           success: false,
           message: `Bu ürün zaten "${existingItem.pricelist_name}" fiyat listesinde mevcut`,
@@ -347,10 +346,12 @@ async function pricelistRoutes(fastify, options) {
         ]
       );
       
-      client.release();
       return { success: true, data: result.rows[0] };
     } catch (err) {
-      return { success: false, message: err.message };
+      request.log.error(err);
+      return reply.status(500).send({ success: false, message: err.message });
+    } finally {
+      client.release();
     }
   });
 
