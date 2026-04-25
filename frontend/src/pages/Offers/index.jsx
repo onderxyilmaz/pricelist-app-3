@@ -1920,6 +1920,10 @@ const OffersTemp = () => {
           unit: item.unit || 'adet',
           currency: item.currency,
           pricelist_id: item.pricelist_id,
+          section_l1_tr: item.section_l1_tr ?? null,
+          section_l1_en: item.section_l1_en ?? null,
+          section_l2_tr: item.section_l2_tr ?? null,
+          section_l2_en: item.section_l2_en ?? null,
           // Yeni alanlar - indirim ve kar bilgileri
           original_price: parseFloat(item.price), // Orijinal liste fiyatı
           item_discount_rate: itemDiscount, // Ürün bazında indirim %

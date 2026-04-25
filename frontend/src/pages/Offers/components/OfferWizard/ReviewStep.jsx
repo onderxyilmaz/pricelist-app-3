@@ -1,8 +1,10 @@
 // ReviewStep - Step 7/6: Önizleme ve Kaydet
-import React from 'react';
-import { Table, Button, Space, Typography, Collapse } from 'antd';
+import React, { useState, useMemo } from 'react';
+import { Table, Button, Space, Typography, Collapse, Switch, Tooltip } from 'antd';
+import { groupItemsBySectionInOrder } from '../../../../utils/offerSectionGroups';
+import SectionHeadingLabel from '../../../../components/SectionHeadingLabel';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const ReviewStep = ({
   offerData,
@@ -19,6 +21,8 @@ const ReviewStep = ({
   onCancel,
   loading
 }) => {
+  const [groupBySections, setGroupBySections] = useState(true);
+
   // Para birimi formatla
   const formatCurrency = (amount, currency = 'TRY') => {
     const currencySymbols = {
@@ -41,35 +45,46 @@ const ReviewStep = ({
     return new Date(date).toLocaleDateString('tr-TR');
   };
 
-  // Aktif ürünleri filtrele
-  const getActiveSelectedItems = () => {
-    return selectedItems.filter(item => {
-      return pricelists.some(pricelist => 
-        pricelist.items && pricelist.items.some(pricelistItem => 
-          pricelistItem.product_id === item.product_id && 
-          pricelist.id === item.pricelist_id
+  const activeItems = useMemo(
+    () =>
+      selectedItems.filter((item) =>
+        pricelists.some(
+          (pricelist) =>
+            pricelist.items &&
+            pricelist.items.some(
+              (pricelistItem) =>
+                pricelistItem.product_id === item.product_id && pricelist.id === item.pricelist_id
+            )
         )
-      );
-    });
-  };
+      ),
+    [selectedItems, pricelists]
+  );
+
+  const hasSections = useMemo(
+    () =>
+      activeItems.some(
+        (i) =>
+          i.section_l1_tr || i.section_l1_en || i.section_l2_tr || i.section_l2_en
+      ),
+    [activeItems]
+  );
 
   // Fiyat listesine göre grupla
-  const groupActiveItemsByPricelist = () => {
-    const activeItems = getActiveSelectedItems();
-    const groups = activeItems.reduce((groups, item) => {
+  const groupActiveItemsByPricelist = useMemo(() => {
+    const groups = activeItems.reduce((acc, item) => {
       const pricelistId = item.pricelist_id;
-      if (!groups[pricelistId]) {
-        const pricelist = pricelists.find(p => p.id === pricelistId);
-        groups[pricelistId] = {
+      if (!acc[pricelistId]) {
+        const pricelist = pricelists.find((p) => p.id === pricelistId);
+        acc[pricelistId] = {
           pricelist: pricelist || { id: pricelistId, name: `Fiyat Listesi ${pricelistId}`, currency: 'EUR' },
           items: []
         };
       }
-      groups[pricelistId].items.push(item);
-      return groups;
+      acc[pricelistId].items.push(item);
+      return acc;
     }, {});
     return Object.values(groups);
-  };
+  }, [activeItems, pricelists]);
 
   // Final fiyat hesapla
   const calculateItemFinalPrice = (item, pricelistId) => {
@@ -108,6 +123,87 @@ const ReviewStep = ({
     return salesPrice;
   };
 
+  const getReviewTableColumns = (pricelistId, currency) => [
+    {
+      title: 'Product Code',
+      dataIndex: 'product_id',
+      key: 'product_id',
+      width: 120
+    },
+    {
+      title: 'Name',
+      key: 'name',
+      ellipsis: true,
+      render: (_, record) => {
+        const displayName =
+          selectedLanguage === 'tr'
+            ? record.name_tr || record.name_en || record.name || '-'
+            : record.name_en || record.name_tr || record.name || '-';
+        return displayName;
+      }
+    },
+    {
+      title: 'Description',
+      key: 'description',
+      ellipsis: true,
+      render: (_, record) => {
+        const displayDescription =
+          selectedLanguage === 'tr'
+            ? record.description_tr || record.description_en || record.description || '-'
+            : record.description_en || record.description_tr || record.description || '-';
+        return displayDescription;
+      }
+    },
+    {
+      title: 'Qty',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      width: 80,
+      align: 'center'
+    },
+    {
+      title: 'Unit Price',
+      key: 'unit_price',
+      width: 120,
+      align: 'right',
+      render: (_, record) => {
+        const finalPrice = calculateItemFinalPrice(record, pricelistId);
+        const isManual = manualPrices[record.id] && manualPrices[record.id].enabled;
+        return (
+          <span style={{ color: isManual ? '#fa8c16' : 'inherit' }}>
+            {formatCurrency(finalPrice, currency)}
+            {isManual && <span style={{ fontSize: '10px', marginLeft: 4 }}>(M)</span>}
+          </span>
+        );
+      }
+    },
+    {
+      title: 'Total Price',
+      key: 'total_price',
+      width: 150,
+      align: 'right',
+      render: (_, record) => {
+        const finalPrice = calculateItemFinalPrice(record, pricelistId) * record.quantity;
+        const isManual = manualPrices[record.id] && manualPrices[record.id].enabled;
+        return (
+          <span style={{ color: isManual ? '#fa8c16' : '#52c41a', fontWeight: 'bold' }}>
+            {formatCurrency(finalPrice, currency)}
+          </span>
+        );
+      }
+    },
+    {
+      title: 'Note',
+      dataIndex: 'note',
+      key: 'note',
+      ellipsis: true,
+      width: 150,
+      render: (note) => note || '-'
+    }
+  ];
+
+  const pricelistGroups = groupActiveItemsByPricelist;
+
   return (
     <div>
       {/* Başlık */}
@@ -140,112 +236,101 @@ const ReviewStep = ({
         </div>
       )}
 
+      {hasSections && (
+        <div style={{ marginBottom: 16 }}>
+          <Tooltip title="Kapalıyken tüm ürünler tek listede; açıkken bölüm başlıklarına göre gruplanır.">
+            <Space size="small" align="center">
+              <Text strong>Bölüm başlıkları:</Text>
+              <Switch
+                checked={groupBySections}
+                onChange={setGroupBySections}
+                checkedChildren="Açık"
+                unCheckedChildren="Kapalı"
+              />
+            </Space>
+          </Tooltip>
+        </div>
+      )}
+
       {/* Ürünler - Fiyat Listelerine Göre */}
-      <Collapse 
-        defaultActiveKey={groupActiveItemsByPricelist().map((g, i) => i.toString())}
-        items={groupActiveItemsByPricelist().map((group, index) => {
+      <Collapse
+        defaultActiveKey={pricelistGroups.map((g, i) => i.toString())}
+        items={pricelistGroups.map((group, index) => {
+          const plId = group.pricelist.id;
+          const plColor = group.pricelist.color || '#1890ff';
           const groupTotal = group.items.reduce((total, item) => {
-            return total + (calculateItemFinalPrice(item, group.pricelist.id) * item.quantity);
+            return total + (calculateItemFinalPrice(item, plId) * item.quantity);
           }, 0);
+
+          const withNotes = (rows) =>
+            rows.map((item) => ({
+              ...item,
+              note: itemNotes[item.id] || ''
+            }));
+
+          const children = (
+            <div>
+              {hasSections && groupBySections
+                ? groupItemsBySectionInOrder(group.items, selectedLanguage).map((sg, sgi) => (
+                    <div key={sgi} style={{ marginBottom: sg.l1 || sg.l2 ? 16 : 0 }}>
+                      {(sg.l1 || sg.l2) && (
+                        <div style={{ marginBottom: 8 }}>
+                          <SectionHeadingLabel l1={sg.l1} l2={sg.l2} pricelistColor={plColor} />
+                        </div>
+                      )}
+                      <Table
+                        dataSource={withNotes(sg.items)}
+                        pagination={false}
+                        rowKey="id"
+                        size="small"
+                        columns={getReviewTableColumns(plId, group.pricelist.currency)}
+                      />
+                    </div>
+                  ))
+                : (
+                    <Table
+                      dataSource={withNotes(group.items)}
+                      pagination={false}
+                      rowKey="id"
+                      size="small"
+                      columns={getReviewTableColumns(plId, group.pricelist.currency)}
+                    />
+                  )}
+            </div>
+          );
 
           return {
             key: index.toString(),
             label: (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <span>
-                  <strong>{group.pricelist.name}</strong> ({group.pricelist.currency})
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%',
+                  paddingRight: 8,
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: plColor,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text strong style={{ color: plColor, margin: 0 }}>
+                    {group.pricelist.name} ({group.pricelist.currency})
+                  </Text>
                 </span>
                 <span style={{ fontWeight: 'bold', color: '#52c41a' }}>
                   {formatCurrency(groupTotal, group.pricelist.currency)}
                 </span>
               </div>
             ),
-            children: (
-              <Table 
-                dataSource={group.items.map(item => ({
-                  ...item,
-                  note: itemNotes[item.id] || ''
-                }))}
-                pagination={false}
-                rowKey="id"
-                size="small"
-                columns={[
-                  {
-                    title: 'Product Code',
-                    dataIndex: 'product_id',
-                    key: 'product_id',
-                    width: 120,
-                  },
-                  {
-                    title: 'Name',
-      key: 'name',
-                    ellipsis: true,
-                    render: (_, record) => {
-                      const displayName = selectedLanguage === 'tr' 
-                        ? (record.name_tr || record.name_en || record.name || '-')
-                        : (record.name_en || record.name_tr || record.name || '-');
-                      return displayName;
-                    },
-                  },
-                  {
-                    title: 'Description',
-                    key: 'description',
-                    ellipsis: true,
-                    render: (_, record) => {
-                      const displayDescription = selectedLanguage === 'tr' 
-                        ? (record.description_tr || record.description_en || record.description || '-')
-                        : (record.description_en || record.description_tr || record.description || '-');
-                      return displayDescription;
-                    }
-                  },
-                  {
-                    title: 'Qty',
-      dataIndex: 'quantity',
-      key: 'quantity',
-                    width: 80,
-      align: 'center',
-    },
-    {
-      title: 'Unit Price',
-      key: 'unit_price',
-      width: 120,
-      align: 'right',
-                    render: (_, record) => {
-                      const finalPrice = calculateItemFinalPrice(record, group.pricelist.id);
-                      const isManual = manualPrices[record.id] && manualPrices[record.id].enabled;
-                      return <span style={{ color: isManual ? '#fa8c16' : 'inherit' }}>
-                        {formatCurrency(finalPrice, group.pricelist.currency)}
-                        {isManual && <span style={{ fontSize: '10px', marginLeft: 4 }}>(M)</span>}
-                      </span>;
-                    }
-                  },
-                  {
-                    title: 'Total Price',
-                    key: 'total_price',
-                    width: 150,
-      align: 'right',
-                    render: (_, record) => {
-                      const finalPrice = calculateItemFinalPrice(record, group.pricelist.id) * record.quantity;
-                      const isManual = manualPrices[record.id] && manualPrices[record.id].enabled;
-                      return <span style={{ 
-                        color: isManual ? '#fa8c16' : '#52c41a', 
-                        fontWeight: 'bold' 
-                      }}>
-                        {formatCurrency(finalPrice, group.pricelist.currency)}
-                      </span>;
-                    }
-                  },
-                  {
-                    title: 'Note',
-                    dataIndex: 'note',
-                    key: 'note',
-                    ellipsis: true,
-                    width: 150,
-                    render: (note) => note || '-'
-                  }
-                ]}
-              />
-            )
+            children
           };
         })}
       />
@@ -259,23 +344,39 @@ const ReviewStep = ({
         border: '2px solid #1890ff'
       }}>
         <Title level={4} style={{ marginBottom: 16 }}>Genel Toplam</Title>
-        {groupActiveItemsByPricelist().map((group) => {
+        {pricelistGroups.map((group) => {
           const groupTotal = group.items.reduce((total, item) => {
             return total + (calculateItemFinalPrice(item, group.pricelist.id) * item.quantity);
           }, 0);
+          const plColor = group.pricelist.color || '#1890ff';
 
-  return (
-            <div key={group.pricelist.id} style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              marginBottom: 8,
-              fontSize: '16px'
-            }}>
-              <span><strong>{group.pricelist.name}:</strong></span>
+          return (
+            <div
+              key={group.pricelist.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+                fontSize: '16px',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: plColor,
+                    flexShrink: 0,
+                  }}
+                />
+                <strong style={{ color: plColor }}>{group.pricelist.name}:</strong>
+              </span>
               <span style={{ fontWeight: 'bold', color: '#52c41a' }}>
                 {formatCurrency(groupTotal, group.pricelist.currency)}
               </span>
-          </div>
+            </div>
           );
         })}
           </div>

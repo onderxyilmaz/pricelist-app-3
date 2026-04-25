@@ -22,7 +22,13 @@ const PricelistDetail = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [formLanguage, setFormLanguage] = useState('en');
   const [tableLanguage, setTableLanguage] = useState('en');
+  const [groupBySections, setGroupBySections] = useState(true);
   const [form] = Form.useForm();
+
+  const hasSectionData = (list) =>
+    (list || []).some(
+      (i) => i?.section_l1_tr || i?.section_l1_en || i?.section_l2_tr || i?.section_l2_en
+    );
 
   useEffect(() => {
     document.title = 'Price List App v3 - Pricelist Detail';
@@ -57,12 +63,18 @@ const PricelistDetail = () => {
   };
 
   const handleSearch = (value) => {
-    const filtered = items.filter(item => 
-      (item.name_tr && item.name_tr.toLowerCase().includes(value.toLowerCase())) ||
-      (item.name_en && item.name_en.toLowerCase().includes(value.toLowerCase())) ||
-      (item.product_id && item.product_id.toLowerCase().includes(value.toLowerCase())) ||
-      (item.description_tr && item.description_tr.toLowerCase().includes(value.toLowerCase())) ||
-      (item.description_en && item.description_en.toLowerCase().includes(value.toLowerCase()))
+    const v = (value || '').toLowerCase();
+    const filtered = items.filter(
+      (item) =>
+        (item.name_tr && item.name_tr.toLowerCase().includes(v)) ||
+        (item.name_en && item.name_en.toLowerCase().includes(v)) ||
+        (item.product_id && item.product_id.toLowerCase().includes(v)) ||
+        (item.description_tr && item.description_tr.toLowerCase().includes(v)) ||
+        (item.description_en && item.description_en.toLowerCase().includes(v)) ||
+        (item.section_l1_tr && item.section_l1_tr.toLowerCase().includes(v)) ||
+        (item.section_l1_en && item.section_l1_en.toLowerCase().includes(v)) ||
+        (item.section_l2_tr && item.section_l2_tr.toLowerCase().includes(v)) ||
+        (item.section_l2_en && item.section_l2_en.toLowerCase().includes(v))
     );
     setFilteredItems(filtered);
   };
@@ -179,6 +191,9 @@ const PricelistDetail = () => {
           onClearSelection={handleClearSelection}
           onBulkDelete={handleBulkDelete}
           totalItems={filteredItems.length}
+          hasSections={hasSectionData(items)}
+          groupBySections={groupBySections}
+          onGroupBySectionsChange={setGroupBySections}
         />
 
         <ProductTable
@@ -190,6 +205,8 @@ const PricelistDetail = () => {
           onEdit={handleEdit}
           onDelete={handleDelete}
           currency={pricelist?.currency}
+          groupBySections={groupBySections}
+          pricelistColor={pricelist?.color || '#1890ff'}
         />
       </Card>
 

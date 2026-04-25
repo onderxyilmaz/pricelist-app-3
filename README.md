@@ -70,6 +70,10 @@ npm install
 npm run dev
 ```
 
+### Docker (Ubuntu / registry)
+
+Kök dizinde `docker-compose.yml` ile tam yığın (Postgres, backend, Nginx+frontend) çalışır. Ortam şablonu: `env.docker.example`. Imaj derleme, `docker compose push` ve sunucu adımları: **[DEPLOY_DOCKER.md](DEPLOY_DOCKER.md)**.
+
 ### Environment Variables
 
 Backend için `.env` dosyası oluşturun (`backend/.env`):
@@ -141,6 +145,24 @@ Uygulama ilk çalıştırıldığında:
 - ✅ Otomatik duplikasyon kontrolü
 - ✅ Kolon eşleştirme
 - ✅ Toplu import işlemleri
+- ✅ Birden çok sheet; her sheet ayrı hedef fiyat listesine atanabilir
+- ✅ İki kademeli bölüm başlıkları (aşağıdaki formatta ayrı satırlar)
+
+**İki kademeli bölüm satırları (Import Excel / Excel şablonu):**
+
+Bölüm satırı, normal ürün satırı gibi ayrı bir satırdadır; metin **ürün adı** sütununa (gerekirse ürün kodu / ilk veri sütunlarında da aranır) yazılır. Eşleşen kalıp: `numara` + **`---`** (ayırıcı **tam üç adet tire**) + boşluk (opsiyonel) + başlık metni.
+
+| Kademe | Ne yazmalı? | Örnek |
+|--------|-------------|--------|
+| **1. seviye** | Tek parça sayı + `---` + başlık | `1---Yangın dedektörleri`, `2---Sirenler` |
+| **2. seviye** | `ana-alt` (tireyle iki parça) + `---` + alt başlık | `1-1---Flexes`, `2-3---Mini dome` |
+
+- Altındaki ürün satırları, o ana kadar geçerli olan bölüme ait sayılır. İkinci seviyede `1-1---...` gibi numara kullanıyorsanız, **aynı kök** (`1`) ile tanımlanmış **son 1. seviye** başlığı (`1---...`) altında gruplanır.
+- Sadece `1---` ve `2---` yeter; alt başlık yoksa ürünler doğrudan o birinci seviye başlığının altında kalır.
+
+**Özet (kısa):** 1. kademe = `1---Başlık`, 2. kademe = `1-1---Alt başlık` (sayılar örnek; `---` üç tire kalmalı).
+
+---
 
 ### 👥 Kullanıcı Yönetimi
 - ✅ Kullanıcı rolleri (Super Admin, Admin, User)

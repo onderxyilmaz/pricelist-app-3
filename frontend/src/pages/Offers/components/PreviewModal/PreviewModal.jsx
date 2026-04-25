@@ -1,6 +1,8 @@
 // PreviewModal - Teklif Önizleme Modal Component
 import React, { useState } from 'react';
 import { Modal, Button, Space, Typography, Tag, Collapse, Table, Divider } from 'antd';
+import { groupItemsBySectionInOrder } from '../../../../utils/offerSectionGroups';
+import SectionHeadingLabel from '../../../../components/SectionHeadingLabel';
 
 const { Title } = Typography;
 const { Compact } = Space;
@@ -128,7 +130,19 @@ const PreviewModal = ({
                   </div>
                 ),
                 children: (
-                  <Table
+                  <div>
+                    {groupItemsBySectionInOrder(group.items, language).map((sg, sgi) => (
+                      <div key={sgi} style={{ marginBottom: sg.l1 || sg.l2 ? 12 : 0 }}>
+                        {(sg.l1 || sg.l2) && (
+                          <div style={{ fontSize: '13px', marginBottom: 8 }}>
+                            <SectionHeadingLabel
+                              l1={sg.l1}
+                              l2={sg.l2}
+                              pricelistColor={group.pricelistColor}
+                            />
+                          </div>
+                        )}
+                        <Table
                     columns={[
                       {
                         title: language === 'tr' ? 'Ürün Kodu' : 'Product Code',
@@ -190,12 +204,15 @@ const PreviewModal = ({
                         render: (total, record) => total ? `${parseFloat(total).toFixed(2)} ${record.currency}` : '-',
                       },
                     ]}
-                    dataSource={group.items}
+                    dataSource={sg.items}
                     rowKey={(record) => `${record.pricelist_id}-${record.product_id}-${record.id || Math.random()}`}
                     pagination={false}
                     size="small"
                     bordered
-                  />
+                        />
+                      </div>
+                    ))}
+                  </div>
                 )
               };
             })}

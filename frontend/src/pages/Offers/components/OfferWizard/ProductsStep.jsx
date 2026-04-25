@@ -1,10 +1,13 @@
 // ProductsStep - Step 3/2: Ürün Seçimi
-import React, { useState } from 'react';
-import { Collapse, Checkbox, Input, Button, Space } from 'antd';
+import React, { useState, useMemo } from 'react';
+import { Collapse, Checkbox, Input, Button, Space, Switch, Tooltip, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { InputNumber as AntInputNumber } from 'antd';
+import { groupItemsBySectionInOrder, getSectionDisplay } from '../../../../utils/offerSectionGroups';
+import SectionHeadingLabel from '../../../../components/SectionHeadingLabel';
 
 const { Compact } = Space;
+const { Text } = Typography;
 
 const ProductsStep = ({
   offerData,
@@ -21,6 +24,21 @@ const ProductsStep = ({
   onCancel
 }) => {
   const [productFilter, setProductFilter] = useState('');
+  const [groupBySections, setGroupBySections] = useState(true);
+
+  const hasSections = useMemo(
+    () =>
+      pricelists.some((pl) =>
+        (pl.items || []).some(
+          (i) =>
+            i.section_l1_tr ||
+            i.section_l1_en ||
+            i.section_l2_tr ||
+            i.section_l2_en
+        )
+      ),
+    [pricelists]
+  );
 
   // Ürün filtreleme fonksiyonu
   const filterItems = (items) => {
@@ -35,6 +53,8 @@ const ProductsStep = ({
       const descriptionTr = (item.description_tr || '').toLowerCase();
       const descriptionEn = (item.description_en || '').toLowerCase();
       const description = (item.description || '').toLowerCase();
+      const { l1, l2 } = getSectionDisplay(item, selectedLanguage);
+      const sec = `${l1} ${l2}`.toLowerCase();
       
       return nameTr.includes(filterLower) || 
              nameEn.includes(filterLower) ||
@@ -42,7 +62,8 @@ const ProductsStep = ({
              productId.includes(filterLower) ||
              descriptionTr.includes(filterLower) ||
              descriptionEn.includes(filterLower) ||
-             description.includes(filterLower);
+             description.includes(filterLower) ||
+             sec.includes(filterLower);
     });
   };
 
@@ -131,6 +152,22 @@ const ProductsStep = ({
         </Compact>
       </div>
 
+      {hasSections && (
+        <div style={{ marginBottom: 16 }}>
+          <Tooltip title="Kapalıyken tüm ürünler tek listede; açıkken bölüm başlıklarına göre gruplanır.">
+            <Space size="small" align="center">
+              <Text strong>Bölüm başlıkları:</Text>
+              <Switch
+                checked={groupBySections}
+                onChange={setGroupBySections}
+                checkedChildren="Açık"
+                unCheckedChildren="Kapalı"
+              />
+            </Space>
+          </Tooltip>
+        </div>
+      )}
+
       {/* Filtreleme sonucu kontrolü */}
       {productFilter.trim() && pricelists.every(pricelist => filterItems(pricelist.items || []).length === 0) && (
         <div style={{ 
@@ -154,107 +191,194 @@ const ProductsStep = ({
             if (filteredItems.length === 0 && productFilter.trim()) {
               return null;
             }
+            const renderItemRow = (item) => {
+              const selectedItem = selectedItems.find(
+                (selected) =>
+                  selected.id === item.id ||
+                  (selected.product_id === item.product_id &&
+                    selected.pricelist_id === pricelist.id)
+              );
+              const isSelected = !!selectedItem;
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '8px 0',
+                    borderBottom: '1px solid #f0f0f0',
+                  }}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={(e) =>
+                      handleItemSelection(
+                        { ...item, pricelist_id: pricelist.id, currency: pricelist.currency },
+                        e.target.checked
+                      )
+                    }
+                  />
+                  <div style={{ flex: 1, marginLeft: 12 }}>
+                    <div>
+                      <strong>
+                        {selectedLanguage === 'tr'
+                          ? item.name_tr || item.name_en || item.name
+                          : item.name_en || item.name_tr || item.name}
+                      </strong>{' '}
+                      ({item.product_id})
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {(selectedLanguage === 'tr'
+                        ? item.description_tr || item.description_en || item.description
+                        : item.description_en || item.description_tr || item.description) ||
+                        'Açıklama yok'}{' '}
+                      | {item.price} {pricelist.currency} |{' '}
+                      <span
+                        style={{
+                          color:
+                            item.stock <= 0
+                              ? '#ff4d4f'
+                              : item.stock < 10
+                                ? '#ff4d4f'
+                                : item.stock < 50
+                                  ? '#faad14'
+                                  : '#52c41a',
+                          fontWeight: 'bold',
+                          marginLeft: 4,
+                        }}
+                      >
+                        Stok: {item.stock} {item.unit}
+                      </span>
+                      {item.stock <= 0 && <span style={{ color: '#ff4d4f' }}> (Stok Yok!)</span>}
+                      {item.stock > 0 && item.stock < 10 && (
+                        <span style={{ color: '#ff4d4f' }}> (Düşük Stok!)</span>
+                      )}
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <div style={{ marginLeft: 12, display: 'flex', alignItems: 'center' }}>
+                      <span style={{ marginRight: 8 }}>Adet:</span>
+                      <AntInputNumber
+                        min={0}
+                        max={item.stock <= 0 ? 0 : item.stock}
+                        value={selectedItem.quantity}
+                        onChange={(value) => handleQuantityChange(selectedItem.id, value)}
+                        disabled={item.stock <= 0}
+                        style={{ width: 80 }}
+                      />
+                      <span style={{ marginLeft: 8, fontWeight: 'bold' }}>
+                        {selectedItem.total_price} {pricelist.currency}
+                      </span>
+                      <Compact style={{ marginLeft: 8 }}>
+                        <Input
+                          placeholder="Ürün İndirimi %"
+                          value={itemDiscounts[item.id] || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                              setItemDiscounts({ ...itemDiscounts, [item.id]: value });
+                            }
+                          }}
+                          style={{ width: 100 }}
+                        />
+                        <span
+                          style={{
+                            padding: '4px 11px',
+                            border: '1px solid #d9d9d9',
+                            borderLeft: 'none',
+                            backgroundColor: '#fafafa',
+                            borderRadius: '0 6px 6px 0',
+                            display: 'inline-block',
+                            fontSize: '14px',
+                          }}
+                        >
+                          %
+                        </span>
+                      </Compact>
+                      {itemDiscounts[item.id] && parseFloat(itemDiscounts[item.id]) > 0 && (
+                        <span style={{ marginLeft: 8, fontWeight: 'bold', color: '#52c41a' }}>
+                          İndirimli:{' '}
+                          {formatCurrency(
+                            parseFloat(selectedItem.total_price) *
+                              (1 - parseFloat(itemDiscounts[item.id]) / 100),
+                            pricelist.currency
+                          )}
+                        </span>
+                      )}
+                      <Input
+                        placeholder="Açıklama (opsiyonel)"
+                        value={itemNotes[item.id] || ''}
+                        onChange={(e) => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
+                        style={{ width: 180, marginLeft: 8 }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            };
+
+            const plColor = pricelist.color || '#1890ff';
+
             return {
               key: pricelist.id,
-              label: `${pricelist.name} (${pricelist.currency}) - ${filteredItems.length}/${(pricelist.items || []).length} ürün${productFilter.trim() ? ' (filtrelenmiş)' : ''}`,
-              children: (
-                <>
-                  {filteredItems.map(item => {
-                    const selectedItem = selectedItems.find(selected => 
-                      selected.id === item.id || 
-                      (selected.product_id === item.product_id && selected.pricelist_id === pricelist.id)
-                    );
-                    const isSelected = !!selectedItem;
-                    return (
-                      <div key={item.id} style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        padding: '8px 0',
-                        borderBottom: '1px solid #f0f0f0'
-                      }}>
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={(e) => handleItemSelection({...item, pricelist_id: pricelist.id, currency: pricelist.currency}, e.target.checked)}
-                        />
-                        <div style={{ flex: 1, marginLeft: 12 }}>
-                          <div><strong>{selectedLanguage === 'tr' ? (item.name_tr || item.name_en || item.name) : (item.name_en || item.name_tr || item.name)}</strong> ({item.product_id})</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            {(selectedLanguage === 'tr' ? (item.description_tr || item.description_en || item.description) : (item.description_en || item.description_tr || item.description)) || 'Açıklama yok'} | {item.price} {pricelist.currency} | 
-                            <span style={{ 
-                              color: item.stock <= 0 ? '#ff4d4f' : item.stock < 10 ? '#ff4d4f' : item.stock < 50 ? '#faad14' : '#52c41a',
-                              fontWeight: 'bold',
-                              marginLeft: 4
-                            }}>
-                              Stok: {item.stock} {item.unit}
-                            </span>
-                            {item.stock <= 0 && <span style={{ color: '#ff4d4f' }}> (Stok Yok!)</span>}
-                            {item.stock > 0 && item.stock < 10 && <span style={{ color: '#ff4d4f' }}> (Düşük Stok!)</span>}
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <div style={{ marginLeft: 12, display: 'flex', alignItems: 'center' }}>
-                            <span style={{ marginRight: 8 }}>Adet:</span>
-                            <AntInputNumber
-                              min={0}
-                              max={item.stock <= 0 ? 0 : item.stock}
-                              value={selectedItem.quantity}
-                              onChange={(value) => handleQuantityChange(selectedItem.id, value)}
-                              disabled={item.stock <= 0}
-                              style={{ width: 80 }}
-                            />
-                            <span style={{ marginLeft: 8, fontWeight: 'bold' }}>
-                              {selectedItem.total_price} {pricelist.currency}
-                            </span>
-                            {/* İndirim alanı */}
-                            <Compact style={{ marginLeft: 8 }}>
-                              <Input
-                                placeholder="Ürün İndirimi %"
-                                value={itemDiscounts[item.id] || ''}
-                                onChange={e => {
-                                  const value = e.target.value;
-                                  if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
-                                    setItemDiscounts({ ...itemDiscounts, [item.id]: value });
-                                  }
-                                }}
-                                style={{ width: 100 }}
+              label: (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    width: '100%',
+                    paddingRight: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: plColor,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text strong style={{ color: plColor, margin: 0 }}>
+                    {pricelist.name} ({pricelist.currency})
+                  </Text>
+                  <Text type="secondary" style={{ margin: 0, fontWeight: 400 }}>
+                    — {filteredItems.length}/{(pricelist.items || []).length} ürün
+                    {productFilter.trim() ? ' (filtrelenmiş)' : ''}
+                  </Text>
+                </div>
+              ),
+              children:
+                hasSections && groupBySections ? (
+                  <>
+                    {groupItemsBySectionInOrder(filteredItems, selectedLanguage).map(
+                      (sectionGroup, gi) => (
+                        <div key={gi} style={{ marginBottom: 8 }}>
+                          {(sectionGroup.l1 || sectionGroup.l2) && (
+                            <div
+                              style={{
+                                fontSize: '13px',
+                                padding: '6px 0 4px',
+                                borderBottom: '1px solid #eee',
+                              }}
+                            >
+                              <SectionHeadingLabel
+                                l1={sectionGroup.l1}
+                                l2={sectionGroup.l2}
+                                pricelistColor={pricelist.color || '#1890ff'}
                               />
-                              <span style={{ 
-                                padding: '4px 11px', 
-                                border: '1px solid #d9d9d9',
-                                borderLeft: 'none',
-                                backgroundColor: '#fafafa',
-                                borderRadius: '0 6px 6px 0',
-                                display: 'inline-block',
-                                fontSize: '14px'
-                              }}>%</span>
-                            </Compact>
-                            {/* İndirimli fiyat gösterimi */}
-                            {itemDiscounts[item.id] && parseFloat(itemDiscounts[item.id]) > 0 && (
-                              <span style={{ 
-                                marginLeft: 8, 
-                                fontWeight: 'bold',
-                                color: '#52c41a'
-                              }}>
-                                İndirimli: {formatCurrency(
-                                  (parseFloat(selectedItem.total_price) * (1 - parseFloat(itemDiscounts[item.id]) / 100)),
-                                  pricelist.currency
-                                )}
-                              </span>
-                            )}
-                            {/* Açıklama alanı */}
-                            <Input
-                              placeholder="Açıklama (opsiyonel)"
-                              value={itemNotes[item.id] || ''}
-                              onChange={e => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
-                              style={{ width: 180, marginLeft: 8 }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </>
-              )
+                            </div>
+                          )}
+                          {sectionGroup.items.map((item) => renderItemRow(item))}
+                        </div>
+                      )
+                    )}
+                  </>
+                ) : (
+                  <>{filteredItems.map((item) => renderItemRow(item))}</>
+                ),
             };
           })
           .filter(Boolean)

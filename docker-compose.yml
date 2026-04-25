@@ -1,3 +1,7 @@
+# Yerel: docker compose up -d --build
+# Registry: .env içinde DOCKER_USERNAME + IMAGE_TAG veya BACKEND_IMAGE / FRONTEND_IMAGE tanımlayın
+#          docker compose build && docker compose push
+
 services:
   # PostgreSQL Database
   postgres:
@@ -24,6 +28,7 @@ services:
 
   # Backend API
   backend:
+    image: ${BACKEND_IMAGE:-pricelist-app-3-backend:latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -59,6 +64,7 @@ services:
 
   # Frontend
   frontend:
+    image: ${FRONTEND_IMAGE:-pricelist-app-3-frontend:latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile

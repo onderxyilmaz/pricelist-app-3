@@ -17,7 +17,8 @@ import {
   Divider,
   Tag,
   Progress,
-  Modal
+  Modal,
+  Collapse
 } from 'antd';
 import {
   InboxOutlined,
@@ -32,6 +33,15 @@ import ExcelJS from 'exceljs';
 import NotificationService from '../../utils/notification';
 import { pricelistApi } from '../../utils/api';
 import { useLocation } from 'react-router-dom';
+import {
+  createSectionState,
+  applySectionToState,
+  sectionStateToRowFields,
+  findSectionInRow,
+  isRowCompletelyEmpty
+} from '../../utils/excelSectionRows';
+import { groupItemsBySectionInOrder } from '../../utils/offerSectionGroups';
+import SectionHeadingLabel from '../../components/SectionHeadingLabel';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
@@ -87,21 +97,50 @@ const ImportExcel = () => {
           'product_id': ['ürün id', 'ürün kodu', 'ürünid', 'ürünkodu', 'product id', 'productid', 'product_id', 'product code', 'productcode', 'product_code', 'id', 'item id', 'item_id'],
           'product_name': ['ürün adı', 'ürün ad', 'ürün', 'ad'],
           'product_description': ['ürün açıklaması', 'ürün açıklama', 'açıklama', 'açıklaması'],
-          'stock': ['stok', 'stock', 'quantity', 'qty', 'amount'],
-          'price': ['fiyat', 'price', 'cost', 'amount', 'value']
+          // 'amount' sadece fiyat — stokta olursa aynı sütun iki kez atanır, diğer sheet'lerde başlık geçersiz sayılır
+          'stock': ['stok', 'stock', 'quantity', 'qty', 'miktar'],
+          'price': ['fiyat', 'price', 'cost', 'amount', 'value', 'tutar']
         };
       } else {
         return {
           'product_id': ['product id', 'productid', 'product_id', 'product code', 'productcode', 'product_code', 'id', 'item id', 'item_id'],
           'product_name': ['product name', 'productname', 'product_name', 'name', 'item name', 'item_name', 'title'],
           'product_description': ['product description', 'productdescription', 'product_description', 'description', 'desc'],
-          'stock': ['stock', 'quantity', 'qty', 'amount'],
-          'price': ['price', 'cost', 'amount', 'value']
+          'stock': ['stock', 'quantity', 'qty'],
+          'price': ['price', 'cost', 'amount', 'value', 'unit price', 'unitprice', 'list price', 'listprice']
         };
       }
     };
 
     const expectedColumns = getExpectedColumns(language);
+
+    /** Aynı başlık metni iki alana (ör. "amount" hem stok hem fiyat) yanlışlanmasın; her sütun en fazla bir alan. Öncelik: ürün adı, fiyat, sonra diğerleri. */
+    const buildColumnMapping = (rowHeaders) => {
+      const columnMapping = {};
+      const used = new Set();
+      const fieldOrder = [
+        'product_name',
+        'price',
+        'product_id',
+        'product_description',
+        'stock'
+      ];
+      keyLoop: for (const key of fieldOrder) {
+        const possibleNames = expectedColumns[key] || [];
+        for (const possibleName of possibleNames) {
+          const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
+          for (let hi = 0; hi < rowHeaders.length; hi++) {
+            if (used.has(hi)) continue;
+            if (rowHeaders[hi] === cleanName) {
+              columnMapping[key] = hi;
+              used.add(hi);
+              continue keyLoop;
+            }
+          }
+        }
+      }
+      return columnMapping;
+    };
     
     // Tüm sheet'leri parse et
     const sheets = {};
@@ -119,126 +158,130 @@ const ImportExcel = () => {
       );
       
       if (filteredData.length > 0) {
-        // İlk birkaç satırı header için kontrol et
         let headerRowIndex = -1;
-        let headers = [];
         
-        // İlk 3 satırda gerçek headerı ara
-        for (let i = 0; i < Math.min(3, filteredData.length); i++) {
+        // İlk N satırda header satırını ara (üstte açıklama/başlık satırları olabilir)
+        const maxHeaderSearch = Math.min(30, filteredData.length);
+        for (let i = 0; i < maxHeaderSearch; i++) {
           const rowHeaders = filteredData[i].map(h => String(h || '').toLowerCase().trim().replace(/[^a-z0-9]/g, ''));
-          
-          // Bu satırda beklenen sütunlar var mı?
-          const columnMapping = {};
-          let foundColumns = 0;
-          
-          Object.keys(expectedColumns).forEach(key => {
-            const possibleNames = expectedColumns[key];
-            for (let possibleName of possibleNames) {
-              const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
-              const headerIndex = rowHeaders.findIndex(header => header === cleanName);
-              if (headerIndex !== -1) {
-                columnMapping[key] = headerIndex;
-                foundColumns++;
-                break;
-              }
-            }
-          });
-          
-          // En az 2 temel sütun bulundu mu?
-          const hasMinimumColumns = columnMapping.product_name !== undefined && 
-                                  columnMapping.price !== undefined;
-          
-          if (hasMinimumColumns) {
+          const tryMap = buildColumnMapping(rowHeaders);
+          if (tryMap.product_name !== undefined && tryMap.price !== undefined) {
             headerRowIndex = i;
-            headers = rowHeaders;
             break;
           }
         }
         
         if (headerRowIndex === -1) {
           console.warn(`Sheet '${sheetName}' uygun header bulunamadı:`, {
-            ilk3Satir: filteredData.slice(0, 3)
+            ilkSatirlar: filteredData.slice(0, Math.min(5, filteredData.length))
           });
           return;
         }
-        
-        // Sütunları eşleştir
-        const columnMapping = {};
-        let foundColumns = 0;
-        
-        Object.keys(expectedColumns).forEach(key => {
-          const possibleNames = expectedColumns[key];
-          for (let possibleName of possibleNames) {
-            const cleanName = possibleName.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const headerIndex = headers.findIndex(header => header === cleanName);
-            if (headerIndex !== -1) {
-              columnMapping[key] = headerIndex;
-              foundColumns++;
-              break;
-            }
-          }
-        });
-        
-        // En az 2 temel sütun bulunmalı (product_name, price)
-        const hasMinimumColumns = columnMapping.product_name !== undefined && 
-                                columnMapping.price !== undefined;
-        
-        if (hasMinimumColumns) {
+
+        const rowHeaders = filteredData[headerRowIndex].map((h) =>
+          String(h || '')
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]/g, '')
+        );
+        const columnMapping = buildColumnMapping(rowHeaders);
+
+        if (columnMapping.product_name !== undefined && columnMapping.price !== undefined) {
           // Header satırından sonraki satırları al
           const dataRows = filteredData.slice(headerRowIndex + 1);
-          
-          const rows = dataRows.map((row, index) => {
-            // Açıklama alanını seçilen dile göre ata
+          let sectionState = createSectionState();
+          const rawRows = [];
+          let productKey = 0;
+
+          for (let index = 0; index < dataRows.length; index++) {
+            const row = dataRows[index];
+            const sectionParsed = findSectionInRow(row, columnMapping);
+            if (sectionParsed) {
+              sectionState = applySectionToState(sectionState, sectionParsed);
+              continue;
+            }
+
+            if (isRowCompletelyEmpty(row)) {
+              continue;
+            }
+
             const description = columnMapping.product_description !== undefined ? (row[columnMapping.product_description] || '') : '';
-            // Ürün adını seçilen dile göre ata
-            const productName = row[columnMapping.product_name] || `Ürün ${index + 1}`;
-            
-            return {
-              key: index,
-              product_id: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || '') : `AUTO-${index + 1}`,
+            const descStr = String(description || '').trim();
+            const rawNameCell = row[columnMapping.product_name];
+            const nameStr =
+              rawNameCell != null && String(rawNameCell).trim() !== '' ? String(rawNameCell).trim() : '';
+            const pidForName =
+              columnMapping.product_id !== undefined
+                ? String(row[columnMapping.product_id] != null ? row[columnMapping.product_id] : '').trim()
+                : '';
+            // Birçok fiyat listesinde "Product Name" boş, metin açıklama sütununda; yoksa koddan türet
+            const productName =
+              nameStr || pidForName || (descStr ? descStr.slice(0, 150) : '') || `Ürün ${index + 1}`;
+            const sec = sectionStateToRowFields(sectionState, language);
+            const s1d = language === 'tr' ? sec.section_l1_tr : sec.section_l1_en;
+            const s2d = language === 'tr' ? sec.section_l2_tr : sec.section_l2_en;
+            const pid = columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || '') : `AUTO-${productKey + 1}`;
+
+            rawRows.push({
+              key: productKey,
+              product_id: pid,
               name_tr: language === 'tr' ? productName : '',
               name_en: language === 'en' ? productName : '',
               description_tr: language === 'tr' ? description : '',
               description_en: language === 'en' ? description : '',
               stock: columnMapping.stock !== undefined ? (parseInt(row[columnMapping.stock]) || 0) : 0,
               price: parseFloat(row[columnMapping.price]) || 0,
-              // Display kolonları (tablo için)
-              col_0: columnMapping.product_id !== undefined ? (row[columnMapping.product_id] || `AUTO-${index + 1}`) : `AUTO-${index + 1}`,
-              col_1: productName,
-              col_2: description,
-              col_3: columnMapping.stock !== undefined ? (row[columnMapping.stock] || '0') : '0',
-              col_4: row[columnMapping.price] || '0'
-            };
-          }).filter(row => 
-            // Boş satırları filtrele (en az product name olmalı ve geçerli fiyat)
-            row.col_1.toString().trim() !== '' && 
-            row.col_1 !== `Ürün ${row.key + 1}` &&
-            row.price > 0
-          );
-          
-          if (rows.length > 0) {
-            // Başlıkları dile göre ayarla - ID/Code esnekliği ile
-            const headers = language === 'tr' 
-              ? ['Ürün ID/Kodu', 'Ürün Adı', 'Ürün Açıklaması', 'Stok', 'Fiyat']
-              : ['Product ID/Code', 'Product Name', 'Product Description', 'Stock', 'Price'];
-              
-            sheets[sheetName] = {
-              headers,
-              rows,
-              rawData: filteredData,
-              columnMapping
-            };
-            
-            selections[sheetName] = [];
-            assignments[sheetName] = null;
-            validSheetCount++;
+              section_l1_tr: sec.section_l1_tr,
+              section_l1_en: sec.section_l1_en,
+              section_l2_tr: sec.section_l2_tr,
+              section_l2_en: sec.section_l2_en,
+              col_0: s1d,
+              col_1: s2d,
+              col_2: pid,
+              col_3: productName,
+              col_4: description,
+              col_5: columnMapping.stock !== undefined ? (row[columnMapping.stock] || '0') : '0',
+              col_6: row[columnMapping.price] || '0',
+              _rowIndex: index
+            });
+            productKey++;
           }
+
+          const rows = rawRows
+            .filter((row) => {
+              if (row.col_3.toString().trim() === '') return false;
+              // Adı boş satırlar için col_3 artık ID veya açıklamadan gelir; eski "Ürün N" sahte eşleşmesi kaldırıldı
+              if (!Number.isFinite(row.price) || row.price < 0) return false;
+              return true;
+            })
+            .map(({ _rowIndex, ...rest }) => rest);
+
+          const tableHeaders =
+            language === 'tr'
+              ? ['Bölüm 1', 'Bölüm 2', 'Ürün ID/Kodu', 'Ürün Adı', 'Ürün Açıklaması', 'Stok', 'Fiyat']
+              : [
+                  'Section 1',
+                  'Section 2',
+                  'Product ID/Code',
+                  'Product Name',
+                  'Product Description',
+                  'Stock',
+                  'Price'
+                ];
+
+          // Geçerli header bulunduysa sheet'i her zaman sekmelerde göster (0 satır olsa bile — fiyatı 0 olan listeler vb.)
+          sheets[sheetName] = {
+            headers: tableHeaders,
+            rows,
+            rawData: filteredData,
+            columnMapping
+          };
+
+          selections[sheetName] = [];
+          assignments[sheetName] = null;
+          validSheetCount++;
         } else {
-          console.warn(`Sheet '${sheetName}' yetersiz sütuna sahip:`, {
-            bulunanlar: Object.keys(columnMapping),
-            headerlar: headers,
-            eslestirme: columnMapping
-          });
+          console.warn(`Sheet '${sheetName}' ürün adı veya fiyat sütunu eşlenemedi:`, columnMapping);
         }
       }
     });
@@ -310,6 +353,28 @@ const ImportExcel = () => {
     }));
   };
 
+  /** Bölüm sütunları hariç: ürün ID, ad, açıklama, stok, fiyat (col_2..col_6) */
+  const getProductTableColumns = (headers) => {
+    if (headers.length <= 2) {
+      return getTableColumns(headers);
+    }
+    return headers.slice(2).map((header, j) => {
+      const index = j + 2;
+      return {
+        title: header || `Kolon ${index + 1}`,
+        dataIndex: `col_${index}`,
+        key: `col_${index}`,
+        width: 140,
+        ellipsis: true
+      };
+    });
+  };
+
+  const sheetHasSectionHierarchy = (rows) =>
+    (rows || []).some(
+      (r) => r.section_l1_tr || r.section_l1_en || r.section_l2_tr || r.section_l2_en
+    );
+
   const handleRowSelection = (sheetName, selectedRowKeys) => {
     setSelectedRows(prev => ({
       ...prev,
@@ -337,6 +402,14 @@ const ImportExcel = () => {
       ...prev,
       [sheetName]: pricelistId
     }));
+  };
+
+  const mergeGroupRowSelection = (sheetName, groupItems, newKeys) => {
+    setSelectedRows((prev) => {
+      const groupSet = new Set(groupItems.map((r) => r.key));
+      const other = (prev[sheetName] || []).filter((k) => !groupSet.has(k));
+      return { ...prev, [sheetName]: [...other, ...newKeys] };
+    });
   };
 
   const canProceedToImport = () => {
@@ -377,7 +450,11 @@ const ImportExcel = () => {
                 description_en: item.description_en || '',
                 stock: item.stock || 0,
                 price: item.price || 0,
-                unit: 'adet'
+                unit: 'adet',
+                section_l1_tr: item.section_l1_tr || null,
+                section_l1_en: item.section_l1_en || null,
+                section_l2_tr: item.section_l2_tr || null,
+                section_l2_en: item.section_l2_en || null
               },
               sheetName
             });
@@ -445,8 +522,14 @@ const ImportExcel = () => {
           const canUpdateName = 
             (task.item.name_en && !existingItem.name_en) ||   // İngilizce ad eklenebilir
             (task.item.name_tr && !existingItem.name_tr); // Türkçe ad eklenebilir
+
+          const canUpdateSection =
+            (task.item.section_l1_tr && !existingItem.section_l1_tr) ||
+            (task.item.section_l1_en && !existingItem.section_l1_en) ||
+            (task.item.section_l2_tr && !existingItem.section_l2_tr) ||
+            (task.item.section_l2_en && !existingItem.section_l2_en);
           
-          if (canUpdateDescription || canUpdateName) {
+          if (canUpdateDescription || canUpdateName || canUpdateSection) {
             updateTasks.push({
               ...task,
               existingItem,
@@ -472,13 +555,13 @@ const ImportExcel = () => {
           if (!duplicatesByLocation[location]) {
             duplicatesByLocation[location] = [];
           }
-          duplicatesByLocation[location].push(task.item.name);
+          duplicatesByLocation[location].push(task.item.name_tr || task.item.name_en || task.item.product_id);
         });
         
-        duplicateInfo.push(...Object.entries(duplicatesByLocation).map(([location, items]) => ({
+        duplicateInfo.push(...Object.entries(duplicatesByLocation).map(([location, nameParts]) => ({
           pricelistName: location,
-          count: items.length,
-          items: items.slice(0, 5) // İlk 5 ürünü göster
+          count: nameParts.length,
+          items: nameParts.slice(0, 5) // İlk 5 ürünü göster
         })));
       }
       
@@ -538,7 +621,11 @@ const ImportExcel = () => {
                 description_en: item.description_en || existingItem.description_en,
                 price: existingItem.price,
                 stock: existingItem.stock,
-                unit: existingItem.unit
+                unit: existingItem.unit,
+                section_l1_tr: item.section_l1_tr || existingItem.section_l1_tr,
+                section_l1_en: item.section_l1_en || existingItem.section_l1_en,
+                section_l2_tr: item.section_l2_tr || existingItem.section_l2_tr,
+                section_l2_en: item.section_l2_en || existingItem.section_l2_en
               };
               
               await pricelistApi.updateItem(existingItem.id, updatedItem);
@@ -598,7 +685,7 @@ const ImportExcel = () => {
         
         <Alert
           message="Beklenen Sütun Formatı"
-          description="Excel dosyanızda en az şu sütunlar olmalı: Ürün Adı (Name/Title) ve Fiyat (Price/Cost). Opsiyonel: ID, Açıklama, Stok. Sütun isimleri esnek - farklı isimler de kabul edilir."
+          description="En az: Ürün Adı ve Fiyat. Opsiyonel: ID, Açıklama, Stok. Bölüm satırları: ürün satırı gibi ayrı satırda, ürün adı veya ID hücresinde N---Başlık (ör. 1---Yangın, 1-1---Alt başlık) ve tam üç adet tire; altındaki ürünler bu bölüme atanır. Sütun isimleri esnek eşleşir."
           type="info"
           style={{ margin: '16px 0', textAlign: 'left' }}
         />
@@ -670,7 +757,13 @@ const ImportExcel = () => {
           const sheet = sheetData[sheetName];
           const selectedCount = selectedRows[sheetName]?.length || 0;
           const totalCount = sheet.rows.length;
-          
+          const useHierarchy = sheetHasSectionHierarchy(sheet.rows);
+          const sectionGroups = useHierarchy
+            ? groupItemsBySectionInOrder(sheet.rows, selectedLanguage)
+            : [];
+          const targetPlColor =
+            pricelists.find((p) => p.id === sheetAssignments[sheetName])?.color || '#1890ff';
+
           return (
             <TabPane 
               tab={
@@ -719,17 +812,69 @@ const ImportExcel = () => {
                 </Col>
               </Row>
               
-              <Table
-                dataSource={sheet.rows}
-                columns={getTableColumns(sheet.headers)}
-                rowSelection={{
-                  selectedRowKeys: selectedRows[sheetName] || [],
-                  onChange: (selectedRowKeys) => handleRowSelection(sheetName, selectedRowKeys),
-                }}
-                pagination={{ defaultPageSize: 10 }}
-                scroll={{ x: 800 }}
-                size="small"
-              />
+              {useHierarchy ? (
+                <Collapse
+                  size="small"
+                  defaultActiveKey={sectionGroups.map((_, i) => String(i))}
+                  style={{ background: 'transparent' }}
+                  items={sectionGroups.map((g, i) => {
+                    return {
+                      key: String(i),
+                      label: (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                          <SectionHeadingLabel
+                            l1={g.l1}
+                            l2={g.l2}
+                            pricelistColor={targetPlColor}
+                            uncategorizedText={
+                              selectedLanguage === 'tr' ? 'Bölüm yok' : 'No section'
+                            }
+                          />
+                          <Tag
+                            style={{
+                              marginLeft: 0,
+                              color: targetPlColor,
+                              borderColor: targetPlColor,
+                              background: 'transparent'
+                            }}
+                          >
+                            {g.items.length} ürün
+                          </Tag>
+                        </span>
+                      ),
+                      children: (
+                        <Table
+                          dataSource={g.items}
+                          rowKey="key"
+                          columns={getProductTableColumns(sheet.headers)}
+                          rowSelection={{
+                            selectedRowKeys: (selectedRows[sheetName] || []).filter((k) =>
+                              g.items.some((row) => row.key === k)
+                            ),
+                            onChange: (keys) => mergeGroupRowSelection(sheetName, g.items, keys)
+                          }}
+                          pagination={g.items.length > 10 ? { defaultPageSize: 10, size: 'small' } : false}
+                          scroll={{ x: 880 }}
+                          size="small"
+                        />
+                      )
+                    };
+                  })}
+                />
+              ) : (
+                <Table
+                  dataSource={sheet.rows}
+                  columns={getTableColumns(sheet.headers)}
+                  rowKey="key"
+                  rowSelection={{
+                    selectedRowKeys: selectedRows[sheetName] || [],
+                    onChange: (selKeys) => handleRowSelection(sheetName, selKeys)
+                  }}
+                  pagination={{ defaultPageSize: 10 }}
+                  scroll={{ x: 1024 }}
+                  size="small"
+                />
+              )}
             </TabPane>
           );
         })}

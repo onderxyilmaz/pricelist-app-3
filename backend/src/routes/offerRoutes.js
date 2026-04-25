@@ -375,17 +375,23 @@ async function offerRoutes(fastify, options) {
             description,
             unit,
             currency,
-            pricelist_id
+            pricelist_id,
+            section_l1_tr,
+            section_l1_en,
+            section_l2_tr,
+            section_l2_en
           } = item;
 
           await client.query(`
             INSERT INTO offer_items (
               offer_id, pricelist_item_id, quantity, price, total_price,
-              product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id,
+              section_l1_tr, section_l1_en, section_l2_tr, section_l2_en
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           `, [
             id, pricelist_item_id, quantity, price, total_price,
-            product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id
+            product_id, product_name_tr, product_name_en, description, unit, currency, pricelist_id,
+            section_l1_tr ?? null, section_l1_en ?? null, section_l2_tr ?? null, section_l2_en ?? null
           ]);
         }
         

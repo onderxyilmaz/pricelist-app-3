@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input, Button, Typography, Space, Popconfirm } from 'antd';
+import { Input, Button, Typography, Space, Popconfirm, Switch, Tooltip } from 'antd';
 import { SearchOutlined, CheckSquareOutlined, CloseSquareOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from '../PricelistDetail.module.css';
 
@@ -14,13 +14,16 @@ const ProductSearch = ({
   onSelectAll,
   onClearSelection,
   onBulkDelete,
-  totalItems 
+  totalItems,
+  hasSections,
+  groupBySections,
+  onGroupBySectionsChange
 }) => {
   return (
     <div className={styles.searchContainer}>
       <div className={styles.searchLeft}>
         <Search
-          placeholder="Ürün ara... (ID, İsim, Açıklama)"
+          placeholder="Ürün ara... (ID, isim, açıklama, bölüm)"
           allowClear
           onSearch={onSearch}
           onChange={(e) => onSearch(e.target.value)}
@@ -56,6 +59,22 @@ const ProductSearch = ({
             </Button>
           </Button.Group>
         </div>
+
+        {hasSections && (
+          <div className={styles.languageToggle}>
+            <Tooltip title="Kapalıyken tüm ürünler tek listede; açıkken bölüm başlıklarına göre gruplanır.">
+              <Space size="small" align="center">
+                <Text strong className={styles.languageText}>Bölüm başlıkları:</Text>
+                <Switch
+                  checked={groupBySections}
+                  onChange={onGroupBySectionsChange}
+                  checkedChildren="Açık"
+                  unCheckedChildren="Kapalı"
+                />
+              </Space>
+            </Tooltip>
+          </div>
+        )}
       </div>
       
       <Space className={styles.actionButtons}>

@@ -336,6 +336,20 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 
+-- 12. FİYAT LİSTESİ ÜRÜN BÖLÜM ALANLARI (hiyerarşik başlık: 1---, 1-1---)
+-- ==============================================================================
+ALTER TABLE pricelist_items
+  ADD COLUMN IF NOT EXISTS section_l1_tr TEXT,
+  ADD COLUMN IF NOT EXISTS section_l1_en TEXT,
+  ADD COLUMN IF NOT EXISTS section_l2_tr TEXT,
+  ADD COLUMN IF NOT EXISTS section_l2_en TEXT;
+
+ALTER TABLE offer_items
+  ADD COLUMN IF NOT EXISTS section_l1_tr TEXT,
+  ADD COLUMN IF NOT EXISTS section_l1_en TEXT,
+  ADD COLUMN IF NOT EXISTS section_l2_tr TEXT,
+  ADD COLUMN IF NOT EXISTS section_l2_en TEXT;
+
 -- ====================================
 -- KURULUM TAMAMLANDI!
 -- ====================================

@@ -215,7 +215,9 @@ async function pricelistRoutes(fastify, options) {
       try {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet' } = item;
+          const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet',
+            section_l1_tr = null, section_l1_en = null, section_l2_tr = null, section_l2_en = null
+          } = item;
 
           // Duplikasyon kontrolü
           const duplicateCheck = await client.query(
@@ -235,8 +237,10 @@ async function pricelistRoutes(fastify, options) {
 
           // Ürünü ekle
           await client.query(
-            'INSERT INTO pricelist_items (pricelist_id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-            [id, product_id, name_tr, name_en || null, description_tr || null, description_en || null, price, stock, unit]
+            'INSERT INTO pricelist_items (pricelist_id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit, section_l1_tr, section_l1_en, section_l2_tr, section_l2_en) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+            [id, product_id, name_tr, name_en || null, description_tr || null, description_en || null, price, stock, unit,
+              section_l1_tr || null, section_l1_en || null, section_l2_tr || null, section_l2_en || null
+            ]
           );
           imported++;
         }
@@ -314,7 +318,9 @@ async function pricelistRoutes(fastify, options) {
   }, async (request, reply) => {
     try {
       const { id } = request.params;
-      const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet' } = request.body;
+      const { product_id, name_tr, name_en, description_tr, description_en, price, stock = 0, unit = 'adet',
+        section_l1_tr, section_l1_en, section_l2_tr, section_l2_en
+      } = request.body;
       const client = await fastify.pg.connect();
       
       // Duplikasyon kontrolü - tüm fiyat listelerinde product_id kontrolü
@@ -335,8 +341,10 @@ async function pricelistRoutes(fastify, options) {
       }
       
       const result = await client.query(
-        'INSERT INTO pricelist_items (pricelist_id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-        [id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit]
+        'INSERT INTO pricelist_items (pricelist_id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit, section_l1_tr, section_l1_en, section_l2_tr, section_l2_en) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+        [id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit,
+          section_l1_tr ?? null, section_l1_en ?? null, section_l2_tr ?? null, section_l2_en ?? null
+        ]
       );
       
       client.release();
@@ -387,7 +395,9 @@ async function pricelistRoutes(fastify, options) {
   }, async (request, reply) => {
     try {
       const { id } = request.params;
-      const { product_id, name_tr, name_en, description_tr, description_en, price, stock, unit } = request.body;
+      const { product_id, name_tr, name_en, description_tr, description_en, price, stock, unit,
+        section_l1_tr, section_l1_en, section_l2_tr, section_l2_en
+      } = request.body;
       const client = await fastify.pg.connect();
       
       // Duplikasyon kontrolü - diğer ürünlerle product_id kontrolü (kendi hariç)
@@ -407,8 +417,10 @@ async function pricelistRoutes(fastify, options) {
       }
       
       const result = await client.query(
-        'UPDATE pricelist_items SET product_id = $1, name_tr = $2, name_en = $3, description_tr = $4, description_en = $5, price = $6, stock = $7, unit = $8, updated_at = NOW() WHERE id = $9 RETURNING *',
-        [product_id, name_tr, name_en, description_tr, description_en, price, stock, unit, id]
+        'UPDATE pricelist_items SET product_id = $1, name_tr = $2, name_en = $3, description_tr = $4, description_en = $5, price = $6, stock = $7, unit = $8, section_l1_tr = $9, section_l1_en = $10, section_l2_tr = $11, section_l2_en = $12, updated_at = NOW() WHERE id = $13 RETURNING *',
+        [product_id, name_tr, name_en, description_tr, description_en, price, stock, unit,
+          section_l1_tr ?? null, section_l1_en ?? null, section_l2_tr ?? null, section_l2_en ?? null, id
+        ]
       );
       
       client.release();
@@ -484,7 +496,9 @@ async function pricelistRoutes(fastify, options) {
       try {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          const { id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit } = item;
+          const { id, product_id, name_tr, name_en, description_tr, description_en, price, stock, unit,
+            section_l1_tr, section_l1_en, section_l2_tr, section_l2_en
+          } = item;
 
           // Item'ın var olup olmadığını kontrol et
           const itemCheck = await client.query('SELECT id FROM pricelist_items WHERE id = $1', [id]);
@@ -517,8 +531,10 @@ async function pricelistRoutes(fastify, options) {
 
           // Ürünü güncelle
           await client.query(
-            'UPDATE pricelist_items SET product_id = $1, name_tr = $2, name_en = $3, description_tr = $4, description_en = $5, price = $6, stock = $7, unit = $8, updated_at = NOW() WHERE id = $9',
-            [product_id, name_tr, name_en || null, description_tr || null, description_en || null, price, stock, unit, id]
+            'UPDATE pricelist_items SET product_id = $1, name_tr = $2, name_en = $3, description_tr = $4, description_en = $5, price = $6, stock = $7, unit = $8, section_l1_tr = $9, section_l1_en = $10, section_l2_tr = $11, section_l2_en = $12, updated_at = NOW() WHERE id = $13',
+            [product_id, name_tr, name_en || null, description_tr || null, description_en || null, price, stock, unit,
+              section_l1_tr ?? null, section_l1_en ?? null, section_l2_tr ?? null, section_l2_en ?? null, id
+            ]
           );
           updated++;
         }
@@ -662,24 +678,26 @@ async function pricelistRoutes(fastify, options) {
     try {
       const client = await fastify.pg.connect();
       
-      // Önce fiyat listelerini getir
+      // Önce fiyat listelerini getir (renk vb. tüm alanlar — teklif sihirbazı için gerekli)
       const pricelistsResult = await client.query(`
-        SELECT id, name, currency
-        FROM pricelists 
+        SELECT *
+        FROM pricelists
         ORDER BY name ASC
       `);
-      
+
       const pricelists = [];
-      
-      // Her fiyat listesi için ürünlerini getir
+
+      // Her fiyat listesi için ürünlerini getir (bölüm sütunları + liste sırası fiyat listesiyle aynı)
       for (const pricelist of pricelistsResult.rows) {
-        const itemsResult = await client.query(`
-          SELECT 
-            id, product_id, name_tr, name_en, description_tr, description_en, price, unit, stock, created_at
-          FROM pricelist_items 
-          WHERE pricelist_id = $1 
-          ORDER BY name_tr ASC, name_en ASC
-        `, [pricelist.id]);
+        const itemsResult = await client.query(
+          `
+          SELECT *
+          FROM pricelist_items
+          WHERE pricelist_id = $1
+          ORDER BY created_at ASC
+        `,
+          [pricelist.id]
+        );
         
         pricelists.push({
           ...pricelist,
